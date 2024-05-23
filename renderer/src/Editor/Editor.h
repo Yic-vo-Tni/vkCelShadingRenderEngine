@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_EDITOR_H
 #define VKCELSHADINGRENDERER_EDITOR_H
 
-#include "Engine/Core/Engine.h"
+#include "Engine/Engine.h"
 
 namespace yic {
 
