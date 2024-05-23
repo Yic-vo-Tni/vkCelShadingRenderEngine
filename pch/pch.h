@@ -40,67 +40,45 @@
 #include "ranges"
 #include "stack"
 
-namespace pch {
+#include "include/spdlog/spdlog.h"
+#include "include/spdlog/sinks/stdout_color_sinks.h"
+#include "include/spdlog/fmt/ostr.h"
+#include "include/spdlog/sinks/ansicolor_sink.h"
 
-    struct IfDebug {
-    public:
-        template<typename Func>
-        auto operator=(Func &&func) -> decltype(func()) {
-            if constexpr (enableDebug) {
-                func();
-                return *this;
-            }
-        }
 
-    private:
-        static constexpr bool enableDebug =
 #ifdef NDEBUG
-                false;
+const bool enableDebug = false;
 #else
-                true;
+const bool enableDebug = true;
 #endif
-    };
 
-//    enum level{
-//        eTrance, eInfo, eWarn, eError
-//    };
-//
-//    extern void try_catch(const std::function<void()>& fun, const std::string & des, level);
-//
-//    struct vkCreateInvoker {
-//        explicit vkCreateInvoker(std::string description, level level) : mDescription(std::move(description)), mLevel(level) {};
-//        vkCreateInvoker() = default;
-//
-//        template<typename Func>
-//        vkCreateInvoker& operator=(Func &&func)  {
-//            try_catch(func, mDescription, mLevel);
-//            return *this;
-//        }
-//
-//    private:
-//        std::string mDescription{};
-//        level mLevel{};
-//    };
+#define if_debug  if(enableDebug)
 
 
+extern inline void try_catch(const std::function<void()> &fun, const std::string &des, spdlog::level::level_enum);
 
+template<typename ReturnType>
+struct vkCreateInvoker {
+    explicit vkCreateInvoker(std::string description, spdlog::level::level_enum level) : mDescription(std::move(description)),
+                                                                     mLevel(level) {};
+
+    vkCreateInvoker() = default;
+
+    template<typename Func>
+    ReturnType operator=(Func &&func) {
+        ReturnType returnType;
+        try_catch(func, mDescription, mLevel);
+        return returnType;
+    }
+
+private:
+    std::string mDescription{};
+    spdlog::level::level_enum mLevel{};
+};
+
+template<typename ReturnType>
+inline vkCreateInvoker<ReturnType> vkCreate(const std::string & description = {}, spdlog::level::level_enum level = spdlog::level::info){
+    return vkCreateInvoker<ReturnType>(description, level);
 }
-
-
-
-inline constexpr pch::IfDebug if_debug;
-
-//inline pch::vkCreateInvoker vkCreate(const std::string & description = {}, pch::level level = pch::level::eInfo){
-//    return pch::vkCreateInvoker(description, level);
-//}
-
-//void x(){
-//    vkCreate() = [&]{
-//
-//    } ;
-//
-//}
-
-//extern void vkCreate(const std::function<void()>& fun, const std::string& description, int n = -1);
 
 #endif //VKCELSHADINGRENDERER_PCH_H

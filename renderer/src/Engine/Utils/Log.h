@@ -5,10 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_LOG_H
 #define VKCELSHADINGRENDERER_LOG_H
 
-#include "spdlog/include/spdlog/spdlog.h"
-#include "spdlog/include/spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/include/spdlog/fmt/ostr.h"
-#include "spdlog/include/spdlog/sinks/ansicolor_sink.h"
+
 
 namespace yic {
 
@@ -30,6 +27,33 @@ namespace yic {
 #define vkInfo(...)      yic::Log::GetLogger()->info(__VA_ARGS__)
 #define vkWarn(...)      yic::Log::GetLogger()->warn(__VA_ARGS__)
 #define vkError(...)     yic::Log::GetLogger()->error(__VA_ARGS__)
+
+inline void try_catch(const std::function<void()> &fun, const std::string &des, spdlog::level::level_enum level){
+    try {
+        fun();
+    } catch (const vk::SystemError &e) {
+        if_debug vkError("failed to {0}: {1}", des, e.what());
+        exit(EXIT_FAILURE);
+    }
+
+    if_debug {
+        switch (level) {
+            case spdlog::level::info:
+                vkInfo("{0}, successfully", des);
+                break;
+            case spdlog::level::warn:
+                vkWarn("{0} successfully", des);
+                break;
+            case spdlog::level::err:
+                vkError("{0} successfully", des);
+                break;
+            default:
+                vkTrance("{0} successfully", des);
+        }
+    };
+}
+
+
 
 
 #endif //VKCELSHADINGRENDERER_LOG_H

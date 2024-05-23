@@ -6,19 +6,19 @@
 
 namespace yic {
 
-    bool Engine::run() {
-        [&,
-                window_run = [&]() {
-                    return !vkWindow::run();
-                }()
-        ]() {
-            try {
+    Engine::Engine() = default;
 
-            }catch (const std::exception& e){
-                std::cerr << "Exception caught in run loop: " << e.what() << "\n";
-                return false;
-            }
-            return true;
+    bool Engine::run() {
+        mRhi = std::make_unique<vkRhi>();
+
+        [&, rhi_run = [&]() {
+            return mRhi->run();
+        }(), window_run = [&]() {
+            return !vkWindow::run();
+        }()
+        ]() {
+                if (!window_run)
+                    mRhi->setRunCondition();
         }();
 
         return true;

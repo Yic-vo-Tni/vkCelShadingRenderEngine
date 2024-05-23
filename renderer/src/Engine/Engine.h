@@ -6,12 +6,17 @@
 #define VKCELSHADINGRENDERER_ENGINE_H
 
 #include "Engine/Core/vkWindow.h"
+#include "Engine/RHI/vkRhi.h"
 
 namespace yic {
 
     class Engine {
     public:
+        Engine();
         bool run();
+
+    private:
+        std::unique_ptr<vkRhi> mRhi;
     };
 
 } // yic
