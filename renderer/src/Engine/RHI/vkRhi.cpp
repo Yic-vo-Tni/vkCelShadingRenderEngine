@@ -20,19 +20,10 @@ namespace yic {
     }
 
     bool vkRhi::run() {
-        std::thread RhiThread([this] {
-            try {
-                while (mRun.load()) {
+        while (mRun.load()) {
 
 
-                }
-            } catch (const vk::SystemError &e) {
-                std::cerr << e.what() << "\n";
-            }
-        });
-
-        if(RhiThread.joinable())
-            RhiThread.join();
+        }
 
         return true;
     }

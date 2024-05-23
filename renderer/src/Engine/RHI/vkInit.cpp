@@ -28,14 +28,6 @@ namespace yic{
                 };
             }())
 
-//            mDebugMessenger([&]() {
-//                return mInstance->createDebugUtilsMessengerEXTUnique({});
-//            }())
-
-//            mSurface([&](){
-//                return
-//            }())
-
             {
     }
 

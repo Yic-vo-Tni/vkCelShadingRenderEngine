@@ -11,14 +11,23 @@ namespace yic {
     bool Engine::run() {
         mRhi = std::make_unique<vkRhi>();
 
-        [&, rhi_run = [&]() {
-            return mRhi->run();
-        }(), window_run = [&]() {
+        [&, rhi_thread = [&]() {
+            return std::make_unique<std::thread>([&] {
+                try {
+                    mRhi->run();
+                } catch (const vk::SystemError &e) {
+                    std::cerr << e.what() << "\n";
+                }
+            });
+        }(), window_main_thread = [&]() {
             return !vkWindow::run();
         }()
         ]() {
-                if (!window_run)
-                    mRhi->setRunCondition();
+            if (!window_main_thread)
+                mRhi->setRunCondition();
+
+            if (rhi_thread->joinable())
+                rhi_thread->join();
         }();
 
         return true;

@@ -13,11 +13,13 @@ namespace yic {
     public:
         vkRhi();
 
-        bool run();
+       // bool run();
+
+        auto run() -> bool ;
 
         void setRunCondition() { mRun.store(false);}
     private:
-        std::atomic<bool> mRun;
+        std::atomic<bool> mRun{true};
     };
 
 } // yic
