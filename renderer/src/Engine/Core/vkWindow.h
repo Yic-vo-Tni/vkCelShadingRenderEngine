@@ -1,0 +1,33 @@
+//
+// Created by lenovo on 5/21/2024.
+//
+
+#ifndef VKCELSHADINGRENDERER_VKWINDOW_H
+#define VKCELSHADINGRENDERER_VKWINDOW_H
+
+#include "Engine/Core/Event/Event.h"
+#include "Engine/Core/Callback/GlfwCallback.h"
+#include "Engine/Core/Input/InputHandlers.h"
+
+namespace yic {
+
+    class vkWindow : public nonCopyable{
+    public:
+        vkGet auto get = [](const int& w = 1600, const int& h = 1200){ return Singleton<vkWindow>::get(w, h);};
+
+        vkWindow(const int& w, const int& h);
+        ~vkWindow() = default;
+
+        static bool run();
+
+        [[nodiscard]] inline static auto GetWindow()  { return get()->mWindow.get();}
+    private:
+        int mWidth{}, mHeight{};
+        std::string mName{"Yicvot"};
+
+        std::shared_ptr<GLFWwindow> mWindow;
+    };
+
+} // yic
+
+#endif //VKCELSHADINGRENDERER_VKWINDOW_H
