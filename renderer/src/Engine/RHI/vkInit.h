@@ -14,6 +14,9 @@ namespace yic {
     class vkInit {
     public:
         explicit vkInit(const std::shared_ptr<vkInitCreateInfo>& createInfo);
+        ~vkInit(){
+            mInstance->destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicDispatcher);
+        }
 
         vkGet auto get = [](const std::shared_ptr<vkInitCreateInfo>& createInfo = {}){
             return Singleton<vkInit>::get(createInfo);
@@ -21,10 +24,8 @@ namespace yic {
 
     private:
         vk::UniqueInstance mInstance{};
-        vk::DispatchLoaderDynamic mDispatcher{};
-//        vk::UniqueDebugUtilsMessengerEXT mDebugMessenger{};
-
-//        vk::UniqueSurfaceKHR  mSurface{};
+        vk::DispatchLoaderDynamic mDynamicDispatcher{};
+        vk::DebugUtilsMessengerEXT mDebugMessenger{};
     };
 
     class vkInitCreateInfo : public std::enable_shared_from_this<vkInitCreateInfo>{

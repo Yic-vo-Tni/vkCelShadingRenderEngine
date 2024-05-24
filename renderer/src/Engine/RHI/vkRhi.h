@@ -13,8 +13,6 @@ namespace yic {
     public:
         vkRhi();
 
-       // bool run();
-
         auto run() -> bool ;
 
         void setRunCondition() { mRun.store(false);}

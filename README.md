@@ -15,36 +15,40 @@
   - 通过事件总线的方式做的。
 - **基础输入测试**：搞了个键盘输入测试，现在按键可以只响应一次了，还可以多次撤回。
 
+
+- **添加了Return Type**：这下可以创建了直接返回了，舒服多了，有问题，修改成auto这些方便多了
 ```c++
-extern inline void try_catch(const std::function<void()> &fun, const std::string &des, spdlog::level::level_enum);
+template<typename Func>
+    auto operator=(Func &&func) {
+        try {
+            auto r = func();
 
-template<typename ReturnType>
-struct vkCreateInvoker {
-    explicit vkCreateInvoker(std::string description, spdlog::level::level_enum level) : mDescription(std::move(description)),
-                                                                     mLevel(level) {};
+            if_debug {
+                switch (mLevel) {
+                    case spdlog::level::info:
+                        vkInfo("{0}, successfully", mDescription);
+                        break;
+                    case spdlog::level::warn:
+                        vkWarn("{0} successfully", mDescription);
+                        break;
+                    case spdlog::level::err:
+                        vkError("{0} successfully", mDescription);
+                        break;
+                    default:
+                        vkTrance("{0} successfully", mDescription);
+                }
+            };
 
-    vkCreateInvoker() = default;
-
-    template<typename Func>
-    ReturnType operator=(Func &&func) {
-        ReturnType returnType;
-        try_catch(func, mDescription, mLevel);
-        return returnType;
+            return r;
+        } catch (const vk::SystemError &e) {
+            if_debug vkError("failed to {0}: {1}", mDescription, e.what());
+            exit(EXIT_FAILURE);
+        }
     }
-
-private:
-    std::string mDescription{};
-    spdlog::level::level_enum mLevel{};
-};
-
-template<typename ReturnType>
-inline vkCreateInvoker<ReturnType> vkCreate(const std::string & description = {}, spdlog::level::level_enum level = spdlog::level::info){
-    return vkCreateInvoker<ReturnType>(description, level);
-}
 ```
-- **添加了Return Type**：这下可以创建了直接返回了，舒服多了
+- vkCreate返回创建的UniqueInstance,再也不用用一个临时的vk::instance了，之前忘了给try-catch搞个返回值= =
 ```c++
-      mInstance([&, appInfo = []() {
+mInstance([&, appInfo = [&]() {
                 return vk::ApplicationInfo{
                         "Yic", VK_MAKE_VERSION(1, 0, 0),
                         "Vot", VK_MAKE_VERSION(1, 0, 0),
@@ -54,7 +58,7 @@ inline vkCreateInvoker<ReturnType> vkCreate(const std::string & description = {}
                 createInfo->addInstanceExtensions(fn::addRequiredExtensions());
                 fn::checkInstanceSupport(createInfo->mInstanceExtensions, createInfo->mInstanceLayers);
 
-                return vkCreate < vk::UniqueInstance > ("create instance") = [&]() {
+                return vkCreate("create instance") = [&]() {
                     return vk::createInstanceUnique(
                             vk::InstanceCreateInfo()
                                     .setPApplicationInfo(&appInfo)
@@ -64,7 +68,7 @@ inline vkCreateInvoker<ReturnType> vkCreate(const std::string & description = {}
                 };
             }())
 ```
-- vkCreate返回创建的UniqueInstance,再也不用用一个临时的vk::instance了
+- 渲染和主窗口各一个线程，这下应该不用像上一个点击窗口会暂停画面了，舒服了
 ```c++
      [&, rhi_thread = [&]() {
             return std::make_unique<std::thread>([&] {
@@ -85,7 +89,7 @@ inline vkCreateInvoker<ReturnType> vkCreate(const std::string & description = {}
                 rhi_thread->join();
         }();
 ```
-- 渲染和主窗口各一个线程，这下应该不用像上一个点击窗口会暂停画面了，舒服了
+
 
 
 

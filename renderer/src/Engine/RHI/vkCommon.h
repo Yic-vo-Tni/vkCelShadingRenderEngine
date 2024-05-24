@@ -5,14 +5,11 @@
 #ifndef VKCELSHADINGRENDERER_VKCOMMON_H
 #define VKCELSHADINGRENDERER_VKCOMMON_H
 
-//#include "pch.h"
-//#include "Core/Log/Log.h"
 #include "Engine/Utils/Log.h"
 
-
-    enum class QueueType{
-        eGraphics, eTransfer,
-    };
+enum class QueueType {
+    eGraphics, eTransfer,
+};
 
 
 namespace fn{
