@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_EVENTTYPES_H
 #define VKCELSHADINGRENDERER_EVENTTYPES_H
 
-#include "boost/hana.hpp"
+#include "Engine/RHI/vkStruct.h"
 
 #define struct_y(...) BOOST_HANA_DEFINE_STRUCT(__VA_ARGS__)
 
@@ -31,8 +31,19 @@ namespace EventTypes {
 
     struct vkInitContext {
         struct_y(vkInitContext,
-                 (vk::Instance, instance));
+                 (vk::Instance, instance),
+                 (std::shared_ptr<vk::DispatchLoaderDynamic>, dynamicDispatcher),
+                 (vk::DebugUtilsMessengerEXT, debugMessenger),
+                 (vk::SurfaceKHR, surface));
     };
+
+    struct vkDeviceContext {
+        struct_y(vkDeviceContext,
+                 (vk::PhysicalDevice, physicalDevice),
+                 (vk::Device, device),
+                 (std::shared_ptr<yic::QueueFamily>, queueFamily));
+    };
+
 
 }
 

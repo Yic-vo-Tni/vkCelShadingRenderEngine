@@ -8,6 +8,7 @@ namespace yic {
 
     vkRhi::vkRhi() {
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelF{};
+        vkWindow::get();
         vkInit::get(std::make_shared<vkInitCreateInfo>()
                             ->addInstanceLayers("VK_LAYER_KHRONOS_validation")
                             ->addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
@@ -15,12 +16,10 @@ namespace yic {
                             ->addPhysicalExtensions(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, &accelF)
 
-                            ->setQueuesPriority(std::vector<float>{1.f, 0.9f}),
-
-                     vkWindow::GetWindow()
+                            ->setQueuesPriority(std::vector<float>{1.f, 0.9f})
         );
 
-      //  vkSwapchain swapchain{vkInit::GetDevice()};
+        mSwapchain = std::make_unique<vkSwapchain>();
     }
 
     bool vkRhi::run() {

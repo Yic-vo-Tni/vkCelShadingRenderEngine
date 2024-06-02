@@ -21,10 +21,10 @@ namespace yic {
 
 } // yic
 
-#define vkTrance(...)    yic::Log::GetLogger()->trace(__VA_ARGS__)
-#define vkInfo(...)      yic::Log::GetLogger()->info(__VA_ARGS__)
-#define vkWarn(...)      yic::Log::GetLogger()->warn(__VA_ARGS__)
-#define vkError(...)     yic::Log::GetLogger()->error(__VA_ARGS__)
+#define vkTrance(...)   if_debug yic::Log::GetLogger()->trace(__VA_ARGS__)
+#define vkInfo(...)     if_debug yic::Log::GetLogger()->info(__VA_ARGS__)
+#define vkWarn(...)     if_debug yic::Log::GetLogger()->warn(__VA_ARGS__)
+#define vkError(...)    if_debug yic::Log::GetLogger()->error(__VA_ARGS__)
 
 
 struct vkCreateInvoker {
@@ -38,25 +38,23 @@ struct vkCreateInvoker {
         try {
             auto r = func();
 
-            if_debug {
-                switch (mLevel) {
-                    case spdlog::level::info:
-                        vkInfo("{0}, successfully", mDescription);
-                        break;
-                    case spdlog::level::warn:
-                        vkWarn("{0} successfully", mDescription);
-                        break;
-                    case spdlog::level::err:
-                        vkError("{0} successfully", mDescription);
-                        break;
-                    default:
-                        vkTrance("{0} successfully", mDescription);
-                }
-            };
+            switch (mLevel) {
+                case spdlog::level::info:
+                    vkInfo("{0}, successfully", mDescription);
+                    break;
+                case spdlog::level::warn:
+                    vkWarn("{0} successfully", mDescription);
+                    break;
+                case spdlog::level::err:
+                    vkError("{0} successfully", mDescription);
+                    break;
+                default:
+                    vkTrance("{0} successfully", mDescription);
+            }
 
             return r;
         } catch (const vk::SystemError &e) {
-            if_debug vkError("failed to {0}: {1}", mDescription, e.what());
+            vkError("failed to {0}: {1}", mDescription, e.what());
             exit(EXIT_FAILURE);
         }
     }

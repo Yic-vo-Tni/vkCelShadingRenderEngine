@@ -9,11 +9,10 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
-        mRhi = std::make_unique<vkRhi>();
-
         [&, rhi_thread = [&]() {
             return std::make_unique<std::thread>([&] {
                 try {
+                    mRhi = std::make_unique<vkRhi>();
                     mRhi->run();
                 } catch (const vk::SystemError &e) {
                     std::cerr << e.what() << "\n";

@@ -35,7 +35,7 @@ namespace yic {
         }
 
 //        template<typename Event>
-//        static void publish_fix(const Event& event){
+//        static void publish(const Event& event){
 //            auto type = std::type_index(typeid(Event));
 //            std::lock_guard<std::mutex> lock(get()->mMutex);
 //            if (get()->mHandlers.count(type)){
@@ -69,21 +69,26 @@ namespace yic {
             }
         }
 
-        template<typename T>
-        static void setState(const T& value){
-            std::lock_guard<std::mutex> lock(get()->mStateMutex);
-            get()->mState[std::type_index(typeid(T))] = value;
-        }
+//        template<typename T>
+//        static void setState(const T& value){
+//            std::lock_guard<std::mutex> lock(get()->mStateMutex);
+//            get()->mState[std::type_index(typeid(T))] = value;
+//        }
 
-        template<typename T>
-        static T getState() {
-            std::lock_guard<std::mutex> lock(get()->mStateMutex);
-            auto it = get()->mState.find(std::type_index(typeid(T)));
-            if(it != get()->mState.end()){
-                return std::any_cast<T>(it->second);
+        struct Get {
+            static auto vkWindowContext() {
+                return getState<EventTypes::WindowContext>();
             }
-            throw std::runtime_error("state not found for the requested type.");
-        }
+
+            static auto vkInitContext() {
+                return getState<EventTypes::vkInitContext>();
+            }
+
+            static auto vkDeviceContext() {
+                return getState<EventTypes::vkDeviceContext>();
+            }
+        };
+
 
     private:
         template<typename T>
@@ -111,10 +116,37 @@ namespace yic {
                 auto& oldVal = boost::hana::at_key(exist, key);
                 const auto& newVal = boost::hana::at_key(updates, key);
 
-                if (newVal){
+                using oldValType = decltype(oldVal);
+                using newValType = std::decay_t<decltype(*newVal)>;
+
+                if constexpr (std::is_same_v<oldValType, std::optional<newValType>>){
+                    if (newVal.has_value())
+                        oldVal = newVal;
+                } else if constexpr (std::is_same_v<oldValType, std::shared_ptr<newValType>>) {
+                    if (newVal != nullptr)
+                        oldVal = newVal;
+                } else if constexpr (std::is_same_v<oldValType, std::unique_ptr<newValType>>){
+                    if (auto ptr = newVal.get(); ptr != nullptr){
+                        if (!oldVal){
+                            oldVal = std::make_unique<newValType>(*ptr);
+                        } else{
+                            *(oldVal.get()) = *ptr;
+                        }
+                    }
+                } else {
                     oldVal = newVal;
                 }
             });
+        }
+
+        template<typename T>
+        static T getState() {
+            std::lock_guard<std::mutex> lock(get()->mStateMutex);
+            auto it = get()->mState.find(std::type_index(typeid(T)));
+            if(it != get()->mState.end()){
+                return std::any_cast<T>(it->second);
+            }
+            throw std::runtime_error("state not found for the requested type.");
         }
 
 
@@ -125,5 +157,8 @@ namespace yic {
     };
 
 } // yic
+
+
+
 
 #endif //VKCELSHADINGRENDERER_EVENT_H

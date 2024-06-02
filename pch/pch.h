@@ -46,6 +46,8 @@
 #include "include/spdlog/fmt/ostr.h"
 #include "include/spdlog/sinks/ansicolor_sink.h"
 
+#include "boost/hana.hpp"
+
 
 #ifdef NDEBUG
 const bool enableDebug = false;

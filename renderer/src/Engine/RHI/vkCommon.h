@@ -12,6 +12,7 @@ enum class QueueType {
 };
 
 
+
 namespace fn{
 
     inline auto addRequiredExtensions(){
@@ -113,9 +114,9 @@ namespace fn{
 
         return std::nullopt;
     }
-
-
 };
+
+
 
 #endif //VKCELSHADINGRENDERER_VKCOMMON_H
 

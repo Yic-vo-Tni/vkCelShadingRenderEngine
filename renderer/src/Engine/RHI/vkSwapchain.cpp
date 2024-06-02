@@ -6,8 +6,23 @@
 
 namespace yic {
 
-    vkSwapchain::vkSwapchain(vk::Device device) : mDevice(device),
-        mSwapchain(createSwapchain())
+    vkSwapchain::vkSwapchain(vk::Format format) :
+        mDevice                     (EventBus::Get::vkDeviceContext().device),
+        mPhysicalDevice             (EventBus::Get::vkDeviceContext().physicalDevice),
+        mSurface                    (EventBus::Get::vkInitContext().surface),
+        mGraphicsQueueFamilyIndex   (EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsFamilyIndex().value()),
+
+        mSurfaceFormat([&]{
+            auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
+            for (auto &i: formats) {
+                if (i.format == format) {
+                    return i;
+                }
+            }
+            return formats[0];
+        }()),
+
+        mSwapchain(createSwapchain({}))
     {
 
     }
@@ -16,9 +31,7 @@ namespace yic {
         mDevice.destroy(mSwapchain);
     }
 
-    auto vkSwapchain::createSwapchain() -> vk::SwapchainKHR {
-        auto oldSwapchain = mSwapchain;
-
+    auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
         return vkCreate("create swapchain") = [&](){
 
             auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
@@ -53,7 +66,7 @@ namespace yic {
 
 
             return mDevice.createSwapchainKHR(vk::SwapchainCreateInfoKHR{{},
-                                                                         mSurface, mImageCount, mSurfaceFormat, mColorSpace,
+                                                                         mSurface, mImageCount, mSurfaceFormat.format, mSurfaceFormat.colorSpace,
                                                                          mExtent, 1, vk::ImageUsageFlagBits::eColorAttachment,
                                                                          vk::SharingMode::eExclusive, mGraphicsQueueFamilyIndex,
                                                                          vk::SurfaceTransformFlagBitsKHR::eIdentity, vk::CompositeAlphaFlagBitsKHR::eOpaque,

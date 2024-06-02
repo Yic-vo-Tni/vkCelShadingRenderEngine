@@ -15,9 +15,9 @@ namespace yic{
         return VK_FALSE;
     }
 
-    vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo, GLFWwindow* w) : mWindow(w)
+    vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo) :
 
-            , mInstance([&, appInfo = [&]() {
+            mInstance([&, appInfo = [&]() {
                 return vk::ApplicationInfo{
                         "Yic", VK_MAKE_VERSION(1, 0, 0),
                         "Vot", VK_MAKE_VERSION(1, 0, 0),
@@ -38,7 +38,8 @@ namespace yic{
             }())
 
             , mDebugMessenger([&](){
-                mDynamicDispatcher = vk::DispatchLoaderDynamic(mInstance, vkGetInstanceProcAddr);
+//                mDynamicDispatcher = vk::DispatchLoaderDynamic(mInstance, vkGetInstanceProcAddr);
+                mDynamicDispatcher = std::make_unique<vk::DispatchLoaderDynamic>(mInstance, vkGetInstanceProcAddr);
 
                 return vkCreate("create debug messenger") = [&](){
                     using tSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT;
@@ -47,18 +48,17 @@ namespace yic{
                             vk::DebugUtilsMessengerCreateInfoEXT()
                                     .setMessageSeverity(tSeverity::eVerbose | tSeverity::eWarning | tSeverity::eError)
                                     .setMessageType(tType::eGeneral | tType::ePerformance | tType::eValidation)
-                                    .setPfnUserCallback(debugCallback), nullptr, mDynamicDispatcher);
+                                    .setPfnUserCallback(debugCallback), nullptr, *mDynamicDispatcher);
                 };
             }())
 
             , mSurface([&](){
                 return vkCreate("create surface") = [&](){
-                    auto w = EventBus::getState<EventTypes::WindowContext>().window.get();
                     if (VkSurfaceKHR tempSurface;
-                            glfwCreateWindowSurface(mInstance, w, nullptr, &tempSurface) == VK_SUCCESS){
+                            glfwCreateWindowSurface(mInstance, EventBus::Get::vkWindowContext().window.get(), nullptr, &tempSurface) == VK_SUCCESS){
                         return tempSurface;
                     } else{
-                        exit(1);
+                        throw std::runtime_error("failed to create surface");
                     }
                 };
             }())
@@ -91,12 +91,10 @@ namespace yic{
             }())
 
             , mDevice([&]{
-                mQueueFamilies.emplace(QueueType::eGraphics, QueueFamily{{}, fn::findQueueFamily(mPhysicalDevice, QueueType::eGraphics)});
-                mQueueFamilies.emplace(QueueType::eTransfer, QueueFamily{{}, fn::findQueueFamily(mPhysicalDevice, QueueType::eTransfer)});
+                mQueueFamily = std::make_shared<QueueFamily>(mPhysicalDevice, QueueType::eGraphics, QueueType::eTransfer);
 
-                std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{};
-
-                for(auto& [type , family] : mQueueFamilies){
+                std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+                for(auto& [type , family] : mQueueFamily->getQueueFamilies()){
                     if (family.familyIndex.has_value())
                         queueCreateInfos.push_back({{}, family.familyIndex.value(), createInfo->mPriorities});
                 }
@@ -110,10 +108,11 @@ namespace yic{
             }())
 
             {
-                mDynamicDispatcher.init(mDevice);
-                for(auto& [type, family] : mQueueFamilies){
-                    family.createQueues(mDevice, createInfo->mPriorities.size());
-                }
+                mDynamicDispatcher->init(mDevice);
+                mQueueFamily->createQueues(mDevice, createInfo->mPriorities.size());
+
+                EventBus::publish(EventTypes::vkInitContext{mInstance,mDynamicDispatcher, mDebugMessenger, mSurface});
+                EventBus::publish(EventTypes::vkDeviceContext{mPhysicalDevice, mDevice, mQueueFamily});
     }
 
 }
