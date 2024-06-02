@@ -4,7 +4,7 @@ project(vkCelShadingRenderer)
 set(CMAKE_CXX_STANDARD 23)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    if (Win32)
+    if (WIN32)
         set(CMAKE_WIN32_EXECUTABLE ON)
     endif ()
 endif ()
