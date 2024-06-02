@@ -11,7 +11,7 @@
 namespace glfw_callback {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height) {
-        yic::EventBus::publish(EventTypes::WindowSize{width, height});
+        yic::EventBus::publish(EventTypes::WindowContext{width, height});
     };
 
     inline auto setKeyCallback = [](GLFWwindow *window, int key, int scancode, int action, int mods) {

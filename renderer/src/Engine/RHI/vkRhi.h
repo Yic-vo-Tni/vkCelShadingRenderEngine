@@ -6,6 +6,8 @@
 #define VKCELSHADINGRENDERER_VKRHI_H
 
 #include "vkInit.h"
+#include "Engine/Core/vkWindow.h"
+#include "Engine/RHI/vkSwapchain.h"
 
 namespace yic {
 

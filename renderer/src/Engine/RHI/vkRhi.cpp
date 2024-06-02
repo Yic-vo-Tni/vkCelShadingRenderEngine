@@ -15,8 +15,12 @@ namespace yic {
                             ->addPhysicalExtensions(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, &accelF)
 
-                            ->setQueuesPriority(std::vector<float>{1.f, 0.9f})
+                            ->setQueuesPriority(std::vector<float>{1.f, 0.9f}),
+
+                     vkWindow::GetWindow()
         );
+
+      //  vkSwapchain swapchain{vkInit::GetDevice()};
     }
 
     bool vkRhi::run() {

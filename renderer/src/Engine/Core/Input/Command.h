@@ -43,14 +43,12 @@ namespace yic {
         explicit TestCommand(GLFWwindow* w) : mWindow(w), previousState(false){};
 
         void execute() override{
-           // if (glfwGetKey(mWindow, GLFW_KEY_SPACE) == GLFW_PRESS) {
-               // int width, height;
                 glfwGetWindowSize(mWindow, &width, &height);
                 glfwSetWindowSize(mWindow, width + 10, height + 10);
-            //}
         }
 
         void undo() override{
+            glfwGetWindowSize(mWindow, &width, &height);
             glfwSetWindowSize(mWindow, width - 10, height - 10);
         }
 
@@ -61,7 +59,7 @@ namespace yic {
     private:
         GLFWwindow *mWindow;
         int previousState;
-        int width, height;
+        int width{}, height{};
     };
 
 } // yic

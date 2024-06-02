@@ -34,17 +34,55 @@ namespace yic {
             subscribe<EventType>(std::forward<Handler>(handler));
         }
 
+//        template<typename Event>
+//        static void publish_fix(const Event& event){
+//            auto type = std::type_index(typeid(Event));
+//            std::lock_guard<std::mutex> lock(get()->mMutex);
+//            if (get()->mHandlers.count(type)){
+//                for(const auto& handler : get()->mHandlers.at(type)){
+//                    get()->mThreadPool.enqueue([handler, event]{
+//                        handler(&event);
+//                    });
+//                }
+//            }
+//        }
+
         template<typename Event>
         static void publish(const Event& event){
+            auto inst = get();
             auto type = std::type_index(typeid(Event));
-            std::lock_guard<std::mutex> lock(get()->mMutex);
-            if (get()->mHandlers.count(type)){
-                for(const auto& handler : get()->mHandlers.at(type)){
-                    get()->mThreadPool.enqueue([handler, event]{
-                        handler(&event);
+            std::lock_guard<std::mutex> lock(inst->mMutex);
+            auto& storedEvent = inst->mState[std::type_index(typeid(event))];
+
+            if (storedEvent.has_value()){
+                inst->updateOptional(std::any_cast<Event&>(storedEvent), event);
+            } else {
+                storedEvent = event;
+            }
+
+            if (inst->mHandlers.count(type)){
+                for(const auto& handler : inst->mHandlers.at(type)){
+                    inst->mThreadPool.enqueue([handler, event]{
+                      handler(&event);
                     });
                 }
             }
+        }
+
+        template<typename T>
+        static void setState(const T& value){
+            std::lock_guard<std::mutex> lock(get()->mStateMutex);
+            get()->mState[std::type_index(typeid(T))] = value;
+        }
+
+        template<typename T>
+        static T getState() {
+            std::lock_guard<std::mutex> lock(get()->mStateMutex);
+            auto it = get()->mState.find(std::type_index(typeid(T)));
+            if(it != get()->mState.end()){
+                return std::any_cast<T>(it->second);
+            }
+            throw std::runtime_error("state not found for the requested type.");
         }
 
     private:
@@ -67,8 +105,22 @@ namespace yic {
         };
 
 
+        template<typename Event>
+        void updateOptional(Event& exist, const Event& updates){
+            boost::hana::for_each(boost::hana::keys(exist), [&](auto key){
+                auto& oldVal = boost::hana::at_key(exist, key);
+                const auto& newVal = boost::hana::at_key(updates, key);
+
+                if (newVal){
+                    oldVal = newVal;
+                }
+            });
+        }
+
+
         std::unordered_map<std::type_index, std::vector<std::function<void(const void*)>>> mHandlers;
-        std::mutex mMutex;
+        std::unordered_map<std::type_index, std::any> mState;
+        std::mutex mMutex, mStateMutex;
         ThreadPool mThreadPool;
     };
 

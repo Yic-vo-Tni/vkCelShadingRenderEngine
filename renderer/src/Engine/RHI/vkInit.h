@@ -7,25 +7,56 @@
 
 #include "vkCommon.h"
 
+#include "Engine/Utils/Log.h"
+#include "Engine/Core/Event/Event.h"
+
 namespace yic {
 
     class vkInitCreateInfo;
 
     class vkInit {
+        struct QueueFamily{
+            std::vector<vk::Queue> queues{};
+            std::optional<uint32_t> familyIndex{};
+
+            bool createQueues(vk::Device device, uint32_t queueCount){
+                if (familyIndex.has_value()){
+                    queues.resize(queueCount);
+                    for(uint32_t i = 0; i < queueCount; i++){
+                        queues[i] = device.getQueue(familyIndex.value(), i);
+                    }
+                }
+                return true;
+            }
+        };
     public:
-        explicit vkInit(const std::shared_ptr<vkInitCreateInfo>& createInfo);
-        ~vkInit(){
-            mInstance->destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicDispatcher);
+        explicit vkInit(const std::shared_ptr<vkInitCreateInfo>& createInfo, GLFWwindow* w);
+        ~vkInit() {
+            mDevice.destroy();
+            mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicDispatcher);
+            mInstance.destroySurfaceKHR(mSurface);
+            mInstance.destroy();
         }
 
-        vkGet auto get = [](const std::shared_ptr<vkInitCreateInfo>& createInfo = {}){
-            return Singleton<vkInit>::get(createInfo);
+        vkGet auto get = [](const std::shared_ptr<vkInitCreateInfo>& createInfo = {}, GLFWwindow* w = {}){
+            return Singleton<vkInit>::get(createInfo, w);
         };
 
+        [[nodiscard]] inline static const auto& GetInstance() { return get()->mInstance;}
+        [[nodiscard]] inline static const auto& GetSurface() { return get()->mSurface;}
+        [[nodiscard]] inline static const auto& GetDynamicDispatcher() { return get()->mDynamicDispatcher;}
+        [[nodiscard]] inline static const auto& GetDevice() { return get()->mDevice;}
+        [[nodiscard]] inline static const auto& GetPrimaryQueue(const QueueType& type) { return get()->mQueueFamilies[type].queues[0];}
+        [[nodiscard]] inline static const auto& GetBackupQueue(const QueueType& type) { return get()->mQueueFamilies[type].queues[1];}
     private:
-        vk::UniqueInstance mInstance{};
+        GLFWwindow *mWindow{};
+        vk::Instance mInstance{};
         vk::DispatchLoaderDynamic mDynamicDispatcher{};
         vk::DebugUtilsMessengerEXT mDebugMessenger{};
+        vk::SurfaceKHR mSurface{};
+        vk::PhysicalDevice mPhysicalDevice{};
+        std::unordered_map<QueueType, QueueFamily> mQueueFamilies{};
+        vk::Device mDevice{};
     };
 
     class vkInitCreateInfo : public std::enable_shared_from_this<vkInitCreateInfo>{

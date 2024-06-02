@@ -9,7 +9,6 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
-        vkWindow::get();
         mRhi = std::make_unique<vkRhi>();
 
         [&, rhi_thread = [&]() {

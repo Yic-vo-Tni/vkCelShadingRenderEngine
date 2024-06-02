@@ -27,8 +27,10 @@ namespace yic {
                     });
         }()) {
 
-        EventBus::subscribeAuto([&](const EventTypes::WindowSize& size){
-            printf("width:%d\n", size.w);
+        EventBus::publish(EventTypes::WindowContext{.window = mWindow});
+
+        EventBus::subscribeAuto([&](const EventTypes::WindowContext& size){
+            printf("width:%d\n", size.w.value());
         });
     }
 
