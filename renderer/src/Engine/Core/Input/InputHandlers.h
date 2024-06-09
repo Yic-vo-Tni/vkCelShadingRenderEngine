@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_INPUTHANDLERS_H
 #define VKCELSHADINGRENDERER_INPUTHANDLERS_H
 
-#include "Engine/Core/Event/Event.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Core/Input/CommandParser.h"
 
 namespace yic {

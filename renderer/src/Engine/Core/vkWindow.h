@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_VKWINDOW_H
 #define VKCELSHADINGRENDERER_VKWINDOW_H
 
-#include "Engine/Core/Event/Event.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Core/Callback/GlfwCallback.h"
 #include "Engine/Core/Input/InputHandlers.h"
 
@@ -21,6 +21,9 @@ namespace yic {
         static bool run();
 
         [[nodiscard]] inline static auto GetWindow()  { return get()->mWindow.get();}
+
+    private:
+        auto createWindow() -> std::shared_ptr<GLFWwindow>;
     private:
         int mWidth{}, mHeight{};
         std::string mName{"Yicvot"};

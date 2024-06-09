@@ -6,106 +6,70 @@
 
 namespace yic {
 
-    vkSwapchain::vkSwapchain(vk::Format format) :
-        mDevice                     (EventBus::Get::vkDeviceContext().device),
-        mPhysicalDevice             (EventBus::Get::vkDeviceContext().physicalDevice),
-        mSurface                    (EventBus::Get::vkInitContext().surface),
-        mGraphicsQueueFamilyIndex   (EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsFamilyIndex().value()),
+    vkSwapchain::vkSwapchain(vk::Format format) : mDevice(EventBus::Get::vkDeviceContext().device.value()),
+                                                  mPhysicalDevice(EventBus::Get::vkDeviceContext().physicalDevice.value()),
+                                                  mSurface(EventBus::Get::vkInitContext().surface.value()),
+                                                  mGraphicsQueueFamilyIndex(EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsFamilyIndex()),
 
-        mSurfaceFormat([&]{
-            auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
-            for (auto &i: formats) {
-                if (i.format == format) {
-                    return i;
-                }
-            }
-            return formats[0];
-        }()),
+                                                  mSurfaceFormat([&] {
+                                                      auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
+                                                      for (auto &i: formats) {
+                                                          if (i.format == format)
+                                                              return i;
+                                                      }
+                                                      return formats[0];
+                                                  }()),
 
-        mSwapchain(createSwapchain({}))
-    {
+                                                  mSwapchain(createSwapchain({})) {
 
+        EventBus::publish(et::vkSwapchainContext{mSwapchain, mImageViews});
+
+        TaskBus::registerTask(tt::RebuildSwapchain::eSwapchainRebuild, [&]() {
+            auto oldSwapchain = mSwapchain;
+            auto newSwapchain = createSwapchain(oldSwapchain);
+
+            if (newSwapchain != VK_NULL_HANDLE) {
+                setSwapchain(newSwapchain);
+            } else { std::cerr << "failed to create new swapchain" << "\n"; }
+        });
     }
 
     vkSwapchain::~vkSwapchain() {
-        mDevice.destroy(mSwapchain);
+        if (mSwapchain)
+            mDevice.destroy(mSwapchain);
     }
 
     auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
-        return vkCreate("create swapchain") = [&](){
+        auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
+        auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
+        auto extent = EventBus::Get::vkWindowContext().extent.value();
 
-            auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
-            auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
+        mExtent = capabilities.currentExtent.width == (uint32_t) - 1 ? extent : capabilities.currentExtent;
+        mImageCount = std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount,
+                                 capabilities.maxImageCount ? capabilities.maxImageCount : UINT32_MAX);
 
-            mExtent = [&]{
-                if (capabilities.currentExtent.width == (uint32_t ) - 1){
-                    return vk::Extent2D{};
-                }
-
-                return capabilities.currentExtent;
-            }();
-            mImageCount = [&] -> uint32_t {
-                return std::clamp(capabilities.minImageCount + 1,
-                                  capabilities.minImageCount,
-                                  capabilities.maxImageCount ? capabilities.maxImageCount : UINT32_MAX);
-            }();
-
-            auto presentMode = [&]{
-                using mode = vk::PresentModeKHR;
-
-                for(const auto& m : {mode::eMailbox, mode::eImmediate}){
-                    auto found = std::ranges::find_if(presentModes, [&m](const mode& mode){
-                        return mode == m;
-                    });
-                    if (found != presentModes.end()){
-                        return *found;
-                    };
-                }
-                return mode::eFifo;
-            }();
-
-
-            return mDevice.createSwapchainKHR(vk::SwapchainCreateInfoKHR{{},
-                                                                         mSurface, mImageCount, mSurfaceFormat.format, mSurfaceFormat.colorSpace,
-                                                                         mExtent, 1, vk::ImageUsageFlagBits::eColorAttachment,
-                                                                         vk::SharingMode::eExclusive, mGraphicsQueueFamilyIndex,
-                                                                         vk::SurfaceTransformFlagBitsKHR::eIdentity, vk::CompositeAlphaFlagBitsKHR::eOpaque,
-                                                                         presentMode, vk::True, oldSwapchain}
-                    );
-        };
-    }
-
-    bool vkSwapchain::update(const vk::Extent2D &extent) {
-        auto oldSwapchain = mSwapchain;
-
-        auto createSwapchain = [&,
-                                chooseExtent = [&]{
-           auto capabilities =  mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
-           if (capabilities.currentExtent.width == (uint32_t) - 1){
-               return vk::Extent2D{};
-           } else{
-               return capabilities.currentExtent;
-           }
-        }, choosePresentMode = [&]{
-            auto presentMode = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
-
+        auto presentMode = [&] {
             using mode = vk::PresentModeKHR;
-            auto preMode = mode::eFifo;
 
-            for(auto& m : presentMode){
-                if (m == mode ::eMailbox){
-                    preMode = mode ::eMailbox;
-                    break;
-                }
-                if (m == mode::eImmediate){
-                    preMode = mode ::eImmediate;
-                }
+            for (const auto &m: {mode::eMailbox, mode::eImmediate}) {
+                if (std::ranges::find_if(presentModes, [&m](const mode& mode) {return mode == m;}) != presentModes.end())
+                    return m;
             }
-        }](){
+            return mode::eFifo;
+        }();
 
+        Rvk_t("create swapchain", spdlog::level::warn) = [&]() {
+            return mDevice.createSwapchainKHR(vk::SwapchainCreateInfoKHR{{},
+                                                                         mSurface, mImageCount, mSurfaceFormat.format,
+                                                                         mSurfaceFormat.colorSpace,
+                                                                         mExtent, 1,
+                                                                         vk::ImageUsageFlagBits::eColorAttachment,
+                                                                         vk::SharingMode::eExclusive,
+                                                                         mGraphicsQueueFamilyIndex,
+                                                                         vk::SurfaceTransformFlagBitsKHR::eIdentity,
+                                                                         vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                                                                         presentMode, vk::True, oldSwapchain});
         };
-
-        return true;
     }
 
 } // yic

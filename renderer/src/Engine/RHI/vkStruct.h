@@ -42,7 +42,7 @@ namespace yic{
         }
 
         [[nodiscard]] inline auto& getQueueFamilies() { return mQueueFamilies;}
-        [[nodiscard]] inline auto& getPrimaryGraphicsFamilyIndex() { return mQueueFamilies[QueueType::eGraphics].familyIndex;}
+        [[nodiscard]] inline auto& getPrimaryGraphicsFamilyIndex() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
         [[nodiscard]] inline auto& getPrimaryGraphicsQueue() { return mQueueFamilies[QueueType::eGraphics].queues[0];}
     private:
         void addQueueFamily(vk::PhysicalDevice phy, QueueType type) {

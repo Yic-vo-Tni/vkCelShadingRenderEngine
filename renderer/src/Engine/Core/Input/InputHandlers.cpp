@@ -17,9 +17,9 @@ namespace yic {
 //            inputHandlers->handleUserInput(key, action);
 //        });
 
-        EventBus::subscribeAuto([&](const EventTypes::KeyInput& input){
-           auto inputHandlers = InputHandlers::get(mWindow);
-           inputHandlers->handleUserInput(input.key.value(), input.action.value());
+        EventBus::subscribeAuto([&](const et::KeyInput& input){
+            auto inputHandlers = InputHandlers::get(mWindow);
+            inputHandlers->handleUserInput(input.key.value(), input.action.value());
         });
     }
 

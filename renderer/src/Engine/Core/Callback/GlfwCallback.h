@@ -5,17 +5,22 @@
 #ifndef VKCELSHADINGRENDERER_GLFWCALLBACK_H
 #define VKCELSHADINGRENDERER_GLFWCALLBACK_H
 
-#include "Engine/Core/Event/Event.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
 
 
 namespace glfw_callback {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height) {
-        yic::EventBus::publish(EventTypes::WindowContext{width, height});
+        yic::EventBus::publish(et::WindowContext{
+                .size = std::make_pair(width, height),
+                .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height}
+        });
+
+        yic::TaskBus::executeTask<tt::RebuildSwapchain>();
     };
 
     inline auto setKeyCallback = [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-        yic::EventBus::publish(EventTypes::KeyInput{key, action, scancode, mods});
+        yic::EventBus::publish(et::KeyInput{key, action, scancode, mods});
     };
 
 }

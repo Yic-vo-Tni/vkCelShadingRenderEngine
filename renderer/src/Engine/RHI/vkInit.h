@@ -8,7 +8,7 @@
 #include "vkStruct.h"
 
 #include "Engine/Utils/Log.h"
-#include "Engine/Core/Event/Event.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
 
 namespace yic {
 
@@ -19,7 +19,7 @@ namespace yic {
         explicit vkInit(const std::shared_ptr<vkInitCreateInfo>& createInfo);
         ~vkInit() {
             mDevice.destroy();
-            mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, *mDynamicDispatcher);
+            mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicDispatcher);
             mInstance.destroySurfaceKHR(mSurface);
             mInstance.destroy();
         }
@@ -32,9 +32,18 @@ namespace yic {
         [[nodiscard]] inline static const auto& GetSurface() { return get()->mSurface;}
         [[nodiscard]] inline static const auto& GetDynamicDispatcher() { return get()->mDynamicDispatcher;}
         [[nodiscard]] inline static const auto& GetDevice() { return get()->mDevice;}
+
     private:
+        auto createInstance() -> vk::Instance;
+        auto createDebugMessenger() -> vk::DebugUtilsMessengerEXT;
+        auto createSurface() -> vk::SurfaceKHR;
+        auto pickPhysicalDevice() -> vk::PhysicalDevice;
+        auto createLogicalDevice() -> vk::Device;
+    private:
+        GLFWwindow *mWindow{};
+        std::shared_ptr<vkInitCreateInfo> mCreateInfo{};
         vk::Instance mInstance{};
-        std::shared_ptr<vk::DispatchLoaderDynamic> mDynamicDispatcher{};
+        vk::DispatchLoaderDynamic mDynamicDispatcher{};
         vk::DebugUtilsMessengerEXT mDebugMessenger{};
         vk::SurfaceKHR mSurface{};
         vk::PhysicalDevice mPhysicalDevice{};

@@ -48,7 +48,6 @@
 
 #include "boost/hana.hpp"
 
-
 #ifdef NDEBUG
 const bool enableDebug = false;
 #else

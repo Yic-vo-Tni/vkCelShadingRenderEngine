@@ -8,56 +8,75 @@ namespace yic {
 
 
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h},
-        mWindow([&, initGLFW = []() -> std::optional<std::string>{
-            if (!glfwInit()){
-                return "failed to initialize GLFW";
-            }
-            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-            glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-            return std::nullopt;
-        }()] {
-            if (initGLFW){
-                throw std::runtime_error(initGLFW.value());
-            }
-            return std::shared_ptr<GLFWwindow>(
-                    glfwCreateWindow(mWidth, mHeight, mName.c_str(),nullptr, nullptr),
-                                    [](GLFWwindow *w) {
-                        glfwTerminate();
-                        glfwDestroyWindow(w);
-                    });
-        }()) {
+                                                     mWindow(createWindow()) {
 
-        EventBus::publish(EventTypes::WindowContext{.window = mWindow});
+        EventBus::publish(et::WindowContext{
+                std::make_pair(mWidth, mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
+        });
 
-        EventBus::subscribeAuto([&](const EventTypes::WindowContext& size){
-            printf("width:%d\n", size.w.value());
+        EventBus::subscribeAuto([&](const et::WindowContext &windowContext) {
+            vkTrance("width: {0}, height: {1}", windowContext.size.value().first, windowContext.size.value().second);
         });
     }
 
     bool vkWindow::run() {
-        [&,
-                inputHandler = [&]() {
-                    return InputHandlers::get(GetWindow());
-                }()
-        ]() {
-            try {
-                while (!glfwWindowShouldClose(GetWindow())) {
-                    glfwPollEvents();
+        try {
+            while (!glfwWindowShouldClose(GetWindow())) {
+                glfwPollEvents();
 
-                    inputHandler->withDraw();
+                InputHandlers::get(GetWindow())->withDraw();
 
-                    callback(GetWindow());
-                }
-            } catch (const std::exception &e) {
-                std::cerr << "Exception caught in run loop: " << e.what() << "\n";
-                return false;
+                callback(GetWindow());
             }
-            return true;
+        } catch (const std::exception &e) {
+            std::cerr << "Exception caught in run loop: " << e.what() << "\n";
+            return false;
+        }
+        return true;
+    }
+
+    auto vkWindow::createWindow() -> std::shared_ptr<GLFWwindow> {
+        auto initGLFW = [] -> std::optional<std::string> {
+            if (!glfwInit())
+                return "failed to initialize GLFW";
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            glfwWindowHint(GLFW_RELEASE, GLFW_TRUE);
+            return std::nullopt;
         }();
 
-        return true;
+        if (initGLFW)
+            throw std::runtime_error(initGLFW.value());
+
+        return {glfwCreateWindow(mWidth, mHeight, mName.c_str(), nullptr, nullptr), [](GLFWwindow *w) {
+            glfwDestroyWindow(w);
+            glfwTerminate();
+        }};
     }
 
 
 
 } // yic
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

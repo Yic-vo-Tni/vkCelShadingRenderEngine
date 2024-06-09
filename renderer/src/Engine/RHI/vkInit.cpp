@@ -15,104 +15,108 @@ namespace yic{
         return VK_FALSE;
     }
 
-    vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo) :
+    vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo) : mCreateInfo(createInfo),
+                                                                          mWindow(EventBus::Get::vkWindowContext().window.value()),
+                                                                          mInstance(createInstance()),
+                                                                          mDebugMessenger(createDebugMessenger()),
+                                                                          mSurface(createSurface()),
+                                                                          mPhysicalDevice(pickPhysicalDevice()),
+                                                                          mDevice(createLogicalDevice()) {
+        mDynamicDispatcher.init(mDevice);
+        mQueueFamily->createQueues(mDevice, createInfo->mPriorities.size());
 
-            mInstance([&, appInfo = [&]() {
-                return vk::ApplicationInfo{
-                        "Yic", VK_MAKE_VERSION(1, 0, 0),
-                        "Vot", VK_MAKE_VERSION(1, 0, 0),
-                        VK_MAKE_API_VERSION(0, 1, 3, 0)
-                };
-            }()]() {
-                createInfo->addInstanceExtensions(fn::addRequiredExtensions());
-                fn::checkInstanceSupport(createInfo->mInstanceExtensions, createInfo->mInstanceLayers);
+        EventBus::publish(et::vkInitContext{mInstance, mDynamicDispatcher, mDebugMessenger, mSurface});
+        EventBus::publish(et::vkDeviceContext{mPhysicalDevice, mDevice, *mQueueFamily});
+    }
 
-                return vkCreate("create instance") = [&]() {
-                    return vk::createInstance(
-                            vk::InstanceCreateInfo()
-                                    .setPApplicationInfo(&appInfo)
-                                    .setPEnabledExtensionNames(createInfo->mInstanceExtensions)
-                                    .setPEnabledLayerNames(createInfo->mInstanceLayers)
-                    );
-                };
-            }())
 
-            , mDebugMessenger([&](){
-//                mDynamicDispatcher = vk::DispatchLoaderDynamic(mInstance, vkGetInstanceProcAddr);
-                mDynamicDispatcher = std::make_unique<vk::DispatchLoaderDynamic>(mInstance, vkGetInstanceProcAddr);
+    auto vkInit::createInstance() -> vk::Instance {
+        auto appInfo = vk::ApplicationInfo{
+                "Yic", VK_MAKE_VERSION(1, 0, 0),
+                "Vot", VK_MAKE_VERSION(1, 0, 0),
+                VK_MAKE_API_VERSION(0, 1, 3, 0)
+        };
 
-                return vkCreate("create debug messenger") = [&](){
-                    using tSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT;
-                    using tType = vk::DebugUtilsMessageTypeFlagBitsEXT;
-                    return mInstance.createDebugUtilsMessengerEXT(
-                            vk::DebugUtilsMessengerCreateInfoEXT()
-                                    .setMessageSeverity(tSeverity::eVerbose | tSeverity::eWarning | tSeverity::eError)
-                                    .setMessageType(tType::eGeneral | tType::ePerformance | tType::eValidation)
-                                    .setPfnUserCallback(debugCallback), nullptr, *mDynamicDispatcher);
-                };
-            }())
+        mCreateInfo->addInstanceExtensions(fn::addRequiredExtensions());
+        fn::checkInstanceSupport(mCreateInfo->mInstanceExtensions, mCreateInfo->mInstanceLayers);
 
-            , mSurface([&](){
-                return vkCreate("create surface") = [&](){
-                    if (VkSurfaceKHR tempSurface;
-                            glfwCreateWindowSurface(mInstance, EventBus::Get::vkWindowContext().window.get(), nullptr, &tempSurface) == VK_SUCCESS){
-                        return tempSurface;
-                    } else{
-                        throw std::runtime_error("failed to create surface");
+        Rvk_y("create instance") = [&]() {
+            return vk::createInstance(
+                    vk::InstanceCreateInfo()
+                            .setPApplicationInfo(&appInfo)
+                            .setPEnabledExtensionNames(mCreateInfo->mInstanceExtensions)
+                            .setPEnabledLayerNames(mCreateInfo->mInstanceLayers));
+        };
+    }
+
+    auto vkInit::createDebugMessenger() -> vk::DebugUtilsMessengerEXT {
+        mDynamicDispatcher = vk::DispatchLoaderDynamic(mInstance, vkGetInstanceProcAddr);
+
+        return vkCreate("create debug messenger") = [&](){
+            using tSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+            using tType = vk::DebugUtilsMessageTypeFlagBitsEXT;
+            return mInstance.createDebugUtilsMessengerEXT(
+                    vk::DebugUtilsMessengerCreateInfoEXT()
+                            .setMessageSeverity(tSeverity::eVerbose | tSeverity::eWarning | tSeverity::eError)
+                            .setMessageType(tType::eGeneral | tType::ePerformance | tType::eValidation)
+                            .setPfnUserCallback(debugCallback), nullptr, mDynamicDispatcher);
+        };
+    }
+
+    auto vkInit::createSurface() -> vk::SurfaceKHR {
+        Rvk_y("create surface") = [&](){
+            if (VkSurfaceKHR tempSurface;
+                    glfwCreateWindowSurface(mInstance, mWindow, nullptr, &tempSurface) == VK_SUCCESS){
+                return tempSurface;
+            } else{
+                throw std::runtime_error("failed to create surface");
+            }
+        };
+    }
+
+    auto vkInit::pickPhysicalDevice() -> vk::PhysicalDevice {
+        auto backup = [&,checkSupport = [&](const vk::PhysicalDevice &phy) -> bool {
+                    if (fn::checkPhysicalSupport(phy, mCreateInfo->mPhysicalExtensions)) {
+                        if_debug vkInfo("Pick GPU : {0}", phy.getProperties().deviceName);
+                        return true;
                     }
-                };
-            }())
-
-            , mPhysicalDevice([&,
-                               backup = [&,
-                                         checkSupport = [&
-                                                         ](const vk::PhysicalDevice& phy) -> bool {
-                if (fn::checkPhysicalSupport(phy, createInfo->mPhysicalExtensions)) {
-                    if_debug vkInfo("Pick GPU : {0}", phy.getProperties().deviceName);
-                    return true;
-                }
-                return false;
-            }] -> std::optional<vk::PhysicalDevice>{
-                for(std::optional<vk::PhysicalDevice> opt_device;const auto& phy : mInstance.enumeratePhysicalDevices()){
-                    if (phy.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu){
-                        if (checkSupport(phy))
-                            opt_device = phy;
-                        return opt_device;
-                    } else if(!opt_device.has_value() && checkSupport(phy)){
+                    return false;
+                }] -> std::optional<vk::PhysicalDevice> {
+            for (std::optional<vk::PhysicalDevice> opt_device; const auto &phy: mInstance.enumeratePhysicalDevices()) {
+                if (phy.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+                    if (checkSupport(phy)){
                         opt_device = phy;
                         return opt_device;
                     }
+                } else if (checkSupport(phy)) {
+                    opt_device = phy;
                 }
-                return std::nullopt;
-            }] -> vk::PhysicalDevice{
-                if (auto re = backup(); re.has_value()){
-                    return re.value();
-                } else { vkError("failed to find support gpu"); exit(0); }
-            }())
+                return opt_device;
+            }
+            return std::nullopt;
+        }();
 
-            , mDevice([&]{
-                mQueueFamily = std::make_shared<QueueFamily>(mPhysicalDevice, QueueType::eGraphics, QueueType::eTransfer);
+        if (backup.has_value())
+            return backup.value();
 
-                std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-                for(auto& [type , family] : mQueueFamily->getQueueFamilies()){
-                    if (family.familyIndex.has_value())
-                        queueCreateInfos.push_back({{}, family.familyIndex.value(), createInfo->mPriorities});
-                }
+        throw std::runtime_error("failed to find support gpu");
+    }
 
-                return vkCreate("create device") = [&](){
-                    return mPhysicalDevice.createDevice(vk::DeviceCreateInfo()
-                                                                   .setQueueCreateInfos(queueCreateInfos)
-                                                                   .setPEnabledExtensionNames(createInfo->mPhysicalExtensions)
-                                                                   .setPNext(&createInfo->features2));
-                };
-            }())
+    auto vkInit::createLogicalDevice() -> vk::Device {
+        mQueueFamily = std::make_shared<QueueFamily>(mPhysicalDevice, QueueType::eGraphics, QueueType::eTransfer);
 
-            {
-                mDynamicDispatcher->init(mDevice);
-                mQueueFamily->createQueues(mDevice, createInfo->mPriorities.size());
+        std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+        for(auto& [type , family] : mQueueFamily->getQueueFamilies()){
+            if (family.familyIndex.has_value())
+                queueCreateInfos.push_back({{}, family.familyIndex.value(), mCreateInfo->mPriorities});
+        }
 
-                EventBus::publish(EventTypes::vkInitContext{mInstance,mDynamicDispatcher, mDebugMessenger, mSurface});
-                EventBus::publish(EventTypes::vkDeviceContext{mPhysicalDevice, mDevice, mQueueFamily});
+        Rvk_y("create device") = [&](){
+            return mPhysicalDevice.createDevice(vk::DeviceCreateInfo()
+                                                        .setQueueCreateInfos(queueCreateInfos)
+                                                        .setPEnabledExtensionNames(mCreateInfo->mPhysicalExtensions)
+                                                        .setPNext(&mCreateInfo->features2));
+        };
     }
 
 }
