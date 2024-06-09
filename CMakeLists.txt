@@ -9,6 +9,9 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     endif ()
 endif ()
 
+set(shader_path "${CMAKE_SOURCE_DIR}/renderer/assets/shaders")
+configure_file("${CMAKE_SOURCE_DIR}/pch/config.h.in" "${CMAKE_SOURCE_DIR}/pch/config.h")
+
 find_package(Vulkan REQUIRED)
 find_program(glsl glslc REQUIRED)
 find_library(glfw_msvc glfw3 PATHS external/GLFW/msvc)

@@ -40,6 +40,7 @@
 #include "ranges"
 #include "stack"
 #include "any"
+#include "filesystem"
 
 #include "include/spdlog/spdlog.h"
 #include "include/spdlog/sinks/stdout_color_sinks.h"
@@ -47,6 +48,7 @@
 #include "include/spdlog/sinks/ansicolor_sink.h"
 
 #include "boost/hana.hpp"
+#include "boost/process.hpp"
 
 #ifdef NDEBUG
 const bool enableDebug = false;
