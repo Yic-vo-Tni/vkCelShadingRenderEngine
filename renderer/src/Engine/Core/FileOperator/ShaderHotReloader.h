@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_SHADERHOTRELOADER_H
 
 #include "Engine/Utils/Log.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
 
 namespace yic{
 
@@ -37,32 +38,46 @@ namespace yic{
         }
 
     private:
-        auto compileShaders() -> void {
-            auto cmake_cmd = "cmake -S . -B build/";
-            auto build_cmd = "cmake --build build/";
+        static auto compileShaders() -> void {
+            std::string shaderPath = shader_path "/..";
 
-//            system(cmake_cmd);
-//            system(build_cmd);
+            auto cmake_cmd = "cmake -S " + shaderPath + " -B " + shaderPath + "/build";
+            auto build_cmd = "cmake --build " + shaderPath + "/build";
+
             boost::process::system(cmake_cmd, boost::process::std_out > stdout, boost::process::std_err > stderr);
             boost::process::system(build_cmd, boost::process::std_out > stdout, boost::process::std_err > stderr);
+        }
+
+        static auto convertToSpvPath(const std::string& shaderPath) -> std::string {
+            std::filesystem::path path(shaderPath);
+
+            std::string fileName = path.filename().replace_extension(".spv").string();
+            std::filesystem::path spvPath = path.parent_path().parent_path() / "shaders_spvs" / fileName;
+            auto preferredPath = spvPath.make_preferred().string();
+            std::ranges::replace(preferredPath, '\\', '/');
+
+            return preferredPath;
         }
 
         void watch(){
             while (run.load()){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-                mReLoad = false;
+//                mReLoad = false;
 
                 auto it = mPaths.begin();
                 while (it != mPaths.end()){
                     if (!fs::exists(it->first)){
-                        it = mPaths.erase(it);
                         vkInfo("File deleted: {0}", it->first);
+                        it = mPaths.erase(it);
                     } else{
                         auto current_time = fs::last_write_time(it->first);
                         if (it->second != current_time){
                             it->second = current_time;
                             vkTrance("File updated: " + it->first);
-                            mReLoad = true;
+                            compileShaders();
+                            //TaskBus::executeShaderTask(convertToSpvPath(it->first));
+                            TaskBus::recordShaderUpdatePath(convertToSpvPath(it->first));
+//                            mReLoad = true;
                         }
                         ++it;
                     }
@@ -75,8 +90,8 @@ namespace yic{
                     }
                 }
 
-                if (mReLoad)
-                    compileShaders();
+//                if (mReLoad)
+//                    compileShaders();
             }
         }
     private:
@@ -84,7 +99,7 @@ namespace yic{
         std::map<std::string, fs::file_time_type> mPaths;
         std::atomic<bool> run{true};
         std::thread mShaderReLoader{};
-        bool mReLoad{false};
+        //bool mReLoad{false};
     };
 
 }

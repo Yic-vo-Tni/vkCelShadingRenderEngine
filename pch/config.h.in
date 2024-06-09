@@ -6,5 +6,6 @@
 #define VULKAN_CONFIG_H
 
 #define shader_path "@shader_path@"
+#define spv_path "@spv_path@"
 
 #endif //VULKAN_CONFIG_H

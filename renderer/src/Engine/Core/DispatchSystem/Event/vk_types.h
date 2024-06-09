@@ -33,6 +33,11 @@ namespace et {
                  (opt<vk::RenderPass>, renderPass));
     };
 
+    struct vkPipelineContext {
+        struct_y(vkPipelineContext,
+                 (opt<vk::Pipeline>, pipeline));
+    };
+
 }
 
 #endif //VKCELSHADINGRENDERER_VKEVENTTYPES_H

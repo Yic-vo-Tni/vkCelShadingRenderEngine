@@ -10,6 +10,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 endif ()
 
 set(shader_path "${CMAKE_SOURCE_DIR}/renderer/assets/shaders")
+set(spv_path "${CMAKE_SOURCE_DIR}/renderer/assets/shaders_spvs")
 configure_file("${CMAKE_SOURCE_DIR}/pch/config.h.in" "${CMAKE_SOURCE_DIR}/pch/config.h")
 
 find_package(Vulkan REQUIRED)

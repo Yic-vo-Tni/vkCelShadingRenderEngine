@@ -9,6 +9,8 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
+        ShaderFolderWatcher::get(shader_path)->start();
+
         [&, rhi_thread = [&]() {
             return std::make_unique<std::thread>([&] {
                 try {
@@ -27,6 +29,8 @@ namespace yic {
 
             if (rhi_thread->joinable())
                 rhi_thread->join();
+
+            ShaderFolderWatcher::end();
         }();
 
         return true;

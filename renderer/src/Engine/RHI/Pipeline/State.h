@@ -6,6 +6,8 @@
 #define VKCELSHADINGRENDERER_STATE_H
 
 #include "Engine/Utils/Log.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
+#include "Engine/Core/FileOperator/FileOperation.h"
 
 namespace yic{
     template<typename I>

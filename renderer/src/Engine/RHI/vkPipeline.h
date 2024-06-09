@@ -22,7 +22,7 @@ namespace yic {
         vk::Device d;
         vk::PipelineLayout l;
         vk::RenderPass r;
-        std::unique_ptr<vkPipeline<Graphics>> p = std::make_unique<vkPipeline<Graphics>>(d, l, r);
+        std::shared_ptr<vkPipeline<Graphics>> p;
 
     }
 

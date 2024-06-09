@@ -17,6 +17,7 @@ namespace yic {
         EventBus::subscribeAuto([&](const et::WindowContext &windowContext) {
             vkTrance("width: {0}, height: {1}", windowContext.size.value().first, windowContext.size.value().second);
         });
+
     }
 
     bool vkWindow::run() {

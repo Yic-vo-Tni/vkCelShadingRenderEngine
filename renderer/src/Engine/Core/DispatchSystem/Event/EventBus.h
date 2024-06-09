@@ -13,7 +13,7 @@ namespace yic {
 
     class EventBus {
     public:
-        vkGet auto get = [](size_t nums = 4){ return Singleton<EventBus>::get(4);};
+        vkGet auto get = [](size_t nums = 3){ return Singleton<EventBus>::get(nums);};
 
         template<typename Event>
         using EventHandler = std::function<void(const Event&)>;
