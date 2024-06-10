@@ -18,6 +18,9 @@ namespace yic {
 
     private:
         std::unique_ptr<vkRhi> mRhi;
+
+        std::unique_ptr<std::thread> mFrameLoopThread;
+        std::atomic<bool> mFrameLoop{true};
     };
 
 } // yic

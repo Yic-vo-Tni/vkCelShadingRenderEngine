@@ -7,13 +7,14 @@
 
 namespace tt{
 
+    enum class EngineFlow{
+        eRhi, ePhysical, eGameLogical
+    };
+
     enum class RebuildSwapchain{
         eSwapchainRebuild, eFrameBuffersRebuild
     };
 
-//    void x(){
-//        std::string x = std::to_string((int) RebuildSwapchain::eSwapchainRebuild);
-//    }
 
 }
 

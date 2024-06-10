@@ -14,7 +14,7 @@ namespace yic{
 
     class ShaderFolderWatcher{
     public:
-        vkGet auto get = [](const std::string & path = {}){ return Singleton<ShaderFolderWatcher>::get(path);};
+        vkGet auto get = [](const std::string & path = shader_path){ return Singleton<ShaderFolderWatcher>::get(path);};
 
         explicit ShaderFolderWatcher(const std::string& path) : mPath([&]{ if (!path.empty()) { return path;}
             throw std::runtime_error("You must init and give a path to shader_directory");

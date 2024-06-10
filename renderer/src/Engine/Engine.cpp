@@ -9,29 +9,24 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
-        ShaderFolderWatcher::get(shader_path)->start();
+        ShaderFolderWatcher::start();
 
-        [&, rhi_thread = [&]() {
-            return std::make_unique<std::thread>([&] {
-                try {
-                    mRhi = std::make_unique<vkRhi>();
-                    mRhi->run();
-                } catch (const vk::SystemError &e) {
-                    std::cerr << e.what() << "\n";
-                }
-            });
-        }(), window_main_thread = [&]() {
-            return !vkWindow::run();
-        }()
-        ]() {
-            if (!window_main_thread)
-                mRhi->setRunCondition();
+        mFrameLoopThread = std::make_unique<std::thread>([this]{
+           mRhi = std::make_unique<vkRhi>();
 
-            if (rhi_thread->joinable())
-                rhi_thread->join();
+            while (mFrameLoop.load()){
+                TaskBus::executeTask<tt::EngineFlow>(true);
+            }
+        });
 
-            ShaderFolderWatcher::end();
-        }();
+        if(vkWindow::run()){
+            mFrameLoop.exchange(false);
+        }
+
+        if (mFrameLoopThread->joinable())
+            mFrameLoopThread->join();
+        ShaderFolderWatcher::end();
+
 
         return true;
     }

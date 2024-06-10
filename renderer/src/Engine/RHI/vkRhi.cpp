@@ -20,15 +20,17 @@ namespace yic {
         );
 
         mSwapchain = std::make_unique<vkSwapchain>();
+
+        TaskBus::registerTask(tt::EngineFlow::eRhi, [this]{run();});
     }
 
     bool vkRhi::run() {
-        while (mRun.load()) {
 
-
-        }
 
         return true;
     }
+
+
+
 
 } // yic

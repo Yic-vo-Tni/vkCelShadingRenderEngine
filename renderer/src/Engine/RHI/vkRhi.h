@@ -16,10 +16,7 @@ namespace yic {
         vkRhi();
 
         auto run() -> bool ;
-
-        void setRunCondition() { mRun.store(false);}
     private:
-        std::atomic<bool> mRun{true};
         std::unique_ptr<vkSwapchain> mSwapchain{};
     };
 

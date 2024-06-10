@@ -28,14 +28,15 @@ namespace yic {
         }
 
         template<typename EnumType>
-        static void executeTask(){
+        static void executeTask(const bool& parallel = false){
             auto inst = get();
             std::lock_guard<std::mutex> lock(inst->mMutex);
             auto typeIndex = std::type_index(typeid(EnumType));
             if (inst->mTasks.find(typeIndex) != inst->mTasks.end()){
                 for(auto& [key, taskList] : inst->mTasks[typeIndex]){
                     for(auto& t : taskList){
-                        inst->mThreadPool.enqueue(t);
+                        parallel ? inst->mThreadPool.enqueue(t) : t();
+//                        inst->mThreadPool.enqueue(t);
                     }
                 }
             }
@@ -63,14 +64,6 @@ namespace yic {
                 }
             }
         }
-
-//        static void executeShaderTask(const std::string& shaderPath){
-//            auto inst = get();
-//            std::lock_guard<std::mutex> lock(inst->mShaderMutex);
-//            if (inst->mShaderTasks.find(shaderPath) != inst->mShaderTasks.end()){
-//                inst->mThreadPool.enqueue(inst->mShaderTasks[shaderPath]);
-//            }
-//        }
 
     private:
         std::unordered_map<std::type_index, std::map<int, std::vector<task>>> mTasks;

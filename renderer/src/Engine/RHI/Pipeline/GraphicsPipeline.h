@@ -12,8 +12,8 @@ namespace yic {
     struct Graphics : public State<Graphics>{
     private:
         struct ShaderModule{
-            vk::ShaderModule shaderModule;
-            vk::ShaderStageFlagBits flags;
+            vk::ShaderModule shaderModule{};
+            vk::ShaderStageFlagBits flags{};
         };
     public:
         Graphics(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass);
