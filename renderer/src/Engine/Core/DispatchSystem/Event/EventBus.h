@@ -79,6 +79,14 @@ namespace yic {
                 return getState<et::vkSwapchainContext>(id);
             }
 
+            static auto vkFrameRenderContext(parm_id){
+                return getState<et::vkFrameRenderContext>(id);
+            }
+
+            static auto vkCommandContext(parm_id) {
+                return getState<et::vkCommandBufContext>(id);
+            }
+
 #undef parm_id
         };
 

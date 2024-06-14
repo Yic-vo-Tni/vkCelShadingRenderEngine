@@ -15,6 +15,10 @@ namespace tt{
         eSwapchainRebuild, eFrameBuffersRebuild
     };
 
+    enum class Test{
+        eT1, eT2, eT3
+    };
+
 
 }
 

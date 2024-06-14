@@ -17,10 +17,12 @@ target_include_directories(Renderer PUBLIC
         third
         third/spdlog
         src
+        ../subprojects/ImGui
 )
 target_link_libraries(Renderer PUBLIC
         "Vulkan::Vulkan"
         ${glfw_mingw}
         ws2_32
         "${BOOST_LIBRARYDIR}/libboost_filesystem-mgw13-mt-d-x64-1_85.a"
+        "imgui"
 )

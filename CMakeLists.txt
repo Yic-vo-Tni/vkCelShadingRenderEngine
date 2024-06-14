@@ -35,3 +35,5 @@ target_link_libraries(vkCelShadingRenderer PUBLIC
 )
 
 add_subdirectory(renderer)
+
+add_subdirectory(subprojects)

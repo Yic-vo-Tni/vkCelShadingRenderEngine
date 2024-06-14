@@ -7,6 +7,13 @@
 
 namespace et {
 
+    struct FrameEntry{
+        vk::Image image;
+        vk::ImageView imageView;
+        vk::Semaphore readSemaphore;
+        vk::Semaphore writtenSemaphore;
+    };
+
     struct vkInitContext {
         struct_y(vkInitContext,
                  (opt<vk::Instance>, instance),
@@ -25,17 +32,24 @@ namespace et {
     struct vkSwapchainContext {
         struct_y(vkSwapchainContext,
                  (opt<vk::SwapchainKHR>, swapchain),
-                 (opt<std::vector<vk::ImageView>>, imageViews));
+                 (opt<std::vector<FrameEntry>>, frameEntries),
+                 (opt<vk::SurfaceFormatKHR>, surfaceFormat),
+                 (opt<uint32_t>, activeImageIndex));
     };
 
-    struct vkRenderPassContext {
-        struct_y(vkRenderPassContext,
-                 (opt<vk::RenderPass>, renderPass));
+    struct vkFrameRenderContext {
+        struct_y(vkFrameRenderContext,
+                 (opt<vk::RenderPass>, renderPass),
+                 (opt<std::vector<vk::Framebuffer>>, framebuffers));
+
+        struct id{
+            static constexpr const char* imguiFrameRender{"imguiFrameRender"};
+        };
     };
 
-    struct vkPipelineContext {
-        struct_y(vkPipelineContext,
-                 (opt<vk::Pipeline>, pipeline));
+    struct vkCommandBufContext{
+        struct_y(vkCommandBufContext,
+                 (opt<vk::CommandBuffer>, cmd));
     };
 
 }

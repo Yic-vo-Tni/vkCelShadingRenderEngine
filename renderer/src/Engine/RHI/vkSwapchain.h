@@ -15,8 +15,13 @@ namespace yic {
         explicit vkSwapchain(vk::Format format = vk::Format::eR8G8B8A8Unorm);
         ~vkSwapchain();
 
+        auto updateEveryFrame() -> void;
+        auto submitFrame(std::vector<vk::CommandBuffer>& cmd) -> void;
     private:
         auto createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR;
+        auto createFrameEntries() -> std::vector<et::FrameEntry>;
+        auto createFences() -> std::vector<vk::Fence>;
+        auto acquire() -> bool;
         auto setSwapchain(vk::SwapchainKHR swapchainKhr) -> void{
             if (mSwapchain != swapchainKhr){
                 if (mSwapchain)
@@ -26,10 +31,13 @@ namespace yic {
             }
         };
 
+        auto destroyResource() -> void;
+
     private:
         vk::Device mDevice{};
         vk::PhysicalDevice mPhysicalDevice{};
         vk::SurfaceKHR mSurface{};
+        vk::Queue mGraphicsQueue{};
 
     private:
         vk::SurfaceFormatKHR mSurfaceFormat;
@@ -37,7 +45,11 @@ namespace yic {
         vk::SwapchainKHR mSwapchain{};
         uint32_t mGraphicsQueueFamilyIndex{UINT32_MAX};
         uint32_t mImageCount{UINT32_MAX};
-        std::vector<vk::ImageView> mImageViews{};
+        uint32_t mImageIndex{UINT32_MAX};
+        uint32_t mCurrentFrame{0};
+        std::vector<et::FrameEntry> mFrameEntries{};
+        std::vector<vk::Fence> mFences{};
+        std::atomic<bool> mUpdateSize{false};
     };
 
 } // yic

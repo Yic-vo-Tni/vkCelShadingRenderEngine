@@ -33,7 +33,7 @@ namespace yic{
         }
 
         void createQueues(vk::Device device, uint32_t queueCount){
-            for(auto [type, family] : mQueueFamilies){
+            for(auto& [type, family] : mQueueFamilies){
                 if (type == QueueType::eGraphics)
                     family.createQueues(device, queueCount, "graphics");
                 if (type == QueueType::eTransfer)

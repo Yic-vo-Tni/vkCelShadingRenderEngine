@@ -16,7 +16,7 @@ namespace glfw_callback {
                 .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height}
         });
 
-        yic::TaskBus::executeTask<tt::RebuildSwapchain>();
+//       yic::TaskBus::executeTask<tt::RebuildSwapchain>();
     };
 
     inline auto setKeyCallback = [](GLFWwindow *window, int key, int scancode, int action, int mods) {

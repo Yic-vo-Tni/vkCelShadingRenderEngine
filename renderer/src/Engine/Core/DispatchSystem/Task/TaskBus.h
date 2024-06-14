@@ -30,15 +30,31 @@ namespace yic {
         template<typename EnumType>
         static void executeTask(const bool& parallel = false){
             auto inst = get();
-            std::lock_guard<std::mutex> lock(inst->mMutex);
-            auto typeIndex = std::type_index(typeid(EnumType));
-            if (inst->mTasks.find(typeIndex) != inst->mTasks.end()){
-                for(auto& [key, taskList] : inst->mTasks[typeIndex]){
-                    for(auto& t : taskList){
-                        parallel ? inst->mThreadPool.enqueue(t) : t();
-//                        inst->mThreadPool.enqueue(t);
+//            std::lock_guard<std::mutex> lock(inst->mMutex);
+//            auto typeIndex = std::type_index(typeid(EnumType));
+//            if (inst->mTasks.find(typeIndex) != inst->mTasks.end()){
+//                for(auto& [key, taskList] : inst->mTasks[typeIndex]){
+//                    for(auto& t : taskList){
+//                        parallel ? inst->mThreadPool.enqueue(t) : t();
+//                    }
+//                }
+//            }
+
+            std::vector<task> taskToExecute{};
+            {
+                std::lock_guard<std::mutex> lock(inst->mMutex);
+                auto typeIndex = std::type_index(typeid(EnumType));
+                if (inst->mTasks.find(typeIndex) != inst->mTasks.end()){
+                    for(auto& [key, taskList] : inst->mTasks[typeIndex]){
+                        for(auto& t : taskList){
+                            taskToExecute.push_back(t);
+                        }
                     }
                 }
+            }
+
+            for(auto& t : taskToExecute){
+                parallel ? inst->mThreadPool.enqueue(t) : t();
             }
         }
 

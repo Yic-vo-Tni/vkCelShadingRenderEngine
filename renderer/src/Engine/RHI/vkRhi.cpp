@@ -20,12 +20,26 @@ namespace yic {
         );
 
         mSwapchain = std::make_unique<vkSwapchain>();
+        mFrameRender = std::make_unique<vkFrameRender>();
+        mCommand = std::make_unique<vkCommand>();
 
-        TaskBus::registerTask(tt::EngineFlow::eRhi, [this]{run();});
+        TaskBus::registerTask(tt::EngineFlow::eRhi, [this]{ run();});
+    }
+
+    vkRhi::~vkRhi() {
+        EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsQueue().waitIdle();
+        EventBus::Get::vkDeviceContext().device.value().waitIdle();
     }
 
     bool vkRhi::run() {
+        mSwapchain->updateEveryFrame();
+        auto cmd = mCommand->beginCommandBuf();
 
+        mCommand->endCommandBuf(cmd);
+        std::vector<vk::CommandBuffer> cmds{cmd};
+        mSwapchain->submitFrame(cmds);
+
+        TaskBus::executeTask<tt::Test>();
 
         return true;
     }

@@ -15,7 +15,7 @@ namespace yic {
            mRhi = std::make_unique<vkRhi>();
 
             while (mFrameLoop.load()){
-                TaskBus::executeTask<tt::EngineFlow>(true);
+                TaskBus::executeTask<tt::EngineFlow>();
             }
         });
 
@@ -26,7 +26,6 @@ namespace yic {
         if (mFrameLoopThread->joinable())
             mFrameLoopThread->join();
         ShaderFolderWatcher::end();
-
 
         return true;
     }
