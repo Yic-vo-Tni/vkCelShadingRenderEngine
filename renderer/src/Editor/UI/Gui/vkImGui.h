@@ -14,8 +14,13 @@ namespace yic {
         vkImGui();
         ~vkImGui();
 
-    private:
+        auto beginRenderImGui() -> void;
+        auto endRenderImGui(const vk::CommandBuffer& cmd) -> void;
 
+    private:
+        vk::DescriptorPool mDescriptorPool{};
+
+        bool mShowDemo{true};
     };
 
 } // yic

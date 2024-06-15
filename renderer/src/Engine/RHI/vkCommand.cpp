@@ -4,8 +4,6 @@
 
 #include "vkCommand.h"
 
-#include <utility>
-
 namespace yic {
 
     vkCommand::vkCommand() : mDevice(EventBus::Get::vkDeviceContext().device.value()),
@@ -43,11 +41,10 @@ namespace yic {
         auto imageIndex = EventBus::Get::vkSwapchainContext().activeImageIndex.value();
         auto& cmd = mCommandBuffers[imageIndex];
         auto framebuffers = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).framebuffers.value();
-        //EventBus::publish(et::vkCommandBufContext{.cmd = cmd});
 
         cmd.begin(beginInfo);
         {
-            std::vector<vk::ClearValue> cv{vk::ClearColorValue{1.f, 0.f, 0.f, 1.f}};
+            std::vector<vk::ClearValue> cv{vk::ClearColorValue{1.f, 0.f, 0.f, 0.f}};
 
             vk::RenderPassBeginInfo renderPassBeginInfo{mRenderPass, framebuffers[imageIndex],
                                                         {{0, 0}, EventBus::Get::vkWindowContext().extent.value()}, cv};
@@ -59,9 +56,6 @@ namespace yic {
     }
 
     auto vkCommand::endCommandBuf(vk::CommandBuffer& cmd) -> void {
-        //auto imageIndex = EventBus::Get::vkSwapchainContext().activeImageIndex.value();
-        //mCommandBuffers[imageIndex].endRenderPass();
-        //mCommandBuffers[imageIndex].end();
         cmd.endRenderPass();
         cmd.end();
     }

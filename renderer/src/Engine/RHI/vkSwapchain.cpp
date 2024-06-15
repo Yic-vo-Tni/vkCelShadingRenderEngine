@@ -117,15 +117,15 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-//        EventBus::subscribeAuto([&](const et::WindowContext& windowContext){
-//            mUpdateSize.exchange(true);
-//        });
-//        if (mUpdateSize.load()){
-//            mDevice.waitIdle();
-//            mGraphicsQueue.waitIdle();
-//            TaskBus::executeTask<tt::RebuildSwapchain>();
-//            mUpdateSize.exchange(false);
-//        }
+        EventBus::subscribeAuto([&](const et::WindowContext& windowContext){
+            mUpdateSize.exchange(true);
+        });
+        if (mUpdateSize.load()){
+            mDevice.waitIdle();
+            mGraphicsQueue.waitIdle();
+            TaskBus::executeTask<tt::RebuildSwapchain>();
+            mUpdateSize.exchange(false);
+        }
 
         if (!acquire())
             throw std::runtime_error("failed to acquire swap chain image");
@@ -151,7 +151,6 @@ namespace yic {
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
             TaskBus::executeTask<tt::RebuildSwapchain>();
-//            acquire();
         }
 
         mCurrentFrame = (mCurrentFrame + 1) % mImageCount;

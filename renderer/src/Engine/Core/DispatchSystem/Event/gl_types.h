@@ -10,17 +10,25 @@ namespace et{
 
     struct WindowContext {
         struct_y(WindowContext,
-        (opt<std::pair<int, int>>, size),
-        (opt<vk::Extent2D>, extent),
-        (opt<GLFWwindow*>, window));
+                 (opt < std::pair<int, int>>, size),
+                 (opt < vk::Extent2D > , extent),
+                 (opt < GLFWwindow * > , window)
+                 );
     };
 
     struct KeyInput {
         struct_y(KeyInput,
-        (opt<int>, key),
-        (opt<int>, action),
-        (opt<int>, scancode),
-        (opt<int>, mods));
+                 (opt<int>, key),
+                 (opt<int>, action),
+                 (opt<int>, scancode),
+                 (opt<int>, mods));
+    };
+
+    struct MouseInput{
+        struct_y(MouseInput,
+                 (opt<int>, button),
+                 (opt<int>, action),
+                 (opt<int>, modes));
     };
 
 }

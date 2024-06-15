@@ -6,9 +6,44 @@
 
 namespace yic {
 
+    LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        switch (uMsg) {
+//            case WM_PAINT: {
+//                PAINTSTRUCT ps;
+//                HDC hdc = BeginPaint(hwnd, &ps);
+//
+//                SetTextColor(hdc, RGB(255, 255, 255));
+//                SetBkMode(hdc, TRANSPARENT);
+//                const char* text = "Hello, Overlay!";
+//                TextOut(hdc, 10, 10, text, strlen(text));
+//
+//                Rectangle(hdc, 50, 50, 200, 200);
+//
+//                EndPaint(hwnd, &ps);
+//                return 0;
+//            }
+            case WM_NCHITTEST:
+                return HTTRANSPARENT;
+            case WM_SIZE:
+                if (wParam == SIZE_MINIMIZED){
+                    ShowWindow(hwnd, SW_HIDE);
+                } else {
+                    ShowWindow(hwnd, SW_SHOW);
+                }
+                return 0;
+            case WM_DESTROY:
+                PostQuitMessage(0);
+                return 0;
+            case WM_ERASEBKGND:
+                return 1;
+            default:
+                return DefWindowProc(hwnd, uMsg, wParam, lParam);
+        }
+        return 0;
+    }
 
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h},
-                                                     mWindow(createWindow()) {
+                                                     mWindow(createWindow()){
 
         EventBus::publish(et::WindowContext{
                 std::make_pair(mWidth, mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
@@ -21,9 +56,27 @@ namespace yic {
     }
 
     bool vkWindow::run() {
+        auto hwndMain = glfwGetWin32Window(get()->mWindow.get());
+        auto hInstance = GetModuleHandle(nullptr);
+        const char CLASS_NAME[] = "OverlayWindowClass";
+        registerWindowClass(CLASS_NAME, hInstance);
+
+        get()->mHwndOverlayWindow = createOverlayWindow(CLASS_NAME, hInstance, get()->mWidth, get()->mHeight, hwndMain);
+        glfwSetWindowUserPointer(get()->mWindow.get(), (void*)get()->mHwndOverlayWindow);
+        SetLayeredWindowAttributes(get()->mHwndOverlayWindow, RGB(0, 0, 0), 0, LWA_ALPHA);
+        ShowWindow(get()->mHwndOverlayWindow, SW_SHOW);
+
         try {
             while (!glfwWindowShouldClose(GetWindow())) {
                 glfwPollEvents();
+
+                TaskBus::executeTask<tt::EngineFlow>(true);
+
+                MSG msg;
+                while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)){
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
 
                 InputHandlers::get(GetWindow())->withDraw();
 
@@ -42,6 +95,7 @@ namespace yic {
                 return "failed to initialize GLFW";
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RELEASE, GLFW_TRUE);
+            glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
             return std::nullopt;
         }();
 
@@ -54,7 +108,30 @@ namespace yic {
         }};
     }
 
+    auto vkWindow::createOverlayWindow(const char* className, HINSTANCE hInstance, int width, int height, HWND parent) -> HWND  {
+        int xpos, ypos;
+        glfwGetWindowPos(get()->mWindow.get(), &xpos, &ypos);
 
+        return CreateWindowEx(
+                WS_EX_LAYERED | WS_EX_TRANSPARENT,
+                className,
+                "Overlay Window",
+                WS_POPUP,
+                xpos, ypos, width, height,
+                parent,
+                nullptr, hInstance, nullptr
+        );
+    }
+
+    auto vkWindow::registerWindowClass(const char *className, HINSTANCE hInstance) -> void {
+        WNDCLASS wc = {};
+        wc.lpfnWndProc = WindowProc;
+        wc.hInstance = hInstance;
+        wc.lpszClassName = className;
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+        RegisterClass(&wc);
+    }
 
 } // yic
 

@@ -15,6 +15,11 @@ namespace tt{
         eSwapchainRebuild, eFrameBuffersRebuild
     };
 
+    enum class Window{
+        eImGui, eRhi
+    };
+
+
     enum class Test{
         eT1, eT2, eT3
     };

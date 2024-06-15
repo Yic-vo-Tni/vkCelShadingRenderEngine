@@ -24,11 +24,14 @@ namespace yic {
 
     private:
         auto createWindow() -> std::shared_ptr<GLFWwindow>;
+        [[nodiscard]] static auto createOverlayWindow(const char* className, HINSTANCE hInstance, int width, int height, HWND parent) ->  HWND ;
+        static auto registerWindowClass(const char* className, HINSTANCE hInstance) -> void;
     private:
         int mWidth{}, mHeight{};
         std::string mName{"Yicvot"};
 
         std::shared_ptr<GLFWwindow> mWindow;
+        HWND mHwndOverlayWindow{};
     };
 
 } // yic

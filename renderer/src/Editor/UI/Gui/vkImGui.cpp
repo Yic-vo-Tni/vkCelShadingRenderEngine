@@ -13,12 +13,23 @@ namespace yic {
 
         ImGui_ImplGlfw_InitForVulkan(EventBus::Get::vkWindowContext().window.value(), false);
 
+        vk::DescriptorPoolSize poolSize[] = { {vk::DescriptorType::eCombinedImageSampler, 1}};
+        auto pool_info = vk::DescriptorPoolCreateInfo().setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+                                                                            .setMaxSets(1)
+                                                                            .setPoolSizes(poolSize);
+        mDescriptorPool = vkCreate("create imgui descriptor pool") = [&]{
+            return EventBus::Get::vkDeviceContext().device.value().createDescriptorPool(pool_info);
+        };
+
+
+
         ImGui_ImplVulkan_InitInfo info{
             .Instance = EventBus::Get::vkInitContext().instance.value(),
             .PhysicalDevice = EventBus::Get::vkDeviceContext().physicalDevice.value(),
             .Device = EventBus::Get::vkDeviceContext().device.value(),
             .Queue = EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsQueue(),
-            .RenderPass = EventBus::Get::vkFrameRenderContext().renderPass.value(),
+            .DescriptorPool = mDescriptorPool,
+            .RenderPass = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).renderPass.value(),
             .MinImageCount = static_cast<uint32_t>(EventBus::Get::vkSwapchainContext().frameEntries->size()),
             .ImageCount = static_cast<uint32_t>(EventBus::Get::vkSwapchainContext().frameEntries->size()),
         };
@@ -32,6 +43,21 @@ namespace yic {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+
+        EventBus::Get::vkDeviceContext().device.value().destroy(mDescriptorPool);
+    }
+
+    auto vkImGui::beginRenderImGui() -> void {
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        if (mShowDemo) ImGui::ShowDemoWindow(&mShowDemo);
+    }
+
+    auto vkImGui::endRenderImGui(const vk::CommandBuffer &cmd) -> void {
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
     }
 
 } // yic

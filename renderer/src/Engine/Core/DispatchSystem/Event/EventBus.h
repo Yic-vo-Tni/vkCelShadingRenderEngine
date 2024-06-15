@@ -61,21 +61,22 @@ namespace yic {
         }
 
         struct Get {
-#define parm_id const std::string& id = "default"
+#define default_parm_id const std::string& id = "default"
+#define parm_id const std::string& id
 
-            static auto vkWindowContext(parm_id) {
+            static auto vkWindowContext(default_parm_id) {
                 return getState<et::WindowContext>(id);
             }
 
-            static auto vkInitContext(parm_id) {
+            static auto vkInitContext(default_parm_id) {
                 return getState<et::vkInitContext>(id);
             }
 
-            static auto vkDeviceContext(parm_id) {
+            static auto vkDeviceContext(default_parm_id) {
                 return getState<et::vkDeviceContext>(id);
             }
 
-            static auto vkSwapchainContext(parm_id){
+            static auto vkSwapchainContext(default_parm_id){
                 return getState<et::vkSwapchainContext>(id);
             }
 
@@ -83,10 +84,11 @@ namespace yic {
                 return getState<et::vkFrameRenderContext>(id);
             }
 
-            static auto vkCommandContext(parm_id) {
+            static auto vkCommandContext(default_parm_id) {
                 return getState<et::vkCommandBufContext>(id);
             }
 
+#undef default_parm_id
 #undef parm_id
         };
 

@@ -23,6 +23,8 @@ namespace yic {
         mFrameRender = std::make_unique<vkFrameRender>();
         mCommand = std::make_unique<vkCommand>();
 
+        mImGui = std::make_unique<vkImGui>();
+
         TaskBus::registerTask(tt::EngineFlow::eRhi, [this]{ run();});
     }
 
@@ -32,14 +34,12 @@ namespace yic {
     }
 
     bool vkRhi::run() {
-       // SemaphoreGuard guard{mRun_semaphore};
-
-//        if (!mContinueRunning.load(std::memory_order_acquire)){
-//            return false;
-//        }
 
         mSwapchain->updateEveryFrame();
         auto cmd = mCommand->beginCommandBuf();
+
+        mImGui->beginRenderImGui();
+        mImGui->endRenderImGui(cmd);
 
         mCommand->endCommandBuf(cmd);
         std::vector<vk::CommandBuffer> cmds{cmd};
