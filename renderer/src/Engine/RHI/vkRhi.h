@@ -19,10 +19,15 @@ namespace yic {
         ~vkRhi();
 
         auto run() -> bool ;
+
+        auto stopRunning() -> void { mContinueRunning.store(false, std::memory_order_release); }
     private:
         std::unique_ptr<vkSwapchain> mSwapchain{};
         std::unique_ptr<vkFrameRender> mFrameRender{};
         std::unique_ptr<vkCommand> mCommand{};
+
+        std::counting_semaphore<1> mRun_semaphore{1};
+        std::atomic<bool> mContinueRunning{true};
     };
 
 } // yic

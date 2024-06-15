@@ -6,8 +6,6 @@ set(BOOST_LIBRARYDIR  "${BOOST_ROOT}/stage/lib")
 message("Boost root: ${BOOST_ROOT}")
 message("Boost library directory: ${BOOST_LIBRARYDIR}")
 
-#find_package(Boost 1.85.0 REQUIRED COMPONENTS filesystem)
-
 file(GLOB_RECURSE SRCS "src/*.h" "src/*.cpp")
 
 add_library(Renderer STATIC ${SRCS})
@@ -25,4 +23,5 @@ target_link_libraries(Renderer PUBLIC
         ws2_32
         "${BOOST_LIBRARYDIR}/libboost_filesystem-mgw13-mt-d-x64-1_85.a"
         "imgui"
+        ${tbb12}
 )

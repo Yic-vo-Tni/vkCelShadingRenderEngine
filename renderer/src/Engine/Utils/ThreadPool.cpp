@@ -18,8 +18,31 @@ ThreadPool::ThreadPool(size_t numThreads) {
                     task = std::move(mTasks.front());
                     mTasks.pop();
                 }
+//                mActiveTasks ++;
                 task();
+//                mActiveTasks --;
             }
+//            while (true){
+//                std::function<void()> task;
+//                {
+//                    std::unique_lock<std::mutex> lock(mQueueMutex);
+//                    mCondition.wait(lock, [this]{
+//                        return mStop || !mTasks.empty();
+//                    });
+//                    if (mStop && mTasks.front()) return ;
+//                    task = std::move(mTasks.front());
+//                    mTasks.pop();
+//                    ++mActiveTasks;
+//                }
+//                task();
+//                {
+//                    std::unique_lock<std::mutex> lock(mQueueMutex);
+//                    --mActiveTasks;
+//                    if (mActiveTasks == 0 && mTasks.empty()){
+//                        mCompleted.notify_all();
+//                    }
+//                }
+//            }
         });
     }
 }

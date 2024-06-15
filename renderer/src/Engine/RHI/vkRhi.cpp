@@ -32,6 +32,12 @@ namespace yic {
     }
 
     bool vkRhi::run() {
+       // SemaphoreGuard guard{mRun_semaphore};
+
+//        if (!mContinueRunning.load(std::memory_order_acquire)){
+//            return false;
+//        }
+
         mSwapchain->updateEveryFrame();
         auto cmd = mCommand->beginCommandBuf();
 
@@ -39,7 +45,6 @@ namespace yic {
         std::vector<vk::CommandBuffer> cmds{cmd};
         mSwapchain->submitFrame(cmds);
 
-        TaskBus::executeTask<tt::Test>();
 
         return true;
     }

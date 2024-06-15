@@ -117,15 +117,15 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-        EventBus::subscribeAuto([&](const et::WindowContext& windowContext){
-            mUpdateSize.exchange(true);
-        });
-        if (mUpdateSize.load()){
-            mDevice.waitIdle();
-            mGraphicsQueue.waitIdle();
-            TaskBus::executeTask<tt::RebuildSwapchain>();
-            mUpdateSize.exchange(false);
-        }
+//        EventBus::subscribeAuto([&](const et::WindowContext& windowContext){
+//            mUpdateSize.exchange(true);
+//        });
+//        if (mUpdateSize.load()){
+//            mDevice.waitIdle();
+//            mGraphicsQueue.waitIdle();
+//            TaskBus::executeTask<tt::RebuildSwapchain>();
+//            mUpdateSize.exchange(false);
+//        }
 
         if (!acquire())
             throw std::runtime_error("failed to acquire swap chain image");
@@ -140,25 +140,19 @@ namespace yic {
         auto waitStage = std::vector<vk::PipelineStageFlags>{vk::PipelineStageFlagBits::eColorAttachmentOutput};
 
         auto i = mCurrentFrame % mImageCount;
-        //auto cmd = EventBus::Get::vkCommandContext().cmd.value();
         vk::SubmitInfo info{mFrameEntries[i].readSemaphore, waitStage, cmd, mFrameEntries[i].writtenSemaphore};
 
         mGraphicsQueue.submit(info, mFences[mImageIndex]);
         vk::PresentInfoKHR presentInfoKhr{mFrameEntries[i].writtenSemaphore, mSwapchain, mCurrentFrame};
 
-//        if (mGraphicsQueue.presentKHR(presentInfoKhr) != vk::Result::eSuccess) {
-//            throw std::runtime_error("failed to present image");
-//        }
-
-
-            auto r = mGraphicsQueue.presentKHR(&presentInfoKhr);
-            if (r == vk::Result::eSuccess) {
-            } else {
-                mDevice.waitIdle();
-                mGraphicsQueue.waitIdle();
-                TaskBus::executeTask<tt::RebuildSwapchain>();
-            }
-
+        auto r = mGraphicsQueue.presentKHR(&presentInfoKhr);
+        if (r == vk::Result::eSuccess) {
+        } else {
+            mDevice.waitIdle();
+            mGraphicsQueue.waitIdle();
+            TaskBus::executeTask<tt::RebuildSwapchain>();
+//            acquire();
+        }
 
         mCurrentFrame = (mCurrentFrame + 1) % mImageCount;
     }
@@ -177,13 +171,6 @@ namespace yic {
                 mDevice.waitIdle();
                 mGraphicsQueue.waitIdle();
                 TaskBus::executeTask<tt::RebuildSwapchain>();
-                {
-                    auto newRv = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE);
-                    if (newRv.result == vk::Result::eSuccess) {
-                        mImageIndex = rv.value;
-                        EventBus::publish(et::vkSwapchainContext{.activeImageIndex = mImageIndex});
-                    }
-                }
                 return true;
             default:
                 return false;

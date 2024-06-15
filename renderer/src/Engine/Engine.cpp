@@ -15,15 +15,17 @@ namespace yic {
            mRhi = std::make_unique<vkRhi>();
 
             while (mFrameLoop.load()){
-                TaskBus::executeTask<tt::EngineFlow>();
+                SemaphoreGuard guard(mFrameLoop_semaphore);
+                TaskBus::executeTask<tt::EngineFlow>(true);
             }
         });
 
         if(vkWindow::run()){
+            mFrameLoop_semaphore.release();
             mFrameLoop.exchange(false);
         }
 
-        if (mFrameLoopThread->joinable())
+        if (mFrameLoopThread && mFrameLoopThread->joinable())
             mFrameLoopThread->join();
         ShaderFolderWatcher::end();
 

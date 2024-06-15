@@ -10,15 +10,19 @@ namespace yic {
         createImguiFrameRenderPass();
 
 
-        TaskBus::registerTask(tt::Test::eT3, [&]{
-            vkInfo("3");
-        });
-        TaskBus::registerTask(tt::Test::eT2, [&]{
-            vkInfo("2");
-        });
-        TaskBus::registerTask(tt::Test::eT1, [&]{
-            vkInfo("1");
-        });
+//        TaskBus::registerTask(tt::Test::eT3, [&]{
+//            vkInfo("3");
+//            vkInfo("4");
+//            vkInfo("5");
+//            vkInfo("6");
+//            vkInfo("7");
+//        });
+//        TaskBus::registerTask(tt::Test::eT2, [&]{
+//            vkInfo("2");
+//        });
+//        TaskBus::registerTask(tt::Test::eT1, [&]{
+//            vkInfo("1");
+//        });
 
 
     }

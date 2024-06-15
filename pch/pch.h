@@ -46,6 +46,7 @@
 #include "stack"
 #include "any"
 #include "filesystem"
+#include "semaphore"
 
 #include "include/spdlog/spdlog.h"
 #include "include/spdlog/sinks/stdout_color_sinks.h"
@@ -54,6 +55,9 @@
 
 #include "boost/hana.hpp"
 #include "boost/process.hpp"
+
+#include "oneapi/tbb/task_group.h"
+#include "oneapi/tbb/parallel_invoke.h"
 
 #ifdef NDEBUG
 const bool enableDebug = false;

@@ -21,6 +21,7 @@ namespace yic {
 
         std::unique_ptr<std::thread> mFrameLoopThread;
         std::atomic<bool> mFrameLoop{true};
+        std::counting_semaphore<1> mFrameLoop_semaphore{1};
     };
 
 } // yic

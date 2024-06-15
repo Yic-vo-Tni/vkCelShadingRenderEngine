@@ -17,6 +17,7 @@ find_package(Vulkan REQUIRED)
 find_program(glsl glslc REQUIRED)
 find_library(glfw_msvc glfw3 PATHS external/GLFW/msvc)
 find_library(glfw_mingw glfw3 PATHS external/GLFW/mingw)
+find_library(tbb12 tbb12 PATHS external/tbb)
 
 include(FetchContent)
 
@@ -33,6 +34,8 @@ target_link_libraries(vkCelShadingRenderer PUBLIC
         "Vulkan::Vulkan"
         ${glfw_mingw}
 )
+
+file(INSTALL external/tbb/libtbb12.dll DESTINATION ${CMAKE_BINARY_DIR})
 
 add_subdirectory(renderer)
 
