@@ -14,49 +14,68 @@ namespace et {
         vk::Semaphore writtenSemaphore;
     };
 
-    struct vkInitContext {
-        struct_y(vkInitContext,
+    struct vkSetupContext{
+        struct_y(vkSetupContext,
                  (opt<vk::Instance>, instance),
                  (opt<vk::DispatchLoaderDynamic>, dynamicDispatcher),
-                 (opt<vk::DebugUtilsMessengerEXT>, debugMessenger));
-    };
-
-    struct vkDeviceContext {
-        struct_y(vkDeviceContext,
+                 (opt<vk::DebugUtilsMessengerEXT>, debugMessenger),
                  (opt<vk::PhysicalDevice>, physicalDevice),
                  (opt<vk::Device>, device),
                  (opt<yic::QueueFamily>, queueFamily));
-    };
 
-//    struct vkSwapchainContext {
-//        struct_y(vkSwapchainContext,
-//                 (opt<vk::SwapchainKHR>, swapchain),
-//                 (opt<std::vector<FrameEntry>>, frameEntries),
-//                 (opt<vk::SurfaceFormatKHR>, surfaceFormat),
-//                 (opt<uint32_t>, activeImageIndex));
-//        struct id{
-//            static constexpr const char* imguiRender{"imguiRender"};
-//        };
-//    };
-
-//    struct vkFrameRenderContext {
-//        struct_y(vkFrameRenderContext,
-//                 (opt<vk::RenderPass>, renderPass),
-//                 (opt<std::vector<vk::Framebuffer>>, framebuffers));
-//
-//        struct id{
-//            static constexpr const char* imguiRender{"imguiRender"};
-//        };
-//    };
-
-    struct vkCommandBufContext{
-        struct_y(vkCommandBufContext,
-                 (opt<vk::CommandBuffer>, cmd));
+        [[nodiscard]] const auto& instance_v(){
+            if (!instance.has_value())
+                throw std::runtime_error("instance is not initialized.");
+            return instance.value();
+        }
+        [[nodiscard]] const auto& dynamicDispatcher_v(){
+            if (!dynamicDispatcher.has_value())
+                throw std::runtime_error("dynamicDispatcher is not initialized.");
+            return dynamicDispatcher.value();
+        }
+        [[nodiscard]] const auto& debugMessenger_v(){
+            if (!debugMessenger.has_value())
+                throw std::runtime_error("debugMessenger is not initialized.");
+            return debugMessenger.value();
+        }
+        [[nodiscard]] const auto& physicalDevice_v(){
+            if (!physicalDevice.has_value())
+                throw std::runtime_error("physicalDevice is not initialized.");
+            return physicalDevice.value();
+        }
+        [[nodiscard]] const auto& device_v(){
+            if (!device.has_value())
+                throw std::runtime_error("device is not initialized.");
+            return device.value();
+        }
+        [[nodiscard]] const auto& queue_imGuiGraphics_v(){
+            if (!queueFamily.has_value())
+                throw std::runtime_error("queueFamily is not initialized.");
+            return queueFamily->getImGuiGraphicsQueue();
+        }
+        [[nodiscard]] auto qIndex_imGuiGraphics_v(){
+            if (!queueFamily.has_value())
+                throw std::runtime_error("queueFamily is not initialized.");
+            return queueFamily->getImGuiGraphicsFamilyIndex();
+        }
+        [[nodiscard]] const auto& queue_mainGraphics_v(){
+            if (!queueFamily.has_value())
+                throw std::runtime_error("queueFamily is not initialized.");
+            return queueFamily->getMainGraphicsQueue();
+        }
+        [[nodiscard]] auto qIndex_mainGraphics_v(){
+            if (!queueFamily.has_value())
+                throw std::runtime_error("queueFamily is not initialized.");
+            return queueFamily->getMainGraphicsFamilyIndex();
+        }
     };
 
 
     struct vkRenderContext {
         struct_y(vkRenderContext,
+                 (opt<std::pair<int, int>>, size),
+                 (opt<vk::Extent2D>, extent),
+                 (opt<std::variant<GLFWwindow*, HWND>>, window),
                  (opt<vk::SwapchainKHR>, swapchain),
                  (opt<std::vector<FrameEntry>>, frameEntries),
                  (opt<vk::SurfaceFormatKHR>, surfaceFormat),
@@ -72,43 +91,77 @@ namespace et {
             static constexpr const char* mainRender{"mainRender"};
         };
 
-        const auto& swapchain_v() {
+        template<typename T>
+        [[nodiscard]] const auto& window_v(){
+            if (!window.has_value())
+                throw std::runtime_error("window is not initialized.");
+
+            return std::get<T>(window.value());
+        }
+
+        [[nodiscard]] const auto& window_v(){
+            if (!window.has_value())
+                throw std::runtime_error("window is not initialized.");
+
+            return window.value();
+        }
+
+        [[nodiscard]] auto width_v()  {
+            if (!size.has_value())
+                throw std::runtime_error("window size is not initialized.");
+
+            return size.value().first;
+        }
+        [[nodiscard]] auto height_v(){
+            if (!size.has_value())
+                throw std::runtime_error("window size is not initialized.");
+
+            return size.value().second;
+        }
+        [[nodiscard]] auto extent_v(){
+            if (!extent.has_value())
+                throw std::runtime_error("extent is not initialized.");
+
+            return extent.value();
+        }
+
+        [[nodiscard]] const auto& swapchain_v() {
             if (!swapchain.has_value())
                 throw std::runtime_error("Swapchain is not initialized.");
             return swapchain.value();
         }
-        const auto& frameEntries_v(){
+        [[nodiscard]] const auto& frameEntries_v(){
             if (!frameEntries.has_value())
                 throw std::runtime_error("Frame entries are not initialized.");
             return frameEntries.value();
         }
-        auto imageCount_v(){
+        [[nodiscard]] auto imageCount_v(){
             if (!frameEntries.has_value())
                 throw std::runtime_error("Frame entries are not initialized -- image count.");
             return static_cast<uint32_t>(frameEntries->size());
         }
-        const auto& surfaceFormat_v(){
+        [[nodiscard]] const auto& surfaceFormat_v(){
             if (!surfaceFormat.has_value())
                 throw std::runtime_error("Surface format is not initialized.");
             return surfaceFormat.value().format;
         }
-        auto activeImageIndex_v(){
+        [[nodiscard]] auto activeImageIndex_v(){
             if (!activeImageIndex.has_value())
                 throw std::runtime_error("Active image index is not set.");
             return activeImageIndex.value();
         }
-        const auto& renderPass_v(){
+        [[nodiscard]] const auto& renderPass_v(){
             if (!renderPass.has_value())
                 throw std::runtime_error("Render pass is not initialized.");
             return renderPass.value();
         }
-        const auto& framebuffers_v() {
+        [[nodiscard]] const auto& framebuffers_v() {
             if (!framebuffers.has_value())
                 throw std::runtime_error("Framebuffers are not initialized.");
             return framebuffers.value();
         }
 
-        const auto& offscreenRenderPass_v(const std::string& id) {
+        [[nodiscard]] const auto& offscreenRenderPass_v(const std::string& id) {
             if (!offscreenRenderPass.has_value())
                 throw std::runtime_error("Offscreen render passes are not initialized.");
 
@@ -120,7 +173,7 @@ namespace et {
             return it->second;
         }
 
-        const auto& offscreenFramebuffers_v(const std::string& id) {
+        [[nodiscard]] const auto& offscreenFramebuffers_v(const std::string& id) {
             if (!offscreenFramebuffers.has_value())
                 throw std::runtime_error("Offscreen framebuffers are not initialized.");
 
@@ -132,6 +185,12 @@ namespace et {
             return it->second;
         }
 
+    };
+
+
+    struct vkCommandBufContext{
+        struct_y(vkCommandBufContext,
+                 (opt<vk::CommandBuffer>, cmd));
     };
 
 }

@@ -16,7 +16,7 @@ namespace yic{
     }
 
     vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo) : mCreateInfo(createInfo),
-                                                                          mWindow(std::get<GLFWwindow*>(EventBus::Get::vkWindowContext().window.value())),
+//                                                                          mWindow(std::get<GLFWwindow*>(EventBus::Get::vkRenderContext().window.value())),
                                                                           mInstance(createInstance()),
                                                                           mDebugMessenger(createDebugMessenger()),
                                                                           mPhysicalDevice(pickPhysicalDevice()),
@@ -24,8 +24,14 @@ namespace yic{
         mDynamicDispatcher.init(mDevice);
         mQueueFamily->createQueues(mDevice, createInfo->mPriorities.size());
 
-        EventBus::publish(et::vkInitContext{mInstance, mDynamicDispatcher, mDebugMessenger});
-        EventBus::publish(et::vkDeviceContext{mPhysicalDevice, mDevice, *mQueueFamily});
+        EventBus::update(et::vkSetupContext{
+                .instance = mInstance,
+                .dynamicDispatcher = mDynamicDispatcher,
+                .debugMessenger = mDebugMessenger,
+                .physicalDevice = mPhysicalDevice,
+                .device = mDevice,
+                .queueFamily = *mQueueFamily
+        });
     }
 
 

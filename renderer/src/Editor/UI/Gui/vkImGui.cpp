@@ -11,24 +11,24 @@ namespace yic {
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
 
-        ImGui_ImplGlfw_InitForVulkan(get<GLFWwindow*>(EventBus::Get::vkWindowContext().window.value()), false);
+        ImGui_ImplGlfw_InitForVulkan(get<GLFWwindow*>(EventBus::Get::vkRenderContext().window_v()), false);
 
         vk::DescriptorPoolSize poolSize[] = { {vk::DescriptorType::eCombinedImageSampler, 1}};
         auto pool_info = vk::DescriptorPoolCreateInfo().setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
                                                                             .setMaxSets(1)
                                                                             .setPoolSizes(poolSize);
         mDescriptorPool = vkCreate("create imgui descriptor pool") = [&]{
-            return EventBus::Get::vkDeviceContext().device.value().createDescriptorPool(pool_info);
+            return EventBus::Get::vkSetupContext().device_v().createDescriptorPool(pool_info);
         };
 
 
 
         ImGui_ImplVulkan_InitInfo info{
-            .Instance = EventBus::Get::vkInitContext().instance.value(),
-            .PhysicalDevice = EventBus::Get::vkDeviceContext().physicalDevice.value(),
-            .Device = EventBus::Get::vkDeviceContext().device.value(),
-            .QueueFamily = EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsFamilyIndex(),
-            .Queue = EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsQueue(),
+            .Instance = EventBus::Get::vkSetupContext().instance_v(),
+            .PhysicalDevice = EventBus::Get::vkSetupContext().physicalDevice_v(),
+            .Device = EventBus::Get::vkSetupContext().device_v(),
+            .QueueFamily = EventBus::Get::vkSetupContext().qIndex_imGuiGraphics_v(),
+            .Queue = EventBus::Get::vkSetupContext().queue_imGuiGraphics_v(),
             .DescriptorPool = mDescriptorPool,
             .RenderPass = EventBus::Get::vkRenderContext().renderPass_v(),
             .MinImageCount = EventBus::Get::vkRenderContext().imageCount_v(),
@@ -45,7 +45,7 @@ namespace yic {
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
-        EventBus::Get::vkDeviceContext().device.value().destroy(mDescriptorPool);
+        EventBus::Get::vkSetupContext().device_v().destroy(mDescriptorPool);
     }
 
     auto vkImGui::beginRenderImGui() -> void {

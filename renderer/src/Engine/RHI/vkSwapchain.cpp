@@ -9,9 +9,9 @@ namespace yic {
     vkSwapchain::vkSwapchain(const std::variant<GLFWwindow*, HWND>& window,
                              vk::Queue graphicsQueue, const uint32_t& queueFamilyIndex, vk::Format format) :
             mWindow(window),
-            mInstance(EventBus::Get::vkInitContext().instance.value()),
-            mDevice(EventBus::Get::vkDeviceContext().device.value()),
-            mPhysicalDevice(EventBus::Get::vkDeviceContext().physicalDevice.value()),
+            mInstance(EventBus::Get::vkSetupContext().instance_v()),
+            mDevice(EventBus::Get::vkSetupContext().device_v()),
+            mPhysicalDevice(EventBus::Get::vkSetupContext().physicalDevice_v()),
             mSurface(createSurface()),
             mGraphicsQueue(graphicsQueue),
             mGraphicsQueueFamilyIndex(queueFamilyIndex),
@@ -27,8 +27,7 @@ namespace yic {
             mFrameEntries(createFrameEntries()),
             mFences(createFences()) {
 
-        EventBus::publish(et::vkRenderContext{mSwapchain, mFrameEntries, mSurfaceFormat});
-        auto x = EventBus::Get::vkRenderContext().swapchain_v();
+        EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .surfaceFormat = mSurfaceFormat});
 
         TaskBus::registerTask(tt::RebuildSwapchain::eSwapchainRebuild, [&]() {
             destroyResource();
@@ -39,7 +38,7 @@ namespace yic {
             setSwapchain(newSwapchain);
             mFrameEntries = createFrameEntries();
 
-            EventBus::publish(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries});
+            EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries});
         });
     }
 
@@ -85,7 +84,7 @@ namespace yic {
     auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
         auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
         auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
-        auto extent = EventBus::Get::vkWindowContext().extent.value();
+        auto extent = EventBus::Get::vkRenderContext().extent_v();
 
         mExtent = capabilities.currentExtent.width == (uint32_t) - 1 ? extent : capabilities.currentExtent;
         auto imageCount = std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount,
@@ -152,14 +151,14 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-        EventBus::subscribeAuto([&](const et::WindowContext& windowContext){
-            mUpdateSize.exchange(true);
+        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
+            mUpdateSize.store(true);
         });
         if (mUpdateSize.load()){
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
             TaskBus::executeTask<tt::RebuildSwapchain>();
-            mUpdateSize.exchange(false);
+            mUpdateSize.store(false);
         }
 
         if (!acquire())
@@ -198,7 +197,7 @@ namespace yic {
         switch (rv.result) {
             case vk::Result::eSuccess:
                 mImageIndex = rv.value;
-                EventBus::publish(et::vkRenderContext{.activeImageIndex = mImageIndex});
+                EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex});
                 return true;
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR:

@@ -42,15 +42,16 @@ namespace yic {
             auto inst = get();
             auto type = std::type_index(typeid(Event));
 
-            std::lock_guard<std::mutex> lock(inst->mMutex);
-
-            std::any& storedEvent = inst->mState[type][id];
-
-            if (!storedEvent.has_value()) {
-                storedEvent = event;
-            } else {
-                inst->updateOptional(std::any_cast<Event&>(storedEvent), event);
-            }
+//            std::lock_guard<std::mutex> lock(inst->mMutex);
+//
+//            std::any& storedEvent = inst->mState[type][id];
+//
+//            if (!storedEvent.has_value()) {
+//                storedEvent = event;
+//            } else {
+//                inst->updateOptional(std::any_cast<Event&>(storedEvent), event);
+//            }
+            update(event, id);
 
             auto& handlers = inst->mHandlers[type][id];
             for (auto& handler : handlers) {
@@ -60,21 +61,36 @@ namespace yic {
             }
         }
 
+        template<typename Event>
+        static void update(const Event& event, const std::string& id = "default"){
+            auto inst = get();
+            auto type = std::type_index(typeid(event));
+
+            std::lock_guard<std::mutex> lock(inst->mMutex);
+            std::any& storedEvent = inst->mState[type][id];
+
+            if (!storedEvent.has_value()){
+                storedEvent = event;
+            } else{
+                inst->updateOptional(std::any_cast<Event&>(storedEvent), event);
+            }
+        }
+
         struct Get {
 #define default_parm_id const std::string& id = "default"
 #define parm_id const std::string& id
 
-            static auto vkWindowContext(default_parm_id) {
-                return getState<et::WindowContext>(id);
-            }
+//            static auto vkWindowContext(default_parm_id) {
+//                return getState<et::WindowContext>(id);
+//            }
 
-            static auto vkInitContext(default_parm_id) {
-                return getState<et::vkInitContext>(id);
-            }
+//            static auto vkInitContext(default_parm_id) {
+//                return getState<et::vkInitContext>(id);
+//            }
 
-            static auto vkDeviceContext(default_parm_id) {
-                return getState<et::vkDeviceContext>(id);
-            }
+//            static auto vkDeviceContext(default_parm_id) {
+//                return getState<et::vkDeviceContext>(id);
+//            }
 
 //            static auto vkSwapchainContext(default_parm_id){
 //                return getState<et::vkSwapchainContext>(id);
@@ -90,6 +106,10 @@ namespace yic {
 
             static auto vkRenderContext(default_parm_id) {
                 return getState<et::vkRenderContext>(id);
+            }
+
+            static auto vkSetupContext(default_parm_id) {
+                return getState<et::vkSetupContext>(id);
             }
 
 #undef default_parm_id

@@ -23,9 +23,10 @@ namespace yic {
         // ImGui Render Pass
         {
             mImGuiSwapchain = std::make_unique<vkSwapchain>(
-                    std::get<GLFWwindow *>(EventBus::Get::vkWindowContext().window.value()),
-                    EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsQueue(),
-                    EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsFamilyIndex());
+                    //std::get<GLFWwindow *>(EventBus::Get::vkWindowContext().window.value()),
+                    EventBus::Get::vkRenderContext().window_v(),
+                    EventBus::Get::vkSetupContext().queue_imGuiGraphics_v(),
+                    EventBus::Get::vkSetupContext().qIndex_imGuiGraphics_v());
             mFrameRender = std::make_unique<vkFrameRender>();
             mCommand = std::make_unique<vkCommand>();
 
@@ -45,8 +46,8 @@ namespace yic {
     }
 
     vkRhi::~vkRhi() {
-        EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsQueue().waitIdle();
-        EventBus::Get::vkDeviceContext().device.value().waitIdle();
+        EventBus::Get::vkSetupContext().queue_imGuiGraphics_v().waitIdle();
+        EventBus::Get::vkSetupContext().device_v().waitIdle();
     }
 
     bool vkRhi::run() {

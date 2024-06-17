@@ -11,7 +11,7 @@
 namespace glfw_callback {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height) {
-        yic::EventBus::publish(et::WindowContext{
+        yic::EventBus::publish(et::vkRenderContext{
                 .size = std::make_pair(width, height),
                 .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height},
         });

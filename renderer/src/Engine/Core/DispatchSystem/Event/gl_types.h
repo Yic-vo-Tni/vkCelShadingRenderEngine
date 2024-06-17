@@ -17,6 +17,21 @@ namespace et{
         struct id{
             static constexpr const char* mainRender{"mainRender"};
         };
+
+        template<typename T>
+        [[nodiscard]] const auto& window_v(){
+            if (!window.has_value())
+                throw std::runtime_error("window is not initialized.");
+
+            return std::get<T>(window.value());
+        }
+
+        [[nodiscard]] const auto& window_v(){
+            if (!window.has_value())
+                throw std::runtime_error("window is not initialized.");
+
+            return window.value();
+        }
     };
 
     struct KeyInput {

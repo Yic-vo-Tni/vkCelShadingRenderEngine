@@ -6,7 +6,7 @@
 
 namespace yic {
 
-    vkFrameRender::vkFrameRender() : mDevice(EventBus::Get::vkDeviceContext().device.value()) {
+    vkFrameRender::vkFrameRender() : mDevice(EventBus::Get::vkSetupContext().device_v()) {
         createImguiFrameRenderPass();
     }
 
@@ -37,21 +37,14 @@ namespace yic {
 
         auto createFrameBuf = [&, rp]{
             std::vector<std::vector<vk::ImageView>> attaches{};
-            //auto frameEntries = EventBus::Get::vkSwapchainContext().frameEntries.value();
             auto frameEntries = EventBus::Get::vkRenderContext().frameEntries_v();
             for (const auto& view: frameEntries) {
                 std::vector<vk::ImageView> attach{view.imageView};
                 attaches.push_back(attach);
             }
-            auto fb = createFrameBuffer(rp, EventBus::Get::vkWindowContext().extent.value(), attaches);
-            //EventBus::publish(et::vkFrameRenderContext{rp, fb}, et::vkFrameRenderContext::id::imguiRender);
-//            auto t = EventBus::Get::vkRenderContext();
-//            t.renderPass = rp;
-//            t.framebuffers = fb;
-//            EventBus::publish(t);
-            EventBus::publish(et::vkRenderContext{.renderPass = rp, .framebuffers = fb});
+            auto fb = createFrameBuffer(rp, EventBus::Get::vkRenderContext().extent_v(), attaches);
 
-            auto y = EventBus::Get::vkRenderContext().framebuffers_v();
+            EventBus::update(et::vkRenderContext{.renderPass = rp, .framebuffers = fb});
         };
         createFrameBuf();
 

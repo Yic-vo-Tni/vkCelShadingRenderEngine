@@ -30,13 +30,13 @@ namespace yic {
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h},
                                                      mWindow(createWindow()){
 
-        EventBus::publish(et::WindowContext{
+        EventBus::update(et::vkRenderContext{
                 std::make_pair(mWidth, mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
         });
 
-        EventBus::subscribeAuto([&](const et::WindowContext &windowContext) {
-            vkTrance("width: {0}, height: {1}", windowContext.size.value().first, windowContext.size.value().second);
-        });
+//        EventBus::subscribeAuto([&](const et::vkRenderContext &vkRenderContext) {
+//            vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());
+//        });
     }
 
     auto vkWindow::createOverlayWindow() -> void {
@@ -50,9 +50,11 @@ namespace yic {
         SetLayeredWindowAttributes(get()->mHwndOverlayWindow, RGB(0, 0, 0), 0, LWA_ALPHA);
         ShowWindow(get()->mHwndOverlayWindow, SW_SHOW);
 
-        EventBus::publish(et::WindowContext{
-            std::make_pair(get()->mWidth, get()->mHeight), vk::Extent2D{(uint32_t)get()->mWidth, (uint32_t)get()->mHeight}, get()->mHwndOverlayWindow
-        }, et::WindowContext::id::mainRender);
+        EventBus::update(et::vkRenderContext{
+            std::make_pair(get()->mWidth, get()->mHeight),
+            vk::Extent2D{(uint32_t)get()->mWidth, (uint32_t)get()->mHeight},
+            get()->mHwndOverlayWindow
+        }, et::vkRenderContext::id::mainRender);
     }
 
     bool vkWindow::run() {
