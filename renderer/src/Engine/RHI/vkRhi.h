@@ -26,7 +26,6 @@ namespace yic {
         std::unique_ptr<vkSwapchain> mImGuiSwapchain{};
 
         std::unique_ptr<vkSwapchain> mSwapchain{};
-        std::unique_ptr<vkFrameRender> mFrameRender{};
         std::unique_ptr<vkCommand> mCommand{};
         std::unique_ptr<vkImGui> mImGui{};
     };

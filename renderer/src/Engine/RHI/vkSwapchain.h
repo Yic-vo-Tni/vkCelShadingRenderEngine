@@ -23,6 +23,8 @@ namespace yic {
         auto createSurface() -> vk::SurfaceKHR;
         auto createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR;
         auto createFrameEntries() -> std::vector<et::FrameEntry>;
+        auto createRenderPass() -> vk::RenderPass;
+        auto createFrameBuffers() -> std::vector<vk::Framebuffer>;
         auto createFences() -> std::vector<vk::Fence>;
         auto acquire() -> bool;
         auto setSwapchain(vk::SwapchainKHR swapchainKhr) -> void{
@@ -30,10 +32,11 @@ namespace yic {
                 if (mSwapchain)
                     mDevice.destroy(mSwapchain);
                 mSwapchain = swapchainKhr;
-                EventBus::publish(et::vkRenderContext{.swapchain = mSwapchain});
+                EventBus::update(et::vkRenderContext{.swapchain = mSwapchain});
             }
         };
-
+        auto recreateSwapchain() -> void;
+        auto chooseSurfaceFormat(vk::Format format) -> vk::SurfaceFormatKHR;
         auto destroyResource() -> void;
 
     private:
@@ -53,6 +56,8 @@ namespace yic {
         uint32_t mImageIndex{UINT32_MAX};
         uint32_t mCurrentFrame{0};
         std::vector<et::FrameEntry> mFrameEntries{};
+        vk::RenderPass mRenderPass{};
+        std::vector<vk::Framebuffer> mFramebuffers{};
         std::vector<vk::Fence> mFences{};
         std::atomic<bool> mUpdateSize{false};
     };

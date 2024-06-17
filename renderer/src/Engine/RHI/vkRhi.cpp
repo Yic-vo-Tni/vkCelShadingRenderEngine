@@ -23,11 +23,9 @@ namespace yic {
         // ImGui Render Pass
         {
             mImGuiSwapchain = std::make_unique<vkSwapchain>(
-                    //std::get<GLFWwindow *>(EventBus::Get::vkWindowContext().window.value()),
                     EventBus::Get::vkRenderContext().window_v(),
                     EventBus::Get::vkSetupContext().queue_imGuiGraphics_v(),
                     EventBus::Get::vkSetupContext().qIndex_imGuiGraphics_v());
-            mFrameRender = std::make_unique<vkFrameRender>();
             mCommand = std::make_unique<vkCommand>();
 
             mImGui = std::make_unique<vkImGui>();

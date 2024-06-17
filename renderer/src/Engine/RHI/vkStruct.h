@@ -42,10 +42,14 @@ namespace yic{
         }
 
         [[nodiscard]] inline auto& getQueueFamilies() { return mQueueFamilies;}
-        [[nodiscard]] inline auto& getImGuiGraphicsFamilyIndex() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
-        [[nodiscard]] inline auto& getMainGraphicsFamilyIndex() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
-        [[nodiscard]] inline auto& getImGuiGraphicsQueue() { return mQueueFamilies[QueueType::eGraphics].queues[0];}
-        [[nodiscard]] inline auto& getMainGraphicsQueue() { return mQueueFamilies[QueueType::eGraphics].queues[1];}
+        [[nodiscard]] inline auto getImGuiGraphicsFamilyIndex() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
+        [[nodiscard]] inline const auto getImGuiGraphicsFamilyIndex() const { return mQueueFamilies.at(QueueType::eGraphics).familyIndex.value();}
+        [[nodiscard]] inline auto getMainGraphicsFamilyIndex() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
+        [[nodiscard]] inline const auto getMainGraphicsFamilyIndex() const { return mQueueFamilies.at(QueueType::eGraphics).familyIndex.value();}
+        [[nodiscard]] inline auto& getImGuiGraphicsQueue() { return mQueueFamilies.at(QueueType::eGraphics).queues.at(0);}
+        [[nodiscard]] inline const auto& getImGuiGraphicsQueue() const { return mQueueFamilies.at(QueueType::eGraphics).queues.at(0);}
+        [[nodiscard]] inline auto& getMainGraphicsQueue() { return mQueueFamilies.at(QueueType::eGraphics).queues.at(1);}
+        [[nodiscard]] inline const auto& getMainGraphicsQueue() const { return mQueueFamilies.at(QueueType::eGraphics).queues.at(1);}
     private:
         void addQueueFamily(vk::PhysicalDevice phy, QueueType type) {
             mQueueFamilies.emplace(type, Family{.familyIndex = fn::findQueueFamily(phy, type)});

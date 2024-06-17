@@ -21,7 +21,7 @@ namespace yic {
         explicit EventBus(size_t numThreads) : mThreadPool(numThreads){};
 
         template<typename Event>
-        static void subscribe(const EventHandler<Event>& handler, const std::string& id = "default"){
+        static void subscribe(const EventHandler<Event>& handler, const std::string& id = {}){
             auto type = std::type_index(typeid(Event));
             auto inst = get();
             std::lock_guard<std::mutex> lock(get()->mMutex);
@@ -32,37 +32,32 @@ namespace yic {
         }
 
         template<typename Handler>
-        static void subscribeAuto(Handler&& handler, const std::string& id = "default"){
+        static void subscribeAuto(Handler&& handler, const std::string& id = {}){
             using EventType = typename std::decay<typename function_traits<decltype(&Handler::operator())>::arg0_type>::type;
             subscribe<EventType>(std::forward<Handler>(handler), id);
         }
 
         template<typename Event>
-        static void publish(const Event& event, const std::string& id = "default"){
+        static void publish(const Event& event, const std::string& id = {}){
             auto inst = get();
             auto type = std::type_index(typeid(Event));
 
-//            std::lock_guard<std::mutex> lock(inst->mMutex);
-//
-//            std::any& storedEvent = inst->mState[type][id];
-//
-//            if (!storedEvent.has_value()) {
-//                storedEvent = event;
-//            } else {
-//                inst->updateOptional(std::any_cast<Event&>(storedEvent), event);
-//            }
             update(event, id);
 
             auto& handlers = inst->mHandlers[type][id];
             for (auto& handler : handlers) {
-                inst->mThreadPool.enqueue([handler, eventCaptured = std::any(event)]() {
+//                inst->mThreadPool.enqueue([handler, eventCaptured = std::any(event)]() {
+//                    handler(eventCaptured);
+//                });
+                inst->mGroup.run([handler, eventCaptured = std::any(event)](){
                     handler(eventCaptured);
                 });
+                inst->mGroup.wait();
             }
         }
 
         template<typename Event>
-        static void update(const Event& event, const std::string& id = "default"){
+        static void update(const Event& event, const std::string& id = {}){
             auto inst = get();
             auto type = std::type_index(typeid(event));
 
@@ -77,39 +72,15 @@ namespace yic {
         }
 
         struct Get {
-#define default_parm_id const std::string& id = "default"
+#define default_parm_id const std::string& id = {}
 #define parm_id const std::string& id
 
-//            static auto vkWindowContext(default_parm_id) {
-//                return getState<et::WindowContext>(id);
-//            }
-
-//            static auto vkInitContext(default_parm_id) {
-//                return getState<et::vkInitContext>(id);
-//            }
-
-//            static auto vkDeviceContext(default_parm_id) {
-//                return getState<et::vkDeviceContext>(id);
-//            }
-
-//            static auto vkSwapchainContext(default_parm_id){
-//                return getState<et::vkSwapchainContext>(id);
-//            }
-
-//            static auto vkFrameRenderContext(parm_id){
-//                return getState<et::vkFrameRenderContext>(id);
-//            }
-
-            static auto vkCommandContext(default_parm_id) {
-                return getState<et::vkCommandBufContext>(id);
+            static auto vkSetupContext(default_parm_id) {
+                return getState<et::vkSetupContext>(id);
             }
 
             static auto vkRenderContext(default_parm_id) {
                 return getState<et::vkRenderContext>(id);
-            }
-
-            static auto vkSetupContext(default_parm_id) {
-                return getState<et::vkSetupContext>(id);
             }
 
 #undef default_parm_id
@@ -173,7 +144,7 @@ namespace yic {
         }
 
         template<typename T>
-        static T getState(const std::string& id = "default") {
+        static T getState(const std::string& id = {}) {
             auto inst = get();
             std::lock_guard<std::mutex> lock(get()->mStateMutex);
 
@@ -192,6 +163,7 @@ namespace yic {
         std::unordered_map<std::type_index, std::unordered_map<std::string, std::vector<std::function<void(const std::any&)>>>> mHandlers;
         std::unordered_map<std::type_index, std::unordered_map<std::string, std::any>> mState;
         std::mutex mMutex, mStateMutex;
+        tbb::task_group mGroup;
         ThreadPool mThreadPool;
     };
 

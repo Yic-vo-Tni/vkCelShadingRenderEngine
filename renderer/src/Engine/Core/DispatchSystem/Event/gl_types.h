@@ -8,31 +8,31 @@
 
 namespace et{
 
-    struct WindowContext {
-        struct_y(WindowContext,
-                 (opt<std::pair<int, int>>, size),
-                 (opt<vk::Extent2D>, extent),
-                 (opt<std::variant<GLFWwindow*, HWND>>, window));
-
-        struct id{
-            static constexpr const char* mainRender{"mainRender"};
-        };
-
-        template<typename T>
-        [[nodiscard]] const auto& window_v(){
-            if (!window.has_value())
-                throw std::runtime_error("window is not initialized.");
-
-            return std::get<T>(window.value());
-        }
-
-        [[nodiscard]] const auto& window_v(){
-            if (!window.has_value())
-                throw std::runtime_error("window is not initialized.");
-
-            return window.value();
-        }
-    };
+//    struct WindowContext {
+//        struct_y(WindowContext,
+//                 (opt<std::pair<int, int>>, size),
+//                 (opt<vk::Extent2D>, extent),
+//                 (opt<std::variant<GLFWwindow*, HWND>>, window));
+//
+//        struct id{
+//            static constexpr const char* mainRender{"mainRender"};
+//        };
+//
+//        template<typename T>
+//        [[nodiscard]] const auto& window_v(){
+//            if (!window.has_value())
+//                throw std::runtime_error("window is not initialized.");
+//
+//            return std::get<T>(window.value());
+//        }
+//
+//        [[nodiscard]] const auto& window_v(){
+//            if (!window.has_value())
+//                throw std::runtime_error("window is not initialized.");
+//
+//            return window.value();
+//        }
+//    };
 
     struct KeyInput {
         struct_y(KeyInput,

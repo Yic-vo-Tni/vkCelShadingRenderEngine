@@ -15,30 +15,19 @@ namespace yic {
             mSurface(createSurface()),
             mGraphicsQueue(graphicsQueue),
             mGraphicsQueueFamilyIndex(queueFamilyIndex),
-            mSurfaceFormat([&] {
-                auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
-                for (auto &i: formats) {
-                    if (i.format == format)
-                        return i;
-                }
-                return formats[0];
-            }()),
+            mSurfaceFormat(chooseSurfaceFormat(format)),
             mSwapchain(createSwapchain({})),
             mFrameEntries(createFrameEntries()),
+            mRenderPass(createRenderPass()),
+            mFramebuffers(createFrameBuffers()),
             mFences(createFences()) {
 
-        EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .surfaceFormat = mSurfaceFormat});
-
-        TaskBus::registerTask(tt::RebuildSwapchain::eSwapchainRebuild, [&]() {
-            destroyResource();
-
-            auto oldSwapchain = mSwapchain;
-            auto newSwapchain = createSwapchain(oldSwapchain);
-
-            setSwapchain(newSwapchain);
-            mFrameEntries = createFrameEntries();
-
-            EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries});
+        EventBus::update(et::vkRenderContext{
+                .swapchain = mSwapchain,
+                .frameEntries = mFrameEntries,
+                .surfaceFormat = mSurfaceFormat,
+                .renderPass = mRenderPass,
+                .framebuffers = mFramebuffers
         });
     }
 
@@ -46,6 +35,7 @@ namespace yic {
         for(auto& f : mFences){
             mDevice.destroy(f);
         }
+        mDevice.destroy(mRenderPass);
         destroyResource();
         if (mSwapchain)
             mDevice.destroy(mSwapchain);
@@ -79,6 +69,15 @@ namespace yic {
         Rvk_y("create surface") = [&]{
             return std::visit(surface, mWindow);
         };
+    }
+
+    auto vkSwapchain::chooseSurfaceFormat(vk::Format format) -> vk::SurfaceFormatKHR {
+        auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
+        for (auto &i: formats) {
+            if (i.format == format)
+                return i;
+        }
+        return formats[0];
     }
 
     auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
@@ -157,14 +156,15 @@ namespace yic {
         if (mUpdateSize.load()){
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
-            TaskBus::executeTask<tt::RebuildSwapchain>();
+            recreateSwapchain();
+            mCurrentFrame = 0;
             mUpdateSize.store(false);
         }
 
         if (!acquire())
             throw std::runtime_error("failed to acquire swap chain image");
 
-        if (mDevice.waitForFences(1, &mFences[mImageIndex], VK_TRUE, UINT64_MAX) != vk::Result::eSuccess)
+        if (mDevice.waitForFences(mFences[mImageIndex], VK_TRUE, UINT64_MAX) != vk::Result::eSuccess)
             throw std::runtime_error("failed to wait fence\n");
     }
 
@@ -184,7 +184,7 @@ namespace yic {
         } else {
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
-            TaskBus::executeTask<tt::RebuildSwapchain>();
+            recreateSwapchain();
         }
 
         mCurrentFrame = (mCurrentFrame + 1) % mImageCount;
@@ -203,7 +203,7 @@ namespace yic {
             case vk::Result::eErrorOutOfDateKHR:
                 mDevice.waitIdle();
                 mGraphicsQueue.waitIdle();
-                TaskBus::executeTask<tt::RebuildSwapchain>();
+                recreateSwapchain();
                 return true;
             default:
                 return false;
@@ -211,7 +211,70 @@ namespace yic {
 
     }
 
+    auto vkSwapchain::recreateSwapchain() -> void {
+        destroyResource();
+
+        auto oldSwapchain = mSwapchain;
+        auto newSwapchain = createSwapchain(oldSwapchain);
+
+        setSwapchain(newSwapchain);
+        mFrameEntries = createFrameEntries();
+        mFramebuffers = createFrameBuffers();
+
+        EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .framebuffers = mFramebuffers});
+    }
+
+    auto vkSwapchain::createRenderPass() -> vk::RenderPass {
+        std::vector<vk::AttachmentReference> attachRef{{0, vk::ImageLayout::eColorAttachmentOptimal}};
+        std::vector<vk::AttachmentDescription> attachDes{
+                {{},
+                 mSurfaceFormat.format, vk::SampleCountFlagBits::e1,
+                 vk::AttachmentLoadOp::eClear,
+                 vk::AttachmentStoreOp::eStore,
+                 vk::AttachmentLoadOp::eDontCare,
+                 vk::AttachmentStoreOp::eDontCare,
+                 vk::ImageLayout::eUndefined,
+                 vk::ImageLayout::ePresentSrcKHR}
+        };
+        std::vector<vk::SubpassDescription> subpass{
+                {
+                        {}, vk::PipelineBindPoint::eGraphics, {},
+                        attachRef[0], {}}
+        };
+
+        vk::RenderPassCreateInfo createInfo{{}, attachDes, subpass, {}};
+
+        Rvk_t("create render pass", spdlog::level::warn) = [&] {
+            return mDevice.createRenderPass(createInfo);
+        };
+    }
+
+    auto vkSwapchain::createFrameBuffers() -> std::vector<vk::Framebuffer> {
+        std::vector<vk::Framebuffer> framebuffers;
+        framebuffers.resize(mImageCount);
+
+        Rvk_y("create frame buffer") = [&]{
+            for(size_t i = 0; i < mFrameEntries.size(); i++){
+                auto view = mFrameEntries[i].imageView;
+
+                auto createInfo = vk::FramebufferCreateInfo().setRenderPass(mRenderPass)
+                        .setAttachments(view)
+                        .setWidth(mExtent.width)
+                        .setHeight(mExtent.height)
+                        .setLayers(1);
+
+                framebuffers[i] = mDevice.createFramebuffer(createInfo);
+            }
+
+            return framebuffers;
+        };
+    }
+
     auto vkSwapchain::destroyResource() -> void {
+        for(auto& fb : mFramebuffers){
+            mDevice.destroy(fb);
+        }
+
         for(auto& f : mFrameEntries){
             mDevice.destroy(f.readSemaphore);
             mDevice.destroy(f.writtenSemaphore);

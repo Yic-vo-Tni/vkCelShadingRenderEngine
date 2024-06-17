@@ -34,9 +34,9 @@ namespace yic {
                 std::make_pair(mWidth, mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
         });
 
-//        EventBus::subscribeAuto([&](const et::vkRenderContext &vkRenderContext) {
-//            vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());
-//        });
+        EventBus::subscribeAuto([&](const et::vkRenderContext &vkRenderContext) {
+            vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());
+        });
     }
 
     auto vkWindow::createOverlayWindow() -> void {
