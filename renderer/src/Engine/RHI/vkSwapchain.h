@@ -12,12 +12,15 @@ namespace yic {
 
     class vkSwapchain : nonCopyable{
     public:
-        explicit vkSwapchain(vk::Format format = vk::Format::eR8G8B8A8Unorm);
+        explicit vkSwapchain(const std::variant<GLFWwindow*, HWND>& window,
+                             vk::Queue graphicsQueue, const uint32_t& queueFamilyIndex,
+                             vk::Format format = vk::Format::eR8G8B8A8Unorm);
         ~vkSwapchain();
 
         auto updateEveryFrame() -> void;
         auto submitFrame(std::vector<vk::CommandBuffer>& cmd) -> void;
     private:
+        auto createSurface() -> vk::SurfaceKHR;
         auto createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR;
         auto createFrameEntries() -> std::vector<et::FrameEntry>;
         auto createFences() -> std::vector<vk::Fence>;
@@ -27,13 +30,15 @@ namespace yic {
                 if (mSwapchain)
                     mDevice.destroy(mSwapchain);
                 mSwapchain = swapchainKhr;
-                EventBus::publish(et::vkSwapchainContext{.swapchain = mSwapchain});
+                EventBus::publish(et::vkRenderContext{.swapchain = mSwapchain});
             }
         };
 
         auto destroyResource() -> void;
 
     private:
+        std::variant<GLFWwindow*, HWND> mWindow{};
+        vk::Instance mInstance{};
         vk::Device mDevice{};
         vk::PhysicalDevice mPhysicalDevice{};
         vk::SurfaceKHR mSurface{};

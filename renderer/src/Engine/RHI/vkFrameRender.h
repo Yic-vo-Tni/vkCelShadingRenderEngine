@@ -27,6 +27,78 @@ namespace yic {
 
     };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    class vkRenderPassInfo : public std::enable_shared_from_this<vkRenderPassInfo>{
+    public:
+        auto addAttachDes(const vk::AttachmentDescription& attachDes){
+            mAttachDes.emplace_back(attachDes);
+            return shared_from_this();
+        }
+
+        auto addAttachRef(uint32_t attachIndex, vk::ImageLayout layout){
+            auto ref = vk::AttachmentReference().setAttachment(attachIndex)
+                                                            .setLayout(layout);
+            mAttachRef.emplace_back(ref);
+            return shared_from_this();
+        }
+
+        auto addSubpass(const vk::SubpassDescription& subpass){
+            mSubpass.emplace_back(subpass);
+            return shared_from_this();
+        }
+
+        auto addDependency(const vk::SubpassDependency& dependency){
+            mDependency.emplace_back(dependency);
+            return shared_from_this();
+        }
+
+        auto create(vk::Device device){
+            auto createInfo = vk::RenderPassCreateInfo()
+                    .setAttachments(mAttachDes)
+                    .setSubpasses(mSubpass)
+                    .setDependencies(mDependency);
+
+            mRenderPass = vkCreate("create render pass") = [&] {
+                return device.createRenderPass(createInfo);
+            };
+            return shared_from_this();
+        }
+    private:
+        vk::RenderPass mRenderPass{};
+
+        std::vector<vk::AttachmentDescription> mAttachDes{};
+        std::vector<vk::AttachmentReference> mAttachRef{};
+        std::vector<vk::SubpassDescription> mSubpass{};
+        std::vector<vk::SubpassDependency> mDependency{};
+    };
+
 } // yic
 
 #endif //VKCELSHADINGRENDERER_VKFRAMERENDER_H

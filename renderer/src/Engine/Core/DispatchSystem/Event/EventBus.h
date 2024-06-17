@@ -76,16 +76,20 @@ namespace yic {
                 return getState<et::vkDeviceContext>(id);
             }
 
-            static auto vkSwapchainContext(default_parm_id){
-                return getState<et::vkSwapchainContext>(id);
-            }
+//            static auto vkSwapchainContext(default_parm_id){
+//                return getState<et::vkSwapchainContext>(id);
+//            }
 
-            static auto vkFrameRenderContext(parm_id){
-                return getState<et::vkFrameRenderContext>(id);
-            }
+//            static auto vkFrameRenderContext(parm_id){
+//                return getState<et::vkFrameRenderContext>(id);
+//            }
 
             static auto vkCommandContext(default_parm_id) {
                 return getState<et::vkCommandBufContext>(id);
+            }
+
+            static auto vkRenderContext(default_parm_id) {
+                return getState<et::vkRenderContext>(id);
             }
 
 #undef default_parm_id
@@ -119,27 +123,33 @@ namespace yic {
                 auto& oldVal = boost::hana::at_key(exist, key);
                 const auto& newVal = boost::hana::at_key(updates, key);
 
-                using oldValType = decltype(oldVal);
-                using newValType = std::decay_t<decltype(*newVal)>;
+                using oldValType = std::decay_t<decltype(oldVal)>;
+                using newValType = std::decay_t<decltype(newVal)>;
 
-                if constexpr (std::is_same_v<oldValType, std::optional<newValType>>){
-                    if (newVal.has_value())
+                if constexpr (std::is_same_v<oldValType, newValType>){
+                    if (updateCondition(newVal)){
                         oldVal = newVal;
-                } else if constexpr (std::is_same_v<oldValType, std::shared_ptr<newValType>>) {
-                    if (newVal != nullptr)
-                        oldVal = newVal;
-                } else if constexpr (std::is_same_v<oldValType, std::unique_ptr<newValType>>){
-                    if (auto ptr = newVal.get(); ptr != nullptr){
-                        if (!oldVal){
-                            oldVal = std::make_unique<newValType>(*ptr);
-                        } else{
-                            *(oldVal.get()) = *ptr;
-                        }
                     }
-                } else {
-                    oldVal = newVal;
                 }
             });
+        }
+
+        template<typename T>
+        bool updateCondition(const T &newVal) {
+            if constexpr (std::is_same_v<T, std::optional<typename T::value_type>>) {
+                return newVal.has_value();
+            } else if constexpr (std::is_pointer_v<T> || std::is_same_v<T, std::shared_ptr<typename T::element_type>> ||
+                                 std::is_same_v<T, std::unique_ptr<typename T::element_type>>) {
+                return newVal != nullptr;
+            } else if constexpr (std::is_same_v<T, std::vector<typename T::value_type>> ||
+                                 std::is_same_v<T, std::map<typename T::key_type, typename T::mapped_type>> ||
+                                 std::is_same_v<T, std::unordered_map<typename T::key_type, typename T::mapped_type>> ||
+                                 std::is_same_v<T, std::initializer_list<typename T::value_type>> ||
+                                 std::is_same_v<T, std::deque<typename T::value_type>>) {
+                return !newVal.empty();
+            } else {
+                return newVal != T{};
+            }
         }
 
         template<typename T>

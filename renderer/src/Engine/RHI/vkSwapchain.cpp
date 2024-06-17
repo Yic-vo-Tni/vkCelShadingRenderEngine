@@ -6,24 +6,29 @@
 
 namespace yic {
 
-    vkSwapchain::vkSwapchain(vk::Format format) : mDevice(EventBus::Get::vkDeviceContext().device.value()),
-                                                  mPhysicalDevice(EventBus::Get::vkDeviceContext().physicalDevice.value()),
-                                                  mSurface(EventBus::Get::vkInitContext().surface.value()),
-                                                  mGraphicsQueue(EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsQueue()),
-                                                  mGraphicsQueueFamilyIndex(EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsFamilyIndex()),
-                                                  mSurfaceFormat([&] {
-                                                      auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
-                                                      for (auto &i: formats) {
-                                                          if (i.format == format)
-                                                              return i;
-                                                      }
-                                                      return formats[0];
-                                                  }()),
-                                                  mSwapchain(createSwapchain({})),
-                                                  mFrameEntries(createFrameEntries()),
-                                                  mFences(createFences()){
+    vkSwapchain::vkSwapchain(const std::variant<GLFWwindow*, HWND>& window,
+                             vk::Queue graphicsQueue, const uint32_t& queueFamilyIndex, vk::Format format) :
+            mWindow(window),
+            mInstance(EventBus::Get::vkInitContext().instance.value()),
+            mDevice(EventBus::Get::vkDeviceContext().device.value()),
+            mPhysicalDevice(EventBus::Get::vkDeviceContext().physicalDevice.value()),
+            mSurface(createSurface()),
+            mGraphicsQueue(graphicsQueue),
+            mGraphicsQueueFamilyIndex(queueFamilyIndex),
+            mSurfaceFormat([&] {
+                auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
+                for (auto &i: formats) {
+                    if (i.format == format)
+                        return i;
+                }
+                return formats[0];
+            }()),
+            mSwapchain(createSwapchain({})),
+            mFrameEntries(createFrameEntries()),
+            mFences(createFences()) {
 
-        EventBus::publish(et::vkSwapchainContext{mSwapchain, mFrameEntries, mSurfaceFormat});
+        EventBus::publish(et::vkRenderContext{mSwapchain, mFrameEntries, mSurfaceFormat});
+        auto x = EventBus::Get::vkRenderContext().swapchain_v();
 
         TaskBus::registerTask(tt::RebuildSwapchain::eSwapchainRebuild, [&]() {
             destroyResource();
@@ -34,7 +39,7 @@ namespace yic {
             setSwapchain(newSwapchain);
             mFrameEntries = createFrameEntries();
 
-            EventBus::publish(et::vkSwapchainContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries});
+            EventBus::publish(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries});
         });
     }
 
@@ -45,6 +50,36 @@ namespace yic {
         destroyResource();
         if (mSwapchain)
             mDevice.destroy(mSwapchain);
+        mInstance.destroy(mSurface);
+    }
+
+    auto vkSwapchain::createSurface() -> vk::SurfaceKHR {
+        auto surface = [this](auto&& arg){
+            using T = std::decay_t<decltype(arg)>;
+            VkSurfaceKHR tempSurface{};
+            if constexpr (std::is_same_v<T, GLFWwindow*>){
+                if(glfwCreateWindowSurface(mInstance, arg, nullptr, &tempSurface) == VK_SUCCESS){
+                    return tempSurface;
+                } else {
+                    throw std::runtime_error("failed to create glfw surface");
+                }
+            }
+            if constexpr (std::is_same_v<T, HWND>){
+                auto createInfo = VkWin32SurfaceCreateInfoKHR();
+                createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+                createInfo.hwnd = arg;
+                createInfo.hinstance = GetModuleHandle(nullptr);
+                if (vkCreateWin32SurfaceKHR(mInstance, &createInfo, nullptr, &tempSurface) == VK_SUCCESS){
+                    return tempSurface;
+                } else{
+                    throw std::runtime_error("failed to create hwnd surface");
+                }
+            }
+        };
+
+        Rvk_y("create surface") = [&]{
+            return std::visit(surface, mWindow);
+        };
     }
 
     auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
@@ -163,7 +198,7 @@ namespace yic {
         switch (rv.result) {
             case vk::Result::eSuccess:
                 mImageIndex = rv.value;
-                EventBus::publish(et::vkSwapchainContext{.activeImageIndex = mImageIndex});
+                EventBus::publish(et::vkRenderContext{.activeImageIndex = mImageIndex});
                 return true;
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR:
@@ -174,27 +209,6 @@ namespace yic {
             default:
                 return false;
         }
-
-//        vk::ResultValue<uint32_t> rv{vk::Result::eSuccess, 0};
-//        do {
-//            rv = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE);
-//            if (rv.result == vk::Result::eErrorOutOfDateKHR) {
-//                TaskBus::executeTask<tt::RebuildSwapchain>();
-//                vkInfo("Failed to rebuild swapchain");
-//                continue;
-//            } else if (rv.result == vk::Result::eSuboptimalKHR) {
-//                vkTrance("Failed to rebuild swapchain");
-//                continue;
-//            } else if (rv.result != vk::Result::eSuccess) {
-//                return false;
-//                throw std::runtime_error("Failed to acquire next image: " + std::to_string(rv.value));
-//            }
-//        } while (rv.result != vk::Result::eSuccess);
-//        mImageIndex = rv.value;
-//        EventBus::publish(et::vkSwapchainContext{.activeImageIndex = mImageIndex});
-
-        return true;
-
 
     }
 

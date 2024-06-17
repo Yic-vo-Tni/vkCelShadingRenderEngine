@@ -23,6 +23,8 @@ namespace yic {
         auto run() -> bool ;
 
     private:
+        std::unique_ptr<vkSwapchain> mImGuiSwapchain{};
+
         std::unique_ptr<vkSwapchain> mSwapchain{};
         std::unique_ptr<vkFrameRender> mFrameRender{};
         std::unique_ptr<vkCommand> mCommand{};

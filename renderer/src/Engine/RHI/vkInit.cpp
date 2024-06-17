@@ -16,16 +16,15 @@ namespace yic{
     }
 
     vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo) : mCreateInfo(createInfo),
-                                                                          mWindow(EventBus::Get::vkWindowContext().window.value()),
+                                                                          mWindow(std::get<GLFWwindow*>(EventBus::Get::vkWindowContext().window.value())),
                                                                           mInstance(createInstance()),
                                                                           mDebugMessenger(createDebugMessenger()),
-                                                                          mSurface(createSurface()),
                                                                           mPhysicalDevice(pickPhysicalDevice()),
                                                                           mDevice(createLogicalDevice()) {
         mDynamicDispatcher.init(mDevice);
         mQueueFamily->createQueues(mDevice, createInfo->mPriorities.size());
 
-        EventBus::publish(et::vkInitContext{mInstance, mDynamicDispatcher, mDebugMessenger, mSurface});
+        EventBus::publish(et::vkInitContext{mInstance, mDynamicDispatcher, mDebugMessenger});
         EventBus::publish(et::vkDeviceContext{mPhysicalDevice, mDevice, *mQueueFamily});
     }
 
@@ -60,17 +59,6 @@ namespace yic{
                             .setMessageSeverity(tSeverity::eVerbose | tSeverity::eWarning | tSeverity::eError)
                             .setMessageType(tType::eGeneral | tType::ePerformance | tType::eValidation)
                             .setPfnUserCallback(debugCallback), nullptr, mDynamicDispatcher);
-        };
-    }
-
-    auto vkInit::createSurface() -> vk::SurfaceKHR {
-        Rvk_y("create surface") = [&](){
-            if (VkSurfaceKHR tempSurface;
-                    glfwCreateWindowSurface(mInstance, mWindow, nullptr, &tempSurface) == VK_SUCCESS){
-                return tempSurface;
-            } else{
-                throw std::runtime_error("failed to create surface");
-            }
         };
     }
 

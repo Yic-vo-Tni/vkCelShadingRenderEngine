@@ -10,10 +10,13 @@ namespace et{
 
     struct WindowContext {
         struct_y(WindowContext,
-                 (opt < std::pair<int, int>>, size),
-                 (opt < vk::Extent2D > , extent),
-                 (opt < GLFWwindow * > , window)
-                 );
+                 (opt<std::pair<int, int>>, size),
+                 (opt<vk::Extent2D>, extent),
+                 (opt<std::variant<GLFWwindow*, HWND>>, window));
+
+        struct id{
+            static constexpr const char* mainRender{"mainRender"};
+        };
     };
 
     struct KeyInput {

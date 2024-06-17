@@ -9,12 +9,12 @@
 
 #define struct_y(...) BOOST_HANA_DEFINE_STRUCT(__VA_ARGS__)
 
-namespace et {
+//namespace et {
 
-    template<typename T>
-    using opt = std::optional<T>;
+template<typename T>
+using opt = std::optional<T>;
 
-}
+//}
 
 #include "gl_types.h"
 #include "vk_types.h"

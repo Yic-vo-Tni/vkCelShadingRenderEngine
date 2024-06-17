@@ -8,20 +8,6 @@ namespace yic {
 
     LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
-//            case WM_PAINT: {
-//                PAINTSTRUCT ps;
-//                HDC hdc = BeginPaint(hwnd, &ps);
-//
-//                SetTextColor(hdc, RGB(255, 255, 255));
-//                SetBkMode(hdc, TRANSPARENT);
-//                const char* text = "Hello, Overlay!";
-//                TextOut(hdc, 10, 10, text, strlen(text));
-//
-//                Rectangle(hdc, 50, 50, 200, 200);
-//
-//                EndPaint(hwnd, &ps);
-//                return 0;
-//            }
             case WM_NCHITTEST:
                 return HTTRANSPARENT;
             case WM_SIZE:
@@ -39,7 +25,6 @@ namespace yic {
             default:
                 return DefWindowProc(hwnd, uMsg, wParam, lParam);
         }
-        return 0;
     }
 
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h},
@@ -52,10 +37,9 @@ namespace yic {
         EventBus::subscribeAuto([&](const et::WindowContext &windowContext) {
             vkTrance("width: {0}, height: {1}", windowContext.size.value().first, windowContext.size.value().second);
         });
-
     }
 
-    bool vkWindow::run() {
+    auto vkWindow::createOverlayWindow() -> void {
         auto hwndMain = glfwGetWin32Window(get()->mWindow.get());
         auto hInstance = GetModuleHandle(nullptr);
         const char CLASS_NAME[] = "OverlayWindowClass";
@@ -66,11 +50,17 @@ namespace yic {
         SetLayeredWindowAttributes(get()->mHwndOverlayWindow, RGB(0, 0, 0), 0, LWA_ALPHA);
         ShowWindow(get()->mHwndOverlayWindow, SW_SHOW);
 
+        EventBus::publish(et::WindowContext{
+            std::make_pair(get()->mWidth, get()->mHeight), vk::Extent2D{(uint32_t)get()->mWidth, (uint32_t)get()->mHeight}, get()->mHwndOverlayWindow
+        }, et::WindowContext::id::mainRender);
+    }
+
+    bool vkWindow::run() {
         try {
             while (!glfwWindowShouldClose(GetWindow())) {
                 glfwPollEvents();
 
-                TaskBus::executeTask<tt::EngineFlow>(true);
+                TaskBus::executeTask<tt::EngineFlow>();
 
                 MSG msg;
                 while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)){

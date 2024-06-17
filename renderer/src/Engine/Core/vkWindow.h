@@ -19,6 +19,7 @@ namespace yic {
         ~vkWindow() = default;
 
         static bool run();
+        static auto createOverlayWindow() -> void;
 
         [[nodiscard]] inline static auto GetWindow()  { return get()->mWindow.get();}
 

@@ -20,7 +20,6 @@ namespace yic {
         ~vkInit() {
             mDevice.destroy();
             mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicDispatcher);
-            mInstance.destroySurfaceKHR(mSurface);
             mInstance.destroy();
         }
 
@@ -29,14 +28,12 @@ namespace yic {
         };
 
         [[nodiscard]] inline static const auto& GetInstance() { return get()->mInstance;}
-        [[nodiscard]] inline static const auto& GetSurface() { return get()->mSurface;}
         [[nodiscard]] inline static const auto& GetDynamicDispatcher() { return get()->mDynamicDispatcher;}
         [[nodiscard]] inline static const auto& GetDevice() { return get()->mDevice;}
 
     private:
         auto createInstance() -> vk::Instance;
         auto createDebugMessenger() -> vk::DebugUtilsMessengerEXT;
-        auto createSurface() -> vk::SurfaceKHR;
         auto pickPhysicalDevice() -> vk::PhysicalDevice;
         auto createLogicalDevice() -> vk::Device;
     private:
@@ -45,7 +42,6 @@ namespace yic {
         vk::Instance mInstance{};
         vk::DispatchLoaderDynamic mDynamicDispatcher{};
         vk::DebugUtilsMessengerEXT mDebugMessenger{};
-        vk::SurfaceKHR mSurface{};
         vk::PhysicalDevice mPhysicalDevice{};
         std::shared_ptr<QueueFamily> mQueueFamily{};
         vk::Device mDevice{};

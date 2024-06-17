@@ -11,7 +11,7 @@ namespace yic {
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
 
-        ImGui_ImplGlfw_InitForVulkan(EventBus::Get::vkWindowContext().window.value(), false);
+        ImGui_ImplGlfw_InitForVulkan(get<GLFWwindow*>(EventBus::Get::vkWindowContext().window.value()), false);
 
         vk::DescriptorPoolSize poolSize[] = { {vk::DescriptorType::eCombinedImageSampler, 1}};
         auto pool_info = vk::DescriptorPoolCreateInfo().setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
@@ -27,11 +27,12 @@ namespace yic {
             .Instance = EventBus::Get::vkInitContext().instance.value(),
             .PhysicalDevice = EventBus::Get::vkDeviceContext().physicalDevice.value(),
             .Device = EventBus::Get::vkDeviceContext().device.value(),
-            .Queue = EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsQueue(),
+            .QueueFamily = EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsFamilyIndex(),
+            .Queue = EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsQueue(),
             .DescriptorPool = mDescriptorPool,
-            .RenderPass = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).renderPass.value(),
-            .MinImageCount = static_cast<uint32_t>(EventBus::Get::vkSwapchainContext().frameEntries->size()),
-            .ImageCount = static_cast<uint32_t>(EventBus::Get::vkSwapchainContext().frameEntries->size()),
+            .RenderPass = EventBus::Get::vkRenderContext().renderPass_v(),
+            .MinImageCount = EventBus::Get::vkRenderContext().imageCount_v(),
+            .ImageCount = EventBus::Get::vkRenderContext().imageCount_v(),
         };
         ImGui_ImplVulkan_Init(&info);
 

@@ -15,6 +15,7 @@
 #include "GLFW/glfw3native.h"
 
 #include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan_win32.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"

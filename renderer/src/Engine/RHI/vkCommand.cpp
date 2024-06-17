@@ -7,8 +7,8 @@
 namespace yic {
 
     vkCommand::vkCommand() : mDevice(EventBus::Get::vkDeviceContext().device.value()),
-                             mRenderPass(EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).renderPass.value()),
-                             mFrameBuffers(EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).framebuffers.value()),
+                             mRenderPass(EventBus::Get::vkRenderContext().renderPass_v()),
+                             mFrameBuffers(EventBus::Get::vkRenderContext().framebuffers_v()),
                              mCommandPool(createCommandPool()),
                              mCommandBuffers(createCommandBuffers()) {
 
@@ -22,7 +22,7 @@ namespace yic {
         Rvk_y("create cmd pool") = [&]{
             return mDevice.createCommandPool(
                     vk::CommandPoolCreateInfo().setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                                            .setQueueFamilyIndex(EventBus::Get::vkDeviceContext().queueFamily->getPrimaryGraphicsFamilyIndex()));
+                                            .setQueueFamilyIndex(EventBus::Get::vkDeviceContext().queueFamily->getImGuiGraphicsFamilyIndex()));
         };
     }
 
@@ -30,7 +30,7 @@ namespace yic {
         Rvk_y("create cmd") = [&]{
             return mDevice.allocateCommandBuffers(
                     vk::CommandBufferAllocateInfo().setCommandPool(mCommandPool)
-                                                            .setCommandBufferCount(EventBus::Get::vkSwapchainContext().frameEntries.value().size())
+                                                            .setCommandBufferCount(EventBus::Get::vkRenderContext().imageCount_v())
                                                             .setLevel(vk::CommandBufferLevel::ePrimary));
         };
     }
@@ -38,9 +38,10 @@ namespace yic {
     auto vkCommand::beginCommandBuf() -> vk::CommandBuffer {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
-        auto imageIndex = EventBus::Get::vkSwapchainContext().activeImageIndex.value();
+        auto imageIndex = EventBus::Get::vkRenderContext().activeImageIndex_v();
         auto& cmd = mCommandBuffers[imageIndex];
-        auto framebuffers = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).framebuffers.value();
+        //auto framebuffers = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiRender).framebuffers.value();
+        auto framebuffers = EventBus::Get::vkRenderContext().framebuffers_v();
 
         cmd.begin(beginInfo);
         {

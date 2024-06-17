@@ -8,28 +8,11 @@ namespace yic {
 
     vkFrameRender::vkFrameRender() : mDevice(EventBus::Get::vkDeviceContext().device.value()) {
         createImguiFrameRenderPass();
-
-
-//        TaskBus::registerTask(tt::Test::eT3, [&]{
-//            vkInfo("3");
-//            vkInfo("4");
-//            vkInfo("5");
-//            vkInfo("6");
-//            vkInfo("7");
-//        });
-//        TaskBus::registerTask(tt::Test::eT2, [&]{
-//            vkInfo("2");
-//        });
-//        TaskBus::registerTask(tt::Test::eT1, [&]{
-//            vkInfo("1");
-//        });
-
-
     }
 
     vkFrameRender::~vkFrameRender() {
-        mDevice.destroy(EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).renderPass.value());
-        auto frameBuffers = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).framebuffers.value();
+        mDevice.destroy(EventBus::Get::vkRenderContext().renderPass_v());
+        auto frameBuffers = EventBus::Get::vkRenderContext().framebuffers_v();
         for(auto& fb : frameBuffers){
             mDevice.destroy(fb);
         }
@@ -39,7 +22,7 @@ namespace yic {
         std::vector<vk::AttachmentReference> attachRef{{0, vk::ImageLayout::eColorAttachmentOptimal}};
         auto rp = createRenderPass(
                 {{{},
-                  EventBus::Get::vkSwapchainContext().surfaceFormat->format, vk::SampleCountFlagBits::e1,
+                  EventBus::Get::vkRenderContext().surfaceFormat_v(), vk::SampleCountFlagBits::e1,
                   vk::AttachmentLoadOp::eClear,
                   vk::AttachmentStoreOp::eStore,
                   vk::AttachmentLoadOp::eDontCare,
@@ -49,23 +32,32 @@ namespace yic {
                 {{
                          {}, vk::PipelineBindPoint::eGraphics, {},
                          attachRef[0], {}}},
-                {}, et::vkFrameRenderContext::id::imguiFrameRender
+                {}
         );
 
         auto createFrameBuf = [&, rp]{
             std::vector<std::vector<vk::ImageView>> attaches{};
-            auto frameEntries = EventBus::Get::vkSwapchainContext().frameEntries.value();
+            //auto frameEntries = EventBus::Get::vkSwapchainContext().frameEntries.value();
+            auto frameEntries = EventBus::Get::vkRenderContext().frameEntries_v();
             for (const auto& view: frameEntries) {
                 std::vector<vk::ImageView> attach{view.imageView};
                 attaches.push_back(attach);
             }
             auto fb = createFrameBuffer(rp, EventBus::Get::vkWindowContext().extent.value(), attaches);
-            EventBus::publish(et::vkFrameRenderContext{rp, fb}, et::vkFrameRenderContext::id::imguiFrameRender);
+            //EventBus::publish(et::vkFrameRenderContext{rp, fb}, et::vkFrameRenderContext::id::imguiRender);
+//            auto t = EventBus::Get::vkRenderContext();
+//            t.renderPass = rp;
+//            t.framebuffers = fb;
+//            EventBus::publish(t);
+            EventBus::publish(et::vkRenderContext{.renderPass = rp, .framebuffers = fb});
+
+            auto y = EventBus::Get::vkRenderContext().framebuffers_v();
         };
         createFrameBuf();
 
         TaskBus::registerTask(tt::RebuildSwapchain::eFrameBuffersRebuild, [=, this]{
-            auto fb = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiFrameRender).framebuffers.value();
+            //auto fb = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiRender).framebuffers.value();
+            auto fb = EventBus::Get::vkRenderContext().framebuffers_v();
             for(const auto& f : fb){
                 mDevice.destroy(f);
             }
@@ -102,6 +94,9 @@ namespace yic {
             return framebuffers;
         };
     }
+
+
+
 
 
 } // yic
