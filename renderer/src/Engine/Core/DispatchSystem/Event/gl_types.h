@@ -5,49 +5,38 @@
 #ifndef VKCELSHADINGRENDERER_GL_TYPES_H
 #define VKCELSHADINGRENDERER_GL_TYPES_H
 
+namespace wrapper{
+
+}
 
 namespace et{
 
-//    struct WindowContext {
-//        struct_y(WindowContext,
-//                 (opt<std::pair<int, int>>, size),
-//                 (opt<vk::Extent2D>, extent),
-//                 (opt<std::variant<GLFWwindow*, HWND>>, window));
-//
-//        struct id{
-//            static constexpr const char* mainRender{"mainRender"};
-//        };
-//
-//        template<typename T>
-//        [[nodiscard]] const auto& window_v(){
-//            if (!window.has_value())
-//                throw std::runtime_error("window is not initialized.");
-//
-//            return std::get<T>(window.value());
-//        }
-//
-//        [[nodiscard]] const auto& window_v(){
-//            if (!window.has_value())
-//                throw std::runtime_error("window is not initialized.");
-//
-//            return window.value();
-//        }
-//    };
-
-    struct KeyInput {
-        struct_y(KeyInput,
+    struct glKeyInput {
+        struct_y(glKeyInput,
                  (opt<int>, key),
                  (opt<int>, action),
                  (opt<int>, scancode),
                  (opt<int>, mods));
-    };
+    } ;
 
-    struct MouseInput{
-        struct_y(MouseInput,
+    struct glMouseInput {
+        struct_y(glMouseInput,
                  (opt<int>, button),
                  (opt<int>, action),
                  (opt<int>, modes));
-    };
+    } ;
+
+    struct glCursorPosInput {
+        struct_y(glCursorPosInput,
+                 (opt<double>, xpos),
+                 (opt<double>, ypos));
+    } ;
+
+    struct glScrollInput {
+        struct_y(glScrollInput,
+                 (opt<double>, xoffset),
+                 (opt<double>, yoffset));
+    } ;
 
 }
 

@@ -75,28 +75,23 @@ namespace et {
         struct_y(vkRenderContext,
                  (opt<std::pair<int, int>>, size),
                  (opt<vk::Extent2D>, extent),
-                 (opt<std::variant<GLFWwindow*, HWND>>, window),
+                 (opt<GLFWwindow*>, window),
                  (opt<vk::SwapchainKHR>, swapchain),
+                 (opt<vk::Extent2D>, currentExtent),
                  (opt<std::vector<FrameEntry>>, frameEntries),
                  (opt<vk::SurfaceFormatKHR>, surfaceFormat),
                  (opt<uint32_t>, activeImageIndex),
                  (opt<vk::RenderPass>, renderPass),
                  (opt<std::vector<vk::Framebuffer>>, framebuffers),
                  (opt<std::unordered_map<std::string, vk::RenderPass>>, offscreenRenderPass),
-                 (opt<std::unordered_map<std::string, std::vector<vk::Framebuffer>>>, offscreenFramebuffers)
+                 (opt<std::unordered_map<std::string, std::vector<vk::Framebuffer>>>, offscreenFramebuffers),
+                 (opt<vk::CommandBuffer>, cmd)
         );
 
         struct id{
             static constexpr const char* imguiRender{"imguiRender"};
             static constexpr const char* mainRender{"mainRender"};
         };
-
-        template<typename T>
-        [[nodiscard]] const auto& window_v() const {
-            if (!window.has_value())
-                throw std::runtime_error("window is not initialized.");
-            return std::get<T>(window.value());
-        }
 
         [[nodiscard]] const auto& window_v() const{
             if (!window.has_value())
@@ -126,6 +121,11 @@ namespace et {
             if (!swapchain.has_value())
                 throw std::runtime_error("Swapchain is not initialized.");
             return swapchain.value();
+        }
+        [[nodiscard]] const auto& currentExtent_v() const {
+            if (!currentExtent.has_value())
+                throw std::runtime_error("currentExtent is not initialized.");
+            return currentExtent.value();
         }
         [[nodiscard]] const auto& frameEntries_v() const{
             if (!frameEntries.has_value())
@@ -157,6 +157,12 @@ namespace et {
                 throw std::runtime_error("Framebuffers are not initialized.");
             return framebuffers.value();
         }
+        [[nodiscard]] const auto& cmd_v() const {
+            if (!cmd.has_value())
+                throw std::runtime_error("cmd are not initialized.");
+            return cmd.value();
+        }
+
 
         [[nodiscard]] const auto& offscreenRenderPass_v(const std::string& id) const {
             if (!offscreenRenderPass.has_value())
@@ -185,10 +191,6 @@ namespace et {
     };
 
 
-    struct vkCommandBufContext{
-        struct_y(vkCommandBufContext,
-                 (opt<vk::CommandBuffer>, cmd));
-    };
 
 }
 

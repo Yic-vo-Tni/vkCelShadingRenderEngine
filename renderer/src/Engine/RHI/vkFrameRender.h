@@ -14,7 +14,6 @@ namespace yic {
         vkFrameRender();
         ~vkFrameRender();
 
-        auto createImguiFrameRenderPass() -> void;
     private:
         auto createRenderPass(const std::vector<vk::AttachmentDescription>& attachDes,
                               const std::vector<vk::SubpassDescription>& subpass,

@@ -10,51 +10,39 @@
 
 namespace glfw_callback {
 
-    inline auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height) {
+    inline auto framebufferSizeCallback = [](GLFWwindow *w, int width, int height) {
         yic::EventBus::publish(et::vkRenderContext{
                 .size = std::make_pair(width, height),
                 .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height},
-        });
+        }, et::vkRenderContext::id::imguiRender);
+    };
+
+    inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {
+        yic::EventBus::publish(et::glKeyInput{key, action, scancode, mods}, "2");
+    };
+
+    inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {
+        yic::EventBus::publish(et::glMouseInput{button, action, mods});
+    };
+
+    inline auto setCursorPosCallback = [](GLFWwindow*w, double xpos, double ypos){
+        yic::EventBus::publish(et::glCursorPosInput{xpos, ypos});
+    };
+
+    inline auto setScrollBack = [](GLFWwindow *w, double xoffset, double yoffset){
+        yic::EventBus::publish(et::glScrollInput{xoffset, yoffset});
+    };
+
+    inline auto setWindowPosCallback = [](GLFWwindow *w, int xpos, int ypos) {
 
     };
 
-    inline auto setKeyCallback = [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-        yic::EventBus::publish(et::KeyInput{key, action, scancode, mods});
+    inline auto setWindowSizeCallback = [](GLFWwindow *w, int width, int height) {
 
-        auto& io = ImGui::GetIO();
-        switch (action) {
-            case GLFW_PRESS:
-                io.KeysDown[key] = true;
-                break;
-            case GLFW_RELEASE:
-                io.KeysDown[key] = false;
-                break;
-            default:
-                break;
-        }
-        io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
-        io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
-        io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
-        io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
-        ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
     };
 
-    inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods){
-        ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);
-    };
+    inline auto setWindowFocusCallback = [](GLFWwindow *w, int focused) {
 
-    inline auto setWindowPosCallback = [](GLFWwindow *w, int xpos, int ypos){
-        HWND hwndOverlay = (HWND)glfwGetWindowUserPointer(w);
-        if (hwndOverlay) {
-            SetWindowPos(hwndOverlay, HWND_BOTTOM, xpos, ypos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-        }
-    };
-
-    inline auto setWindowSizeCallback = [](GLFWwindow* w, int width , int height){
-        HWND hwndOverlay = (HWND)glfwGetWindowUserPointer(w);
-        if (hwndOverlay) {
-            SetWindowPos(hwndOverlay, HWND_BOTTOM, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE);
-        }
     };
 
 }
@@ -65,6 +53,9 @@ inline auto callback = [](GLFWwindow* w){
     glfwSetMouseButtonCallback(w, glfw_callback::setMouseButtonCallback);
     glfwSetWindowPosCallback(w, glfw_callback::setWindowPosCallback);
     glfwSetWindowSizeCallback(w, glfw_callback::setWindowSizeCallback);
+    glfwSetCursorPosCallback(w, glfw_callback::setCursorPosCallback);
+    glfwSetScrollCallback(w, glfw_callback::setScrollBack);
+  //  glfwSetWindowFocusCallback(w, glfw_callback::setWindowFocusCallback);
 };
 
 #endif //VKCELSHADINGRENDERER_GLFWCALLBACK_H

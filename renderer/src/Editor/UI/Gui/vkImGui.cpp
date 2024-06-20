@@ -4,35 +4,39 @@
 
 #include "vkImGui.h"
 
+#include <utility>
+
 namespace yic {
 
-    vkImGui::vkImGui() {
+    vkImGui::vkImGui(std::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex) :
+            mId(std::move(id)),
+            mQueueIndex(queueFamilyIndex), mQueue(graphicsQueue),
+            mWindow(EventBus::Get::vkRenderContext(mId).window_v()){
+
         ImGui::CreateContext();
-        auto& io = ImGui::GetIO();
+        auto &io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
 
-        ImGui_ImplGlfw_InitForVulkan(get<GLFWwindow*>(EventBus::Get::vkRenderContext().window_v()), false);
+        ImGui_ImplGlfw_InitForVulkan(mWindow, false);
 
-        vk::DescriptorPoolSize poolSize[] = { {vk::DescriptorType::eCombinedImageSampler, 1}};
+        vk::DescriptorPoolSize poolSize[] = {{vk::DescriptorType::eCombinedImageSampler, 1}};
         auto pool_info = vk::DescriptorPoolCreateInfo().setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                                                                            .setMaxSets(1)
-                                                                            .setPoolSizes(poolSize);
-        mDescriptorPool = vkCreate("create imgui descriptor pool") = [&]{
+                .setMaxSets(1)
+                .setPoolSizes(poolSize);
+        mDescriptorPool = vkCreate("create imgui descriptor pool") = [&] {
             return EventBus::Get::vkSetupContext().device_v().createDescriptorPool(pool_info);
         };
 
-
-
         ImGui_ImplVulkan_InitInfo info{
-            .Instance = EventBus::Get::vkSetupContext().instance_v(),
-            .PhysicalDevice = EventBus::Get::vkSetupContext().physicalDevice_v(),
-            .Device = EventBus::Get::vkSetupContext().device_v(),
-            .QueueFamily = EventBus::Get::vkSetupContext().qIndex_imGuiGraphics_v(),
-            .Queue = EventBus::Get::vkSetupContext().queue_imGuiGraphics_v(),
-            .DescriptorPool = mDescriptorPool,
-            .RenderPass = EventBus::Get::vkRenderContext().renderPass_v(),
-            .MinImageCount = EventBus::Get::vkRenderContext().imageCount_v(),
-            .ImageCount = EventBus::Get::vkRenderContext().imageCount_v(),
+                .Instance = EventBus::Get::vkSetupContext().instance_v(),
+                .PhysicalDevice = EventBus::Get::vkSetupContext().physicalDevice_v(),
+                .Device = EventBus::Get::vkSetupContext().device_v(),
+                .QueueFamily = mQueueIndex,
+                .Queue = mQueue,
+                .DescriptorPool = mDescriptorPool,
+                .RenderPass = EventBus::Get::vkRenderContext(mId).renderPass_v(),
+                .MinImageCount = EventBus::Get::vkRenderContext(mId).imageCount_v(),
+                .ImageCount = EventBus::Get::vkRenderContext(mId).imageCount_v(),
         };
         ImGui_ImplVulkan_Init(&info);
 
@@ -48,17 +52,51 @@ namespace yic {
         EventBus::Get::vkSetupContext().device_v().destroy(mDescriptorPool);
     }
 
-    auto vkImGui::beginRenderImGui() -> void {
+    auto vkImGui::render() -> void {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        callback();
+
         if (mShowDemo) ImGui::ShowDemoWindow(&mShowDemo);
+
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), EventBus::Get::vkRenderContext(mId).cmd_v());
     }
 
-    auto vkImGui::endRenderImGui(const vk::CommandBuffer &cmd) -> void {
-        ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+    auto vkImGui::callback() -> void{
+        EventBus::subscribeDeferredAuto([&](const et::glKeyInput& input){
+            auto& io = ImGui::GetIO();
+            switch (input.action.value()) {
+                case GLFW_PRESS:
+                    io.KeysDown[input.key.value()] = true;
+                    break;
+                case GLFW_RELEASE:
+                    io.KeysDown[input.key.value()] = false;
+                    break;
+                default:
+                    break;
+            }
+            io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+            io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+            io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+            io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+
+            ImGui_ImplGlfw_KeyCallback(mWindow, input.key.value(), input.scancode.value(), input.action.value(), input.mods.value());
+        });
+
+        EventBus::subscribeDeferredAuto([&](const et::glMouseInput& input){
+            ImGui_ImplGlfw_MouseButtonCallback(mWindow, input.button.value(), input.action.value(), input.modes.value());
+        });
+
+        EventBus::subscribeDeferredAuto([&](const et::glCursorPosInput& input){
+            ImGui_ImplGlfw_CursorPosCallback(mWindow, input.xpos.value(), input.ypos.value());
+        });
+        EventBus::subscribeDeferredAuto([&](const et::glScrollInput& input){
+            ImGui_ImplGlfw_ScrollCallback(mWindow, input.xoffset.value(), input.yoffset.value());
+        });
     }
+
 
 } // yic

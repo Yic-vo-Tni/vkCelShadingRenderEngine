@@ -37,7 +37,6 @@ namespace yic {
         auto pickPhysicalDevice() -> vk::PhysicalDevice;
         auto createLogicalDevice() -> vk::Device;
     private:
-        //GLFWwindow *mWindow{};
         std::shared_ptr<vkInitCreateInfo> mCreateInfo{};
         vk::Instance mInstance{};
         vk::DispatchLoaderDynamic mDynamicDispatcher{};

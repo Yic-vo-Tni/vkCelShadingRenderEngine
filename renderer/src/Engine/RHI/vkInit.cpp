@@ -16,7 +16,6 @@ namespace yic{
     }
 
     vkInit::vkInit(const std::shared_ptr<vkInitCreateInfo> &createInfo) : mCreateInfo(createInfo),
-//                                                                          mWindow(std::get<GLFWwindow*>(EventBus::Get::vkRenderContext().window.value())),
                                                                           mInstance(createInstance()),
                                                                           mDebugMessenger(createDebugMessenger()),
                                                                           mPhysicalDevice(pickPhysicalDevice()),

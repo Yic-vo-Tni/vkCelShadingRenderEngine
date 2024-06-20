@@ -5,17 +5,15 @@
 #ifndef VKCELSHADINGRENDERER_PCH_H
 #define VKCELSHADINGRENDERER_PCH_H
 
+//#define WIN32_LEAN_AND_MEAN
 #include "winsock2.h"
 #include "windows.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include "GLFW/glfw3native.h"
 
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_win32.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -64,6 +62,7 @@
 
 #include "oneapi/tbb/task_group.h"
 #include "oneapi/tbb/parallel_invoke.h"
+#include "oneapi/tbb/concurrent_unordered_map.h"
 
 #ifdef NDEBUG
 const bool enableDebug = false;

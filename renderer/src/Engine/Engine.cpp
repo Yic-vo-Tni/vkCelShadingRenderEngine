@@ -11,23 +11,19 @@ namespace yic {
     bool Engine::run() {
         ShaderFolderWatcher::start();
 
-//        mFrameLoopThread = std::make_unique<std::thread>([this]{
         mRhi = std::make_unique<vkRhi>();
-//
-//            while (mFrameLoop.load()){
-//                SemaphoreGuard guard{mFrameLoop_semaphore};
-//                TaskBus::executeTask<tt::EngineFlow>(true);
-//            }
-//        });
+        mFrameLoopThread = std::make_unique<std::thread>([this]{
+            while (mFrameLoop.load()){
+                TaskBus::executeTaskSpecific(tt::RenderTarget_s::eImGuiWindow, {}, true);
+            }
+        });
 
         vkWindow::run();
-//        if(vkWindow::run()){
-//            mFrameLoop_semaphore.release();
-//            mFrameLoop.exchange(false);
-//        }
-//
-//        if (mFrameLoopThread && mFrameLoopThread->joinable())
-//            mFrameLoopThread->join();
+        mFrameLoop_semaphore.release();
+        mFrameLoop.exchange(false);
+
+        if (mFrameLoopThread && mFrameLoopThread->joinable())
+            mFrameLoopThread->join();
         ShaderFolderWatcher::end();
 
         return true;

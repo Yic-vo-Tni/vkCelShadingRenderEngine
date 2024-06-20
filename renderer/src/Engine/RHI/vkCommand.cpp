@@ -6,11 +6,14 @@
 
 namespace yic {
 
-    vkCommand::vkCommand() : mDevice(EventBus::Get::vkSetupContext().device_v()),
-                             mRenderPass(EventBus::Get::vkRenderContext().renderPass_v()),
-                             mFrameBuffers(EventBus::Get::vkRenderContext().framebuffers_v()),
-                             mCommandPool(createCommandPool()),
-                             mCommandBuffers(createCommandBuffers()) {
+    vkCommand::vkCommand(const std::string &id, const uint32_t &qIndex)
+            : mId(id),
+              mQueueIndex(qIndex),
+              mDevice(EventBus::Get::vkSetupContext().device_v()),
+              mRenderPass(EventBus::Get::vkRenderContext(id).renderPass_v()),
+              mFrameBuffers(EventBus::Get::vkRenderContext(id).framebuffers_v()),
+              mCommandPool(createCommandPool()),
+              mCommandBuffers(createCommandBuffers()) {
 
     }
 
@@ -19,10 +22,10 @@ namespace yic {
     }
 
     auto vkCommand::createCommandPool() -> vk::CommandPool {
-        Rvk_y("create cmd pool") = [&]{
-            return mDevice.createCommandPool(
-                    vk::CommandPoolCreateInfo().setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                                            .setQueueFamilyIndex(EventBus::Get::vkSetupContext().qIndex_imGuiGraphics_v()));
+        Rvk_y("create cmd pool") = [&] {
+            return mDevice.createCommandPool(vk::CommandPoolCreateInfo()
+                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                            .setQueueFamilyIndex(mQueueIndex));
         };
     }
 
@@ -30,34 +33,35 @@ namespace yic {
         Rvk_y("create cmd") = [&]{
             return mDevice.allocateCommandBuffers(
                     vk::CommandBufferAllocateInfo().setCommandPool(mCommandPool)
-                                                            .setCommandBufferCount(EventBus::Get::vkRenderContext().imageCount_v())
+                                                            .setCommandBufferCount(EventBus::Get::vkRenderContext(mId).imageCount_v())
                                                             .setLevel(vk::CommandBufferLevel::ePrimary));
         };
     }
 
-    auto vkCommand::beginCommandBuf() -> vk::CommandBuffer {
+    auto vkCommand::beginCommandBuf() -> void {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
-        auto imageIndex = EventBus::Get::vkRenderContext().activeImageIndex_v();
-        auto& cmd = mCommandBuffers[imageIndex];
-        auto framebuffers = EventBus::Get::vkRenderContext().framebuffers_v();
+        auto imageIndex = EventBus::Get::vkRenderContext(mId).activeImageIndex_v();
+        auto framebuffers = EventBus::Get::vkRenderContext(mId).framebuffers_v();
+        auto extent = EventBus::Get::vkRenderContext(mId).currentExtent_v();
+        mActiveCommandBuffer = mCommandBuffers[imageIndex];
 
-        cmd.begin(beginInfo);
+        mActiveCommandBuffer.begin(beginInfo);
         {
             std::vector<vk::ClearValue> cv{vk::ClearColorValue{1.f, 0.f, 0.f, 0.f}};
 
             vk::RenderPassBeginInfo renderPassBeginInfo{mRenderPass, framebuffers[imageIndex],
-                                                        {{0, 0}, EventBus::Get::vkRenderContext().extent_v()}, cv};
+                                                        {{0, 0}, extent}, cv};
 
-            cmd.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+            mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
         }
 
-        return cmd;
+        EventBus::update(et::vkRenderContext{.cmd = mActiveCommandBuffer}, mId);
     }
 
-    auto vkCommand::endCommandBuf(vk::CommandBuffer& cmd) -> void {
-        cmd.endRenderPass();
-        cmd.end();
+    auto vkCommand::endCommandBuf() -> void {
+        mActiveCommandBuffer.endRenderPass();
+        mActiveCommandBuffer.end();
     }
 
 

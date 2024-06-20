@@ -11,4 +11,4 @@ target_include_directories(imgui PUBLIC
         ../../external
 )
 
-target_link_libraries(imgui "Vulkan::Vulkan")
+target_link_libraries(imgui "Vulkan::Vulkan" dwmapi)

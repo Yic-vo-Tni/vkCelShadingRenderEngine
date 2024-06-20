@@ -7,16 +7,12 @@
 
 namespace tt{
 
-    enum class EngineFlow{
-        eRhi, ePhysical, eGameLogical
+    enum class RenderTarget_s{
+       eImGuiWindow, eMainWindow
     };
 
-    enum class RebuildSwapchain{
-        eSwapchainRebuild, eFrameBuffersRebuild
-    };
-
-    enum class Window{
-        eImGui, eRhi
+    enum class MainWindow{
+        eBackground, eSkybox, eModel
     };
 
 

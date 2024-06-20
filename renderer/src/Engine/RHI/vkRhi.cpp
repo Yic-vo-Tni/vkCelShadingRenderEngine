@@ -9,7 +9,6 @@ namespace yic {
     vkRhi::vkRhi() {
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelF{};
         vkWindow::get();
-        vkWindow::createOverlayWindow();
         vkInit::get(std::make_shared<vkInitCreateInfo>()
                             ->addInstanceLayers("VK_LAYER_KHRONOS_validation")
                             ->addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
@@ -20,46 +19,65 @@ namespace yic {
                             ->setQueuesPriority(std::vector<float>{1.f, 0.9f})
         );
 
+        auto ct = EventBus::Get::vkSetupContext();
         // ImGui Render Pass
         {
-            mImGuiSwapchain = std::make_unique<vkSwapchain>(
-                    EventBus::Get::vkRenderContext().window_v(),
-                    EventBus::Get::vkSetupContext().queue_imGuiGraphics_v(),
-                    EventBus::Get::vkSetupContext().qIndex_imGuiGraphics_v());
-            mCommand = std::make_unique<vkCommand>();
+            auto id = et::vkRenderContext::id::imguiRender;
+            auto queue = ct.queue_imGuiGraphics_v();
+            auto qIndex = ct.qIndex_imGuiGraphics_v();
 
-            mImGui = std::make_unique<vkImGui>();
+            mImGuiSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
+            mImGuiCommand = std::make_unique<vkCommand>(id, qIndex);
+            mImGui = std::make_unique<vkImGui>(id, queue, qIndex);
 
-            TaskBus::registerTask(tt::EngineFlow::eRhi, [this] { run(); });
+            TaskBus::registerTask(tt::RenderTarget_s::eImGuiWindow, [this] {
+                ImGuiFrameLoop();
+            });
         }
 
-        // Main Render Pass
+//        // Main Render Pass
 //        {
-//            mSwapchain = std::make_unique<vkSwapchain>(
-//                    std::get<HWND>(EventBus::Get::vkWindowContext(et::WindowContext::id::mainRender).window.value()),
-//                    EventBus::Get::vkDeviceContext().queueFamily->getMainGraphicsQueue(),
-//                    EventBus::Get::vkDeviceContext().queueFamily->getMainGraphicsFamilyIndex()
-//            );
+//            auto id = et::vkRenderContext::id::mainRender;
+//            auto queue = ct.queue_mainGraphics_v();
+//            auto qIndex = ct.qIndex_mainGraphics_v();
+//
+//            mSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
+//            mCommand = std::make_unique<vkCommand>(id, qIndex);
+//            mTest = std::make_unique<vkImGui>(id, queue, qIndex);
+//
+//            TaskBus::registerTask(tt::RenderTarget_s::eMainWindow, [this]{
+//                MainFrameLoop();
+//            });
 //        }
     }
 
     vkRhi::~vkRhi() {
+        EventBus::Get::vkSetupContext().queue_mainGraphics_v().waitIdle();
         EventBus::Get::vkSetupContext().queue_imGuiGraphics_v().waitIdle();
         EventBus::Get::vkSetupContext().device_v().waitIdle();
     }
 
-    bool vkRhi::run() {
+    bool vkRhi::ImGuiFrameLoop() {
 
         mImGuiSwapchain->updateEveryFrame();
-        auto cmd = mCommand->beginCommandBuf();
+        mImGuiCommand->beginCommandBuf();
 
-        mImGui->beginRenderImGui();
-        mImGui->endRenderImGui(cmd);
+        mImGui->render();
 
-        mCommand->endCommandBuf(cmd);
-        std::vector<vk::CommandBuffer> cmds{cmd};
-        mImGuiSwapchain->submitFrame(cmds);
+        mImGuiCommand->endCommandBuf();
+        mImGuiSwapchain->submitFrame();
 
+        return true;
+    }
+
+    auto vkRhi::MainFrameLoop() -> bool {
+        mSwapchain->updateEveryFrame();
+        mCommand->beginCommandBuf();
+
+        mTest->render();
+
+        mCommand->endCommandBuf();
+        mSwapchain->submitFrame();
 
         return true;
     }

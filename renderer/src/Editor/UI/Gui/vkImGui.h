@@ -11,13 +11,18 @@ namespace yic {
 
     class vkImGui {
     public:
-        vkImGui();
+        vkImGui(std::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex);
         ~vkImGui();
 
-        auto beginRenderImGui() -> void;
-        auto endRenderImGui(const vk::CommandBuffer& cmd) -> void;
+        auto render() -> void;
 
     private:
+        auto callback() -> void;
+    private:
+        std::string mId{};
+        uint32_t mQueueIndex{};
+        vk::Queue mQueue{};
+        GLFWwindow* mWindow{};
         vk::DescriptorPool mDescriptorPool{};
 
         bool mShowDemo{true};

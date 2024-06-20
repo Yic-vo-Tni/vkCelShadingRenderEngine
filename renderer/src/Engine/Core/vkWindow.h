@@ -12,6 +12,14 @@
 namespace yic {
 
     class vkWindow : public nonCopyable{
+        struct Config{
+            bool resizable = {true};
+            bool transparentFramebuffer = true;
+            bool visible = true;
+            bool decorated = true;
+            bool focused = true;
+            bool maximized = false;
+        };
     public:
         vkGet auto get = [](const int& w = 1600, const int& h = 1200){ return Singleton<vkWindow>::get(w, h);};
 
@@ -19,20 +27,16 @@ namespace yic {
         ~vkWindow() = default;
 
         static bool run();
-        static auto createOverlayWindow() -> void;
 
         [[nodiscard]] inline static auto GetWindow()  { return get()->mWindow.get();}
 
     private:
         auto createWindow() -> std::shared_ptr<GLFWwindow>;
-        [[nodiscard]] static auto createOverlayWindow(const char* className, HINSTANCE hInstance, int width, int height, HWND parent) ->  HWND ;
-        static auto registerWindowClass(const char* className, HINSTANCE hInstance) -> void;
     private:
         int mWidth{}, mHeight{};
         std::string mName{"Yicvot"};
 
         std::shared_ptr<GLFWwindow> mWindow;
-        HWND mHwndOverlayWindow{};
     };
 
 } // yic

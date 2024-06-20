@@ -7,55 +7,10 @@
 namespace yic {
 
     vkFrameRender::vkFrameRender() : mDevice(EventBus::Get::vkSetupContext().device_v()) {
-        createImguiFrameRenderPass();
+
     }
 
     vkFrameRender::~vkFrameRender() {
-        mDevice.destroy(EventBus::Get::vkRenderContext().renderPass_v());
-        auto frameBuffers = EventBus::Get::vkRenderContext().framebuffers_v();
-        for(auto& fb : frameBuffers){
-            mDevice.destroy(fb);
-        }
-    }
-
-    auto vkFrameRender::createImguiFrameRenderPass() -> void {
-        std::vector<vk::AttachmentReference> attachRef{{0, vk::ImageLayout::eColorAttachmentOptimal}};
-        auto rp = createRenderPass(
-                {{{},
-                  EventBus::Get::vkRenderContext().surfaceFormat_v(), vk::SampleCountFlagBits::e1,
-                  vk::AttachmentLoadOp::eClear,
-                  vk::AttachmentStoreOp::eStore,
-                  vk::AttachmentLoadOp::eDontCare,
-                  vk::AttachmentStoreOp::eDontCare,
-                  vk::ImageLayout::eUndefined,
-                  vk::ImageLayout::ePresentSrcKHR},},
-                {{
-                         {}, vk::PipelineBindPoint::eGraphics, {},
-                         attachRef[0], {}}},
-                {}
-        );
-
-        auto createFrameBuf = [&, rp]{
-            std::vector<std::vector<vk::ImageView>> attaches{};
-            auto frameEntries = EventBus::Get::vkRenderContext().frameEntries_v();
-            for (const auto& view: frameEntries) {
-                std::vector<vk::ImageView> attach{view.imageView};
-                attaches.push_back(attach);
-            }
-            auto fb = createFrameBuffer(rp, EventBus::Get::vkRenderContext().extent_v(), attaches);
-
-            EventBus::update(et::vkRenderContext{.renderPass = rp, .framebuffers = fb});
-        };
-        createFrameBuf();
-
-        TaskBus::registerTask(tt::RebuildSwapchain::eFrameBuffersRebuild, [=, this]{
-            //auto fb = EventBus::Get::vkFrameRenderContext(et::vkFrameRenderContext::id::imguiRender).framebuffers.value();
-            auto fb = EventBus::Get::vkRenderContext().framebuffers_v();
-            for(const auto& f : fb){
-                mDevice.destroy(f);
-            }
-            createFrameBuf();
-        });
 
     }
 

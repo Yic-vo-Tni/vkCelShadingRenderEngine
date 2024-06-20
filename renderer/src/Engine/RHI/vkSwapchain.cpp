@@ -6,9 +6,10 @@
 
 namespace yic {
 
-    vkSwapchain::vkSwapchain(const std::variant<GLFWwindow*, HWND>& window,
-                             vk::Queue graphicsQueue, const uint32_t& queueFamilyIndex, vk::Format format) :
-            mWindow(window),
+    vkSwapchain::vkSwapchain(const std::string &id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex,
+                             vk::Format format) :
+            mId(id),
+            mWindow(EventBus::Get::vkRenderContext(id).window_v()),
             mInstance(EventBus::Get::vkSetupContext().instance_v()),
             mDevice(EventBus::Get::vkSetupContext().device_v()),
             mPhysicalDevice(EventBus::Get::vkSetupContext().physicalDevice_v()),
@@ -28,7 +29,7 @@ namespace yic {
                 .surfaceFormat = mSurfaceFormat,
                 .renderPass = mRenderPass,
                 .framebuffers = mFramebuffers
-        });
+        }, mId);
     }
 
     vkSwapchain::~vkSwapchain() {
@@ -43,31 +44,16 @@ namespace yic {
     }
 
     auto vkSwapchain::createSurface() -> vk::SurfaceKHR {
-        auto surface = [this](auto&& arg){
-            using T = std::decay_t<decltype(arg)>;
-            VkSurfaceKHR tempSurface{};
-            if constexpr (std::is_same_v<T, GLFWwindow*>){
-                if(glfwCreateWindowSurface(mInstance, arg, nullptr, &tempSurface) == VK_SUCCESS){
-                    return tempSurface;
-                } else {
-                    throw std::runtime_error("failed to create glfw surface");
-                }
-            }
-            if constexpr (std::is_same_v<T, HWND>){
-                auto createInfo = VkWin32SurfaceCreateInfoKHR();
-                createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-                createInfo.hwnd = arg;
-                createInfo.hinstance = GetModuleHandle(nullptr);
-                if (vkCreateWin32SurfaceKHR(mInstance, &createInfo, nullptr, &tempSurface) == VK_SUCCESS){
-                    return tempSurface;
-                } else{
-                    throw std::runtime_error("failed to create hwnd surface");
-                }
-            }
-        };
+        VkSurfaceKHR tempSurface{};
 
-        Rvk_y("create surface") = [&]{
-            return std::visit(surface, mWindow);
+        if (glfwCreateWindowSurface(mInstance, mWindow, nullptr, &tempSurface) == VK_SUCCESS) {
+            return tempSurface;
+        } else {
+            throw std::runtime_error("failed to create glfw surface");
+        }
+
+        Rvk_y("create surface") = [&] {
+            return tempSurface;
         };
     }
 
@@ -83,9 +69,10 @@ namespace yic {
     auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
         auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
         auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
-        auto extent = EventBus::Get::vkRenderContext().extent_v();
+        auto extent = EventBus::Get::vkRenderContext(mId).extent_v();
 
         mExtent = capabilities.currentExtent.width == (uint32_t) - 1 ? extent : capabilities.currentExtent;
+        EventBus::update(et::vkRenderContext{.currentExtent = mExtent}, mId);
         auto imageCount = std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount,
                                  capabilities.maxImageCount ? capabilities.maxImageCount : UINT32_MAX);
 
@@ -152,7 +139,7 @@ namespace yic {
     auto vkSwapchain::updateEveryFrame() -> void {
         EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
             mUpdateSize.store(true);
-        });
+        }, mId);
         if (mUpdateSize.load()){
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
@@ -160,6 +147,12 @@ namespace yic {
             mCurrentFrame = 0;
             mUpdateSize.store(false);
         }
+//        EventBus::subscribeDeferredAuto([&](const et::vkRenderContext& vkRenderContext){
+//            mDevice.waitIdle();
+//            mGraphicsQueue.waitIdle();
+//            recreateSwapchain();
+//            mCurrentFrame = 0;
+//        }, mId);
 
         if (!acquire())
             throw std::runtime_error("failed to acquire swap chain image");
@@ -168,10 +161,11 @@ namespace yic {
             throw std::runtime_error("failed to wait fence\n");
     }
 
-    auto vkSwapchain::submitFrame(std::vector<vk::CommandBuffer>& cmd) -> void {
+    auto vkSwapchain::submitFrame() -> void {
         mDevice.resetFences(mFences[mImageIndex]);
 
         auto waitStage = std::vector<vk::PipelineStageFlags>{vk::PipelineStageFlagBits::eColorAttachmentOutput};
+        auto cmd = EventBus::Get::vkRenderContext(mId).cmd_v();
 
         auto i = mCurrentFrame % mImageCount;
         vk::SubmitInfo info{mFrameEntries[i].readSemaphore, waitStage, cmd, mFrameEntries[i].writtenSemaphore};
@@ -197,7 +191,7 @@ namespace yic {
         switch (rv.result) {
             case vk::Result::eSuccess:
                 mImageIndex = rv.value;
-                EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex});
+                EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex}, mId);
                 return true;
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR:
@@ -221,7 +215,7 @@ namespace yic {
         mFrameEntries = createFrameEntries();
         mFramebuffers = createFrameBuffers();
 
-        EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .framebuffers = mFramebuffers});
+        EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .framebuffers = mFramebuffers}, mId);
     }
 
     auto vkSwapchain::createRenderPass() -> vk::RenderPass {
