@@ -97,11 +97,16 @@ namespace yic {
             static auto glScrollInput(default_parm_id){
                 return getState<et::glScrollInput>(id);
             }
+
+            static auto test(default_parm_id){
+                return getState<et::test>(id);
+            }
         };
 
         struct GetRef_scoped{
             static auto& test(default_parm_id){
-                return getStateRef<et::test>(id).get();
+//                return getStateRef<et::test>(id).get();
+                return getStateRef_f<et::test>(id);
             }
         };
 
@@ -196,6 +201,11 @@ namespace yic {
                 }
             }
             throw std::runtime_error("state not found for the requested type.");
+        }
+
+        template<typename T>
+        static T& getStateRef_f(const std::string& id = {}){
+            return getStateRef<T>(id).get();
         }
 
         template<typename T>

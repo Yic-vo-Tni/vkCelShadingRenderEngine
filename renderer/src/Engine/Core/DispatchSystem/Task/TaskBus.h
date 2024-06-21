@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_TASKBUS_H
 
 #include <utility>
-
+#include "Engine/Utils/Log.h"
 #include "Engine/Core/DispatchSystem/Task/TaskTypes.h"
 
 namespace yic {
@@ -107,6 +107,8 @@ namespace yic {
             for(auto& p : inst->mShaderUpdatePaths){
                 if (inst->mShaderTasks.find(p) != inst->mShaderTasks.end()) {
                     inst->mGroup.run_and_wait(inst->mShaderTasks[p]);
+                    auto fileName = std::filesystem::path(p).filename().string();
+                    vkError("Shader hot reload successfully for shader: " + fileName);
                 }
             }
 

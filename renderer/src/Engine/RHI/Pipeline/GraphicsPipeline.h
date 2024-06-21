@@ -17,6 +17,12 @@ namespace yic {
         };
     public:
         Graphics(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass);
+        ~Graphics(){
+            for(auto& m : shaderModules){
+                mDevice.destroy(m.second.shaderModule);
+            }
+            mDevice.destroy(mPipeline);
+        }
 
         Graphics& create(){
             updateState();
@@ -51,16 +57,19 @@ namespace yic {
         }
 
         Graphics& addShader(const std::string& path, vk::ShaderStageFlagBits flags){
-            auto t = [&]{
+            auto t = [this, path, flags]{
                 std::vector<char> v;
                 std::ranges::copy(fo::loadFile(path), std::back_inserter(v));
+
+                if (shaderModules[path].shaderModule)
+                    mDevice.destroy(shaderModules[path].shaderModule);
 
                 shaderModules[path].shaderModule = mDevice.createShaderModule(vk::ShaderModuleCreateInfo().setCodeSize(sizeof (char) * v.size())
                                                                                       .setPCode(reinterpret_cast<const uint32_t*>(v.data())));
                 shaderModules[path].flags = flags;
             };
 
-            TaskBus::registerShaderFileTask(path, [&]{
+            TaskBus::registerShaderFileTask(path, [this, t]{
                 t();
                 createPipeline();
             });
@@ -79,33 +88,17 @@ namespace yic {
         }
 
         auto createPipeline() -> void{
+            if (mPipeline){
+                mDevice.waitIdle();
+                mDevice.destroy(mPipeline);
+            }
+
             createShaderStage();
             createInfo.setStages(shaderStages);
             mPipeline = vkCreate("create graphics pipeline") = [&]{
                 return mDevice.createGraphicsPipeline({}, createInfo).value;
             };
         }
-
-//        vk::PipelineShaderStageCreateInfo& addShader(const std::string& code, vk::ShaderStageFlagBits flags, const char* entryPoint = "main"){
-//            std::vector<char> v;
-//            std::copy(code.begin(), code.end(), std::back_inserter(v));
-//            return addShader(v, flags, entryPoint);
-//        };
-//        template<typename T>
-//        vk::PipelineShaderStageCreateInfo& addShader(const std::vector<T>& code, vk::ShaderStageFlagBits flags, const char* entryPoint = "main"){
-//            vk::ShaderModuleCreateInfo shaderModuleCreateInfo{{}, sizeof(T) * code.size(), reinterpret_cast<const uint32_t*>(code.data())};
-//
-//            vk::ShaderModule shaderModule{mDevice.createShaderModule(shaderModuleCreateInfo)};
-//            temporaryModules.push_back(shaderModule);
-//
-//            return addShader(shaderModule, flags, entryPoint);
-//        };
-//        vk::PipelineShaderStageCreateInfo& addShader(vk::ShaderModule shaderModule, vk::ShaderStageFlagBits flags, const char* entryPoint = "main"){
-//            vk::PipelineShaderStageCreateInfo shaderStage{{}, flags, shaderModule, entryPoint};
-//            shaderStages.push_back(shaderStage);
-//
-//            return shaderStages.back();
-//        };
 
         [[nodiscard]] inline auto& Get() const { return mPipeline;}
 

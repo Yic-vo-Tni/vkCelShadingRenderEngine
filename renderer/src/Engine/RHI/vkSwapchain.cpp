@@ -9,10 +9,10 @@ namespace yic {
     vkSwapchain::vkSwapchain(const std::string &id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex,
                              vk::Format format) :
             mId(id),
-            mWindow(EventBus::Get::vkRenderContext(id).window_v()),
-            mInstance(EventBus::Get::vkSetupContext().instance_v()),
-            mDevice(EventBus::Get::vkSetupContext().device_v()),
-            mPhysicalDevice(EventBus::Get::vkSetupContext().physicalDevice_v()),
+            mWindow(EventBus::Get::vkRenderContext(id).window_ref()),
+            mInstance(EventBus::Get::vkSetupContext().instance_ref()),
+            mDevice(EventBus::Get::vkSetupContext().device_ref()),
+            mPhysicalDevice(EventBus::Get::vkSetupContext().physicalDevice_ref()),
             mSurface(createSurface()),
             mGraphicsQueue(graphicsQueue),
             mGraphicsQueueFamilyIndex(queueFamilyIndex),
@@ -165,7 +165,7 @@ namespace yic {
         mDevice.resetFences(mFences[mImageIndex]);
 
         auto waitStage = std::vector<vk::PipelineStageFlags>{vk::PipelineStageFlagBits::eColorAttachmentOutput};
-        auto cmd = EventBus::Get::vkRenderContext(mId).cmd_v();
+        auto cmd = EventBus::Get::vkRenderContext(mId).cmd_ref();
 
         auto i = mCurrentFrame % mImageCount;
         vk::SubmitInfo info{mFrameEntries[i].readSemaphore, waitStage, cmd, mFrameEntries[i].writtenSemaphore};

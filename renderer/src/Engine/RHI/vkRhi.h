@@ -10,6 +10,7 @@
 #include "Engine/RHI/vkSwapchain.h"
 #include "Engine/RHI/vkFrameRender.h"
 #include "Engine/RHI/vkCommand.h"
+#include "Engine/RHI/vkPipeline.h"
 
 #include "Editor/UI/Gui/vkImGui.h"
 
@@ -26,6 +27,9 @@ namespace yic {
         std::unique_ptr<vkSwapchain> mImGuiSwapchain{};
         std::unique_ptr<vkCommand> mImGuiCommand{};
         std::unique_ptr<vkImGui> mImGui{};
+
+        vk::PipelineLayout layout;
+        std::unique_ptr<vkPipeline<Graphics>> pipeline;
     };
 
 } // yic

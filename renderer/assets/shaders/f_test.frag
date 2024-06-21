@@ -1,5 +1,8 @@
 #version 450
-layout(location = 0) out vec4 color;
+layout(location = 0) in vec3 fragColor;
+
+layout(location = 0) out vec4 outColor;
+
 void main() {
-    color = vec4(1.0, .0, .0, 1.0);  // 初始为红色
+    outColor = vec4(fragColor, 1.2f);
 }

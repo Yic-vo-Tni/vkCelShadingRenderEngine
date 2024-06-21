@@ -9,9 +9,9 @@ namespace yic {
     vkCommand::vkCommand(const std::string &id, const uint32_t &qIndex)
             : mId(id),
               mQueueIndex(qIndex),
-              mDevice(EventBus::Get::vkSetupContext().device_v()),
-              mRenderPass(EventBus::Get::vkRenderContext(id).renderPass_v()),
-              mFrameBuffers(EventBus::Get::vkRenderContext(id).framebuffers_v()),
+              mDevice(EventBus::Get::vkSetupContext().device_ref()),
+              mRenderPass(EventBus::Get::vkRenderContext(id).renderPass_ref()),
+              mFrameBuffers(EventBus::Get::vkRenderContext(id).framebuffers_ref()),
               mCommandPool(createCommandPool()),
               mCommandBuffers(createCommandBuffers()) {
 
@@ -42,7 +42,7 @@ namespace yic {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
         auto imageIndex = EventBus::Get::vkRenderContext(mId).activeImageIndex_v();
-        auto framebuffers = EventBus::Get::vkRenderContext(mId).framebuffers_v();
+        auto framebuffers = EventBus::Get::vkRenderContext(mId).framebuffers_ref();
         auto extent = EventBus::Get::vkRenderContext(mId).currentExtent_v();
         mActiveCommandBuffer = mCommandBuffers[imageIndex];
 
