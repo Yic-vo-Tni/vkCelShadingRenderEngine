@@ -70,6 +70,14 @@ namespace et {
         }
     };
 
+    struct vkPipeline{
+        struct_y(vkPipeline,
+                 (opt<std::unordered_map<std::string, vk::Pipeline>>, graphics),
+                 (opt<std::unordered_map<std::string, vk::Pipeline>>, compute),
+                 (opt<std::unordered_map<std::string, vk::Pipeline>>, raytracing),
+                 (opt<vk::DescriptorSet>, descriptorSet));
+    };
+
 
     struct vkRenderContext {
         struct_y(vkRenderContext,
@@ -90,7 +98,10 @@ namespace et {
 
         struct id{
             static constexpr const char* imguiRender{"imguiRender"};
-            static constexpr const char* mainRender{"mainRender"};
+        };
+
+        struct id_renderFrame{
+
         };
 
         [[nodiscard]] const auto& window_v() const{
@@ -188,6 +199,16 @@ namespace et {
             return it->second;
         }
 
+    };
+
+
+    struct test{
+        struct_y(test,
+                 (opt<int>, x));
+
+        auto& x_v() {
+            return x.value();
+        }
     };
 
 

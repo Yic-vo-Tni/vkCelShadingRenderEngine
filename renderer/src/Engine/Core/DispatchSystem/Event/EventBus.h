@@ -7,29 +7,26 @@
 
 #include "EventTypes.h"
 #include "Event.h"
-#include "Engine/Utils/ThreadPool.h"
 #include "Engine/Utils/TypeConcepts.h"
 
 namespace yic {
 
     class EventBus {
+        struct EventDate{
+            std::any states;
+            mutable tbb::speculative_spin_rw_mutex mutex_speculative;
+            mutable tbb::queuing_rw_mutex mutex_queuing;
+            std::atomic<bool> deferred;
+            std::vector<std::function<void(const std::any&)>> handlers;
+        };
+
     public:
-        vkGet auto get = [](size_t nums = 3){ return Singleton<EventBus>::get(nums);};
+        vkGet auto get = [](){ return Singleton<EventBus>::get();};
 
         template<typename Event>
         using EventHandler = std::function<void(const Event&)>;
 
-        explicit EventBus(size_t numThreads) : mThreadPool(numThreads){};
-
-        template<typename Event>
-        static void subscribe(const EventHandler<Event>& handler, const std::string& id = {}){
-            auto type = std::type_index(typeid(Event));
-            auto inst = get();
-
-            inst->mHandlers[type][id].emplace_back([handler](const std::any& event){
-                handler(std::any_cast<const Event&>(event));
-            });
-        }
+        explicit EventBus() {};
 
         template<typename Handler>
         static void subscribeAuto(Handler&& handler, const std::string& id = {}){
@@ -37,17 +34,6 @@ namespace yic {
             subscribe<EventType>(std::forward<Handler>(handler), id);
         }
 
-        template<typename Event>
-        static void subscribeDeferred(const EventHandler<Event>& handler, const std::string& id = {}){
-            auto inst = get();
-            auto type = std::type_index(typeid(Event));
-
-            if (inst->mDeferred[type][id] && inst->mState[type].find(id) != inst->mState[type].end()){
-                auto& event = std::any_cast<const Event&>(inst->mState[type][id]);
-                handler(event);
-                inst->mDeferred[type][id].store(false);
-            }
-        }
 
         template<typename Handler>
         static void subscribeDeferredAuto(Handler&& handler, const std::string& id = {}){
@@ -64,44 +50,30 @@ namespace yic {
             }
         }
 
-        template<typename Event>
-        static void publish_impl(const Event& event, const std::string& id = {}){
-            auto inst = get();
-            auto type = std::type_index(typeid(Event));
-
-            update(event, id);
-
-            auto& handlers = inst->mHandlers[type][id];
-            auto& deferred = inst->mDeferred[type][id];
-            deferred.store(true);
-            for (auto& handler : handlers) {
-                inst->mGroup.run([handler, eventCaptured = std::any(event)](){
-                    handler(eventCaptured);
-                });
-                inst->mGroup.wait();
-            }
-        }
-
 
         template<typename Event>
         static void update(const Event& event, const std::string& id = {}){
             auto inst = get();
             auto type = std::type_index(typeid(event));
 
-            std::any &storedEvent = inst->mState[type][id];
+            auto &eventDate = inst->mEventDates[type][id];
+            {
+                tbb::speculative_spin_rw_mutex::scoped_lock lock(eventDate.mutex_speculative, true);
+                auto &storedEvent = eventDate.states;
 
-            if (!storedEvent.has_value()) {
-                storedEvent = event;
-            } else {
-                inst->updateOptional(std::any_cast<Event &>(storedEvent), event);
+                if (!storedEvent.has_value()) {
+                    storedEvent = event;
+                } else {
+                    inst->updateOptional(std::any_cast<Event &>(storedEvent), event);
+                }
             }
 
         }
 
-        struct Get {
 #define default_parm_id const std::string& id = {}
 #define parm_id const std::string& id
 
+        struct Get {
             static auto vkSetupContext(default_parm_id) {
                 return getState<et::vkSetupContext>(id);
             }
@@ -125,10 +97,16 @@ namespace yic {
             static auto glScrollInput(default_parm_id){
                 return getState<et::glScrollInput>(id);
             }
+        };
+
+        struct GetRef_scoped{
+            static auto& test(default_parm_id){
+                return getStateRef<et::test>(id).get();
+            }
+        };
 
 #undef default_parm_id
 #undef parm_id
-        };
 
 
     private:
@@ -185,27 +163,82 @@ namespace yic {
             }
         }
 
+        template<typename Event>
+        static void publish_impl(const Event& event, const std::string& id = {}){
+            auto inst = get();
+            auto type = std::type_index(typeid(Event));
+
+            update(event, id);
+
+            auto& handlers = inst->mEventDates[type][id].handlers;
+            auto& deferred = inst->mEventDates[type][id].deferred;
+            deferred.store(true);
+            for (auto& handler : handlers) {
+                inst->mGroup.run([handler, eventCaptured = std::any(event)](){
+                    handler(eventCaptured);
+                });
+                inst->mGroup.wait();
+            }
+        }
+
         template<typename T>
         static T getState(const std::string& id = {}) {
             auto inst = get();
 
-            auto typeIt = inst->mState.find(std::type_index(typeid(T)));
-            if(typeIt != inst->mState.end()){
+            auto typeIt = inst->mEventDates.find(std::type_index(typeid(T)));
+            if(typeIt != inst->mEventDates.end()){
                 auto& idMap = typeIt->second;
                 auto idIt = idMap.find(id);
                 if (idIt != idMap.end()){
-                    return std::any_cast<T>(idIt->second);
+                    const auto& eventDate = idIt->second;
+                    tbb::speculative_spin_rw_mutex::scoped_lock lock(eventDate.mutex_speculative, false);
+                    return std::any_cast<T>(eventDate.states);
                 }
             }
             throw std::runtime_error("state not found for the requested type.");
         }
 
+        template<typename T>
+        static LockedState<T> getStateRef(const std::string& id = {}) {
+            auto inst = get();
+            auto typeIt = inst->mEventDates.find(std::type_index(typeid(T)));
+            if (typeIt != inst->mEventDates.end()) {
+                auto& idMap = typeIt->second;
+                auto idIt = idMap.find(id);
+                if (idIt != idMap.end()) {
+                    auto& eventDate = idIt->second;
+                    return LockedState<T>{std::any_cast<T&>(eventDate.states), eventDate.mutex_queuing};
+                }
+            }
+            throw std::runtime_error("State not found for the requested type");
+        }
 
-        tbb::concurrent_unordered_map<std::type_index, std::unordered_map<std::string, std::vector<std::function<void(const std::any&)>>>> mHandlers;
-        tbb::concurrent_unordered_map<std::type_index, std::unordered_map<std::string, std::any>> mState;
-        tbb::concurrent_unordered_map<std::type_index, std::unordered_map<std::string, std::atomic<bool>>> mDeferred;
+        template<typename Event>
+        static void subscribe(const EventHandler<Event>& handler, const std::string& id = {}){
+            auto type = std::type_index(typeid(Event));
+            auto inst = get();
+
+            inst->mEventDates[type][id].handlers.emplace_back([handler](const std::any& event){
+                handler(std::any_cast<const Event&>(event));
+            });
+        }
+
+        template<typename Event>
+        static void subscribeDeferred(const EventHandler<Event>& handler, const std::string& id = {}){
+            auto inst = get();
+            auto type = std::type_index(typeid(Event));
+
+            if (inst->mEventDates[type][id].deferred && inst->mEventDates[type].find(id) != inst->mEventDates[type].end()){
+                auto& event = std::any_cast<const Event&>(inst->mEventDates[type][id].states);
+                handler(event);
+                inst->mEventDates[type][id].deferred.store(false);
+            }
+        }
+
+
+    private:
         tbb::task_group mGroup;
-        ThreadPool mThreadPool;
+        tbb::concurrent_unordered_map<std::type_index, tbb::concurrent_unordered_map<std::string, EventDate>> mEventDates;
     };
 
 } // yic

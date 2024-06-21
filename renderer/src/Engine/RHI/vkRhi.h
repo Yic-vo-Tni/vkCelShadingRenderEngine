@@ -21,16 +21,11 @@ namespace yic {
         ~vkRhi();
 
         auto ImGuiFrameLoop() -> bool;
-        auto MainFrameLoop() -> bool;
 
     private:
         std::unique_ptr<vkSwapchain> mImGuiSwapchain{};
         std::unique_ptr<vkCommand> mImGuiCommand{};
         std::unique_ptr<vkImGui> mImGui{};
-
-        std::unique_ptr<vkSwapchain> mSwapchain{};
-        std::unique_ptr<vkCommand> mCommand{};
-        std::unique_ptr<vkImGui> mTest{};
     };
 
 } // yic

@@ -9,6 +9,8 @@
 #include "winsock2.h"
 #include "windows.h"
 
+#include "intrin.h"
+
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
@@ -62,7 +64,10 @@
 
 #include "oneapi/tbb/task_group.h"
 #include "oneapi/tbb/parallel_invoke.h"
+#include "oneapi/tbb/concurrent_map.h"
 #include "oneapi/tbb/concurrent_unordered_map.h"
+#include "oneapi/tbb/spin_rw_mutex.h"
+#include "oneapi/tbb/queuing_rw_mutex.h"
 
 #ifdef NDEBUG
 const bool enableDebug = false;

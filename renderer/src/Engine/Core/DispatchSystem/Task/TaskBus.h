@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "Engine/Core/DispatchSystem/Task/TaskTypes.h"
-#include "Engine/Utils/ThreadPool.h"
 
 namespace yic {
 
@@ -17,14 +16,13 @@ namespace yic {
 
         task specialTask = [](){};
     public:
-        vkGet auto get = [](size_t nums = 3){ return Singleton<TaskBus>::get(nums);};
+        vkGet auto get = [](){ return Singleton<TaskBus>::get();};
 
-        explicit TaskBus(size_t nums) : mThreadPool(nums){};
+        explicit TaskBus() {};
 
         template<typename EnumType>
         static void registerTask(EnumType type, task t, const std::string& id = {}){
             auto inst = get();
-            std::lock_guard<std::mutex> lock(inst->mMutex);
             auto typeIndex = std::type_index(typeid(type));
             inst->mTasks[typeIndex][id][static_cast<int>(type)].push_back(std::move(t));
         }
@@ -33,10 +31,6 @@ namespace yic {
         static void executeTask(const std::string& id = {}, const bool& parallel = false){
             executeTaskSpecific_wrapper<EnumType>(std::nullopt, id, parallel);
         }
-//        template<typename EnumType>
-//        static void executeTask(const bool& parallel = false){
-//            executeTaskSpecific<EnumType>(std::nullopt, {}, parallel);
-//        }
 
         template<typename EnumType>
         static void executeTaskSpecific(EnumType type, const std::string& id = {}, const bool& parallel = false){
@@ -54,7 +48,6 @@ namespace yic {
 
             std::vector<std::pair<task, bool>> taskToExecute{};
             {
-                std::lock_guard<std::mutex> lock(inst->mMutex);
                 if (inst->mTasks.find(typeIndex) != inst->mTasks.end()){
                     for(auto& [key, taskList] : inst->mTasks[typeIndex][id]){
                         bool execute = true;
@@ -113,18 +106,19 @@ namespace yic {
 
             for(auto& p : inst->mShaderUpdatePaths){
                 if (inst->mShaderTasks.find(p) != inst->mShaderTasks.end()) {
-                    inst->mThreadPool.enqueue(inst->mShaderTasks[p]);
+                    inst->mGroup.run_and_wait(inst->mShaderTasks[p]);
                 }
             }
+
+            inst->mShaderUpdatePaths.clear();
         }
 
     private:
-        std::unordered_map<std::type_index, std::unordered_map<std::string, std::map<int, std::vector<task>>>> mTasks;
-        //std::unordered_map<std::type_index, std::map<int, std::vector<task>>> mTasks;
+        tbb::task_group mGroup{};
+        tbb::concurrent_unordered_map<std::type_index, tbb::concurrent_unordered_map<std::string, tbb::concurrent_map<int, std::vector<task>>>> mTasks;
         std::unordered_map<std::string, task> mShaderTasks;
         std::vector<std::string> mShaderUpdatePaths;
-        std::mutex mMutex, mShaderMutex;
-        ThreadPool mThreadPool;
+        std::mutex mShaderMutex;
 
     };
 

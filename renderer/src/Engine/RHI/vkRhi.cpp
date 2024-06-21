@@ -35,20 +35,7 @@ namespace yic {
             });
         }
 
-//        // Main Render Pass
-//        {
-//            auto id = et::vkRenderContext::id::mainRender;
-//            auto queue = ct.queue_mainGraphics_v();
-//            auto qIndex = ct.qIndex_mainGraphics_v();
-//
-//            mSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
-//            mCommand = std::make_unique<vkCommand>(id, qIndex);
-//            mTest = std::make_unique<vkImGui>(id, queue, qIndex);
-//
-//            TaskBus::registerTask(tt::RenderTarget_s::eMainWindow, [this]{
-//                MainFrameLoop();
-//            });
-//        }
+
     }
 
     vkRhi::~vkRhi() {
@@ -70,17 +57,6 @@ namespace yic {
         return true;
     }
 
-    auto vkRhi::MainFrameLoop() -> bool {
-        mSwapchain->updateEveryFrame();
-        mCommand->beginCommandBuf();
-
-        mTest->render();
-
-        mCommand->endCommandBuf();
-        mSwapchain->submitFrame();
-
-        return true;
-    }
 
 
 

@@ -18,7 +18,7 @@ namespace glfw_callback {
     };
 
     inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {
-        yic::EventBus::publish(et::glKeyInput{key, action, scancode, mods}, "2");
+        yic::EventBus::publish(et::glKeyInput{key, action, scancode, mods});
     };
 
     inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {

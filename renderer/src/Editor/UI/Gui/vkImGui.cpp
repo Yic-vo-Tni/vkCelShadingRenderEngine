@@ -27,16 +27,19 @@ namespace yic {
             return EventBus::Get::vkSetupContext().device_v().createDescriptorPool(pool_info);
         };
 
+        auto ct = EventBus::Get::vkSetupContext();
+        auto rt = EventBus::Get::vkRenderContext(mId);
+
         ImGui_ImplVulkan_InitInfo info{
-                .Instance = EventBus::Get::vkSetupContext().instance_v(),
-                .PhysicalDevice = EventBus::Get::vkSetupContext().physicalDevice_v(),
-                .Device = EventBus::Get::vkSetupContext().device_v(),
+                .Instance = ct.instance_v(),
+                .PhysicalDevice = ct.physicalDevice_v(),
+                .Device = ct.device_v(),
                 .QueueFamily = mQueueIndex,
                 .Queue = mQueue,
                 .DescriptorPool = mDescriptorPool,
-                .RenderPass = EventBus::Get::vkRenderContext(mId).renderPass_v(),
-                .MinImageCount = EventBus::Get::vkRenderContext(mId).imageCount_v(),
-                .ImageCount = EventBus::Get::vkRenderContext(mId).imageCount_v(),
+                .RenderPass = rt.renderPass_v(),
+                .MinImageCount = rt.imageCount_v(),
+                .ImageCount = rt.imageCount_v(),
         };
         ImGui_ImplVulkan_Init(&info);
 
