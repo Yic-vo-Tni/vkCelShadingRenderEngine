@@ -108,7 +108,7 @@ namespace yic {
                 if (inst->mShaderTasks.find(p) != inst->mShaderTasks.end()) {
                     inst->mGroup.run_and_wait(inst->mShaderTasks[p]);
                     auto fileName = std::filesystem::path(p).filename().string();
-                    vkError("Shader hot reload successfully for shader: " + fileName);
+                    vkWarn("Shader hot reload successfully for shader: " + fileName);
                 }
             }
 

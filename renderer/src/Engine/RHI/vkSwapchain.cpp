@@ -30,6 +30,7 @@ namespace yic {
                 .renderPass = mRenderPass,
                 .framebuffers = mFramebuffers
         }, mId);
+
     }
 
     vkSwapchain::~vkSwapchain() {
@@ -51,6 +52,13 @@ namespace yic {
         } else {
             throw std::runtime_error("failed to create glfw surface");
         }
+//        auto createInfo = VkWin32SurfaceCreateInfoKHR();
+//        createInfo.hwnd = mWindow;
+//        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+//        createInfo.hinstance = GetModuleHandle(nullptr);
+//        if (vkCreateWin32SurfaceKHR(mInstance, &createInfo, nullptr, &tempSurface) == VK_SUCCESS){
+//            return tempSurface;
+//        }
 
         Rvk_y("create surface") = [&] {
             return tempSurface;
@@ -109,8 +117,8 @@ namespace yic {
         for(size_t i = 0; i < mImageCount; i++){
             auto& entry = frameEntries[i];
 
-            entry.image = images[i];
-            entry.imageView = mDevice.createImageView(vk::ImageViewCreateInfo{{},
+            entry.frame.image = images[i];
+            entry.frame.imageView = mDevice.createImageView(vk::ImageViewCreateInfo{{},
                                                                               images[i], vk::ImageViewType::e2D,
                                                                               mSurfaceFormat.format,vk::ComponentSwizzle::eIdentity,
                                                                               vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}});
@@ -148,8 +156,8 @@ namespace yic {
             mUpdateSize.store(false);
         }
 //        EventBus::subscribeDeferredAuto([&](const et::vkRenderContext& vkRenderContext){
-//            mDevice.waitIdle();
 //            mGraphicsQueue.waitIdle();
+//            mDevice.waitIdle();
 //            recreateSwapchain();
 //            mCurrentFrame = 0;
 //        }, mId);
@@ -195,9 +203,10 @@ namespace yic {
                 return true;
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR:
-                mDevice.waitIdle();
                 mGraphicsQueue.waitIdle();
+                mDevice.waitIdle();
                 recreateSwapchain();
+                mCurrentFrame = 0;
                 return true;
             default:
                 return false;
@@ -249,7 +258,7 @@ namespace yic {
 
         Rvk_y("create frame buffer") = [&]{
             for(size_t i = 0; i < mFrameEntries.size(); i++){
-                auto view = mFrameEntries[i].imageView;
+                auto view = mFrameEntries[i].frame.imageView;
 
                 auto createInfo = vk::FramebufferCreateInfo().setRenderPass(mRenderPass)
                         .setAttachments(view)
@@ -272,7 +281,7 @@ namespace yic {
         for(auto& f : mFrameEntries){
             mDevice.destroy(f.readSemaphore);
             mDevice.destroy(f.writtenSemaphore);
-            mDevice.destroy(f.imageView);
+            mDevice.destroy(f.frame.imageView);
         }
     }
 

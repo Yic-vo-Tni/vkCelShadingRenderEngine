@@ -1,97 +1,39 @@
 # vkCelShadingRenderEngine
 
-## 简介
+## 内容
 
-之前那个渲染器写的太烂，受不了了，重写
+- **多线程事件总线**：
+    - 全局变量存储更新提取
+    - 多订阅多发布
+    - 延迟订阅、延迟首次执行
+- **多线程任务总线**：
+    - 可以按枚举值顺序执行
+    - 单个枚举值下多个任务可选并行
+    - 支持任务嵌套
+- **事件处理**：
+    - 可执行撤回操作
+- **shader热重载**：
+    - 修改shader文件，自动编译替换，重建管线
+- **内存分配**：
+    - 使用vma库
+- **渲染管理**：
+    - 实时窗口重建
+    - 渲染独立线程
+- **性能优化**：
+    - 渲染帧率锁定120fps
 
-这个项目可以直接clone，然后在CLion里面运行。需要C++23（虽然我不确定是否用到了C++23的特性，但用了C++20，所以至少需要C++20）。
-用了很多lambda表达式，可能不熟悉lambda的阅读会不太舒服。
+## 构建
 
-## 记录
-
-### 2024.5.23
-
-- **多线程事件系统**：目前看起来挺不错的，能支持多发布多订阅。而且调整窗口时能后台独立输出信息。
-  - 通过事件总线的方式做的。
-- **基础输入测试**：搞了个键盘输入测试，现在按键可以只响应一次了，还可以多次撤回。
-
-
-- 这次就好了多，不像上一个enmm当时我为什么傻傻没想到给它加个返回值呢= =
-```c++
-template<typename Func>
-    auto operator=(Func &&func) {
-        try {
-            auto r = func();
-
-            if_debug {
-                switch (mLevel) {
-                    case spdlog::level::info:
-                        vkInfo("{0}, successfully", mDescription);
-                        break;
-                    case spdlog::level::warn:
-                        vkWarn("{0} successfully", mDescription);
-                        break;
-                    case spdlog::level::err:
-                        vkError("{0} successfully", mDescription);
-                        break;
-                    default:
-                        vkTrance("{0} successfully", mDescription);
-                }
-            };
-
-            return r;
-        } catch (const vk::SystemError &e) {
-            if_debug vkError("failed to {0}: {1}", mDescription, e.what());
-            exit(EXIT_FAILURE);
-        }
-    }
-```
-- vkCreate返回创建的UniqueInstance,再也不用用一个临时的vk::instance了，之前忘了给try-catch搞个返回值= =
-```c++
-mInstance([&, appInfo = [&]() {
-                return vk::ApplicationInfo{
-                        "Yic", VK_MAKE_VERSION(1, 0, 0),
-                        "Vot", VK_MAKE_VERSION(1, 0, 0),
-                        VK_MAKE_API_VERSION(0, 1, 3, 0)
-                };
-            }()]() {
-                createInfo->addInstanceExtensions(fn::addRequiredExtensions());
-                fn::checkInstanceSupport(createInfo->mInstanceExtensions, createInfo->mInstanceLayers);
-
-                return vkCreate("create instance") = [&]() {
-                    return vk::createInstanceUnique(
-                            vk::InstanceCreateInfo()
-                                    .setPApplicationInfo(&appInfo)
-                                    .setPEnabledExtensionNames(createInfo->mInstanceExtensions)
-                                    .setPEnabledLayerNames(createInfo->mInstanceLayers)
-                    );
-                };
-            }())
-```
-- 渲染和主窗口各一个线程，这下应该不用像上一个点击窗口会暂停画面了，舒服了
-```c++
-     [&, rhi_thread = [&]() {
-            return std::make_unique<std::thread>([&] {
-                try {
-                    mRhi->run();
-                } catch (const vk::SystemError &e) {
-                    std::cerr << e.what() << "\n";
-                }
-            });
-        }(), window_main_thread = [&]() {
-            return !vkWindow::run();
-        }()
-        ]() {
-            if (!window_main_thread)
-                mRhi->setRunCondition();
-
-            if (rhi_thread->joinable())
-                rhi_thread->join();
-        }();
-```
-
-### 2024.5.23
-
+- 需要Vulkan SDK
+- 需要MinGW，CMake、Git
+- 需要自行下载vma库，boost库的hana和filesystem以及tbb
+    - filesystem和tbb需要自行编译，tbb用的是oneapi文件夹的版本
+    - 开始的时候没打算用CMake的FetchContext功能，之前给我留下了不好映像 ：）
+- 其他库会通过CMake的FetchContext功能自动拉取
+    - 需要注释掉renderer文件夹下CMakeLists的下载操作
+    - 注释完后构建CMake，然后编译
+    - 编译完成后，再取消注释构建编译运行就可以了，会自动下载dll文件
+  
 
 
 

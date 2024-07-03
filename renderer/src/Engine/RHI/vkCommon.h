@@ -116,6 +116,67 @@ namespace fn{
     }
 };
 
+namespace yic{
+    struct vkImageConfig{
+        vk::ImageType imageType = vk::ImageType::e2D;
+        vk::Format format = vk::Format::eR8G8B8A8Unorm;
+        vk::Extent3D extent = {};
+        uint32_t mipLevels = 1;
+        uint32_t arrayLayers = 1;
+        vk::SampleCountFlagBits sampleCountFlags = vk::SampleCountFlagBits::e1;
+        vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
+        vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+        vk::SharingMode sharingMode = vk::SharingMode::eExclusive;
+
+        explicit vkImageConfig(vk::Extent2D e2d){ extent = vk::Extent3D{e2d, 1}; };
+
+        vkImageConfig& setImageType(vk::ImageType type) {
+            imageType = type;
+            return *this;
+        }
+
+        vkImageConfig& setFormat(vk::Format f) {
+            format = f;
+            return *this;
+        }
+
+        vkImageConfig& setExtent(vk::Extent3D e) {
+            extent = e;
+            return *this;
+        }
+
+        vkImageConfig& setMipLevels(uint32_t levels) {
+            mipLevels = levels;
+            return *this;
+        }
+
+        vkImageConfig& setArrayLayers(uint32_t layers) {
+            arrayLayers = layers;
+            return *this;
+        }
+
+        vkImageConfig& setSampleCountFlags(vk::SampleCountFlagBits flags) {
+            sampleCountFlags = flags;
+            return *this;
+        }
+
+        vkImageConfig& setTiling(vk::ImageTiling t) {
+            tiling = t;
+            return *this;
+        }
+
+        vkImageConfig& setUsage(vk::ImageUsageFlags u) {
+            usage = u;
+            return *this;
+        }
+
+        vkImageConfig& setSharingMode(vk::SharingMode mode) {
+            sharingMode = mode;
+            return *this;
+        }
+    };
+}
+
 
 
 #endif //VKCELSHADINGRENDERER_VKCOMMON_H

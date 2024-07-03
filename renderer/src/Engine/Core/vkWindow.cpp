@@ -9,16 +9,17 @@ namespace yic {
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h}, mWindow(createWindow()) {
         EventBus::update(et::vkRenderContext{
                 std::make_pair(mWidth, mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
-        }, et::vkRenderContext::id::imguiRender);
+        }, et::vkRenderContext::id::mainRender);
 
         if_debug {
             EventBus::subscribeAuto([&](const et::vkRenderContext &vkRenderContext) {
                 vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());
-            }, et::vkRenderContext::id::imguiRender);
+            }, et::vkRenderContext::id::mainRender);
         };
     }
 
     bool vkWindow::run() {
+
         try {
             while (!glfwWindowShouldClose(GetWindow())) {
                 glfwPollEvents();
@@ -53,6 +54,8 @@ namespace yic {
             glfwTerminate();
         }};
     }
+
+
 
 
 } // yic

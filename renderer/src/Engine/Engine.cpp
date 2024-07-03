@@ -21,9 +21,10 @@ namespace yic {
                 return tsxSupported;
             }
             return false;
-        }){
+        }()){
             vkInfo("TSX is supported");
-        } else { vkWarn("TSX is not supported"); }
+        } else { vkError("TSX is not supported"); }
+
 
         mRhi = std::make_unique<vkRhi>();
         mFrameLoopThread = std::make_unique<std::thread>([this]{

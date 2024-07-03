@@ -8,6 +8,20 @@ message("Boost library directory: ${BOOST_LIBRARYDIR}")
 
 file(GLOB_RECURSE SRCS "src/*.h" "src/*.cpp")
 
+FetchContent_Declare(
+        sfml
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG 2.6.1
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/sfml"
+)
+
+FetchContent_GetProperties(sfml)
+if (NOT sfml_POPULATED)
+    FetchContent_Populate(sfml)
+    add_subdirectory(${sfml_SOURCE_DIR} ${sfml_BINARY_DIR})
+    link_directories(${sfml_BINARY_DIR}/lib)
+endif ()
+
 add_library(Renderer STATIC ${SRCS})
 target_precompile_headers(Renderer PUBLIC ${pch_files})
 target_include_directories(Renderer PUBLIC
@@ -16,6 +30,7 @@ target_include_directories(Renderer PUBLIC
         third/spdlog
         src
         ../subprojects/ImGui
+        third/sfml/include
 )
 target_link_libraries(Renderer PUBLIC
         "Vulkan::Vulkan"
@@ -24,4 +39,15 @@ target_link_libraries(Renderer PUBLIC
         "${BOOST_LIBRARYDIR}/libboost_filesystem-mgw13-mt-d-x64-1_85.a"
         "imgui"
         ${tbb12}
+        sfml-system
 )
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-system-d-2.dll DESTINATION ${Target_dir})
+endif ()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-system-2.dll DESTINATION ${Target_dir})
+endif ()
+
+

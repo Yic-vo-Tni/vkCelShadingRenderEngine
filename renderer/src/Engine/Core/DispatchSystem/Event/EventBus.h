@@ -14,10 +14,11 @@ namespace yic {
     class EventBus {
         struct EventDate{
             std::any states;
-            mutable tbb::speculative_spin_rw_mutex mutex_speculative;
+            mutable tbb::spin_rw_mutex mutex_spin_rw;
             mutable tbb::queuing_rw_mutex mutex_queuing;
             std::atomic<bool> deferred;
             std::vector<std::function<void(const std::any&)>> handlers;
+            std::atomic<bool> firstExecute{true};
         };
 
     public:
@@ -26,7 +27,7 @@ namespace yic {
         template<typename Event>
         using EventHandler = std::function<void(const Event&)>;
 
-        explicit EventBus() {};
+        EventBus() {};
 
         template<typename Handler>
         static void subscribeAuto(Handler&& handler, const std::string& id = {}){
@@ -39,6 +40,12 @@ namespace yic {
         static void subscribeDeferredAuto(Handler&& handler, const std::string& id = {}){
             using EventType = typename std::decay_t<typename function_traits<decltype(&Handler::operator())>::arg0_type>;
             subscribeDeferred<EventType>(std::forward<Handler>(handler), id);
+        }
+
+        template<typename Handler>
+        static void subscribeDeferredWithFirstExecuteAuto(Handler&& handler, const std::string& id = {}){
+            using EventType = typename std::decay_t<typename function_traits<decltype(&Handler::operator())>::arg0_type>;
+            subscribeDeferredWithFirstExecute<EventType>(std::forward<Handler>(handler), id);
         }
 
         template<typename Event, tp::is_string ...Args>
@@ -58,7 +65,7 @@ namespace yic {
 
             auto &eventDate = inst->mEventDates[type][id];
             {
-                tbb::speculative_spin_rw_mutex::scoped_lock lock(eventDate.mutex_speculative, true);
+                tbb::spin_rw_mutex::scoped_lock lock(eventDate.mutex_spin_rw, true);
                 auto &storedEvent = eventDate.states;
 
                 if (!storedEvent.has_value()) {
@@ -74,6 +81,12 @@ namespace yic {
 #define parm_id const std::string& id
 
         struct Get {
+            template<typename T>
+            static auto val(default_parm_id){
+                return getState<T>(id);
+            }
+
+
             static auto vkSetupContext(default_parm_id) {
                 return getState<et::vkSetupContext>(id);
             }
@@ -98,16 +111,15 @@ namespace yic {
                 return getState<et::glScrollInput>(id);
             }
 
-            static auto test(default_parm_id){
-                return getState<et::test>(id);
-            }
+//            static auto test(default_parm_id){
+//                return getState<et::test>(id);
+//            }
         };
 
         struct GetRef_scoped{
-            static auto& test(default_parm_id){
-//                return getStateRef<et::test>(id).get();
-                return getStateRef_f<et::test>(id);
-            }
+//            static auto& test(default_parm_id){
+//                return getStateRef_f<et::test>(id);
+//            }
         };
 
 #undef default_parm_id
@@ -196,7 +208,7 @@ namespace yic {
                 auto idIt = idMap.find(id);
                 if (idIt != idMap.end()){
                     const auto& eventDate = idIt->second;
-                    tbb::speculative_spin_rw_mutex::scoped_lock lock(eventDate.mutex_speculative, false);
+                    tbb::spin_rw_mutex::scoped_lock lock(eventDate.mutex_spin_rw, false);
                     return std::any_cast<T>(eventDate.states);
                 }
             }
@@ -238,13 +250,29 @@ namespace yic {
             auto inst = get();
             auto type = std::type_index(typeid(Event));
 
-            if (inst->mEventDates[type][id].deferred && inst->mEventDates[type].find(id) != inst->mEventDates[type].end()){
+            if (inst->mEventDates[type][id].deferred.load()){
                 auto& event = std::any_cast<const Event&>(inst->mEventDates[type][id].states);
                 handler(event);
                 inst->mEventDates[type][id].deferred.store(false);
             }
         }
 
+        template<typename Event>
+        static void subscribeDeferredWithFirstExecute(const EventHandler<Event>& handler, const std::string& id = {}){
+            auto inst = get();
+            auto type = std::type_index(typeid(Event));
+
+            if (inst->mEventDates[type][id].firstExecute.load()){
+                auto& event = std::any_cast<const Event&>(inst->mEventDates[type][id].states);
+                handler(event);
+                inst->mEventDates[type][id].firstExecute.store(false);
+            }
+            if (inst->mEventDates[type][id].deferred.load() || inst->mEventDates[type][id].firstExecute.load()){
+                auto& event = std::any_cast<const Event&>(inst->mEventDates[type][id].states);
+                handler(event);
+                inst->mEventDates[type][id].deferred.store(false);
+            }
+        }
 
     private:
         tbb::task_group mGroup;

@@ -3,6 +3,8 @@ project(vkCelShadingRenderer)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(Target_dir ${CMAKE_BINARY_DIR})
+
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     if (WIN32)
         set(CMAKE_WIN32_EXECUTABLE ON)
@@ -11,6 +13,7 @@ endif ()
 
 set(shader_path "${CMAKE_SOURCE_DIR}/renderer/assets/shaders")
 set(spv_path "${CMAKE_SOURCE_DIR}/renderer/assets/shaders_spvs")
+set(imgui_ini_path "${CMAKE_SOURCE_DIR}/renderer/src/Editor/Gui")
 configure_file("${CMAKE_SOURCE_DIR}/pch/config.h.in" "${CMAKE_SOURCE_DIR}/pch/config.h")
 
 find_package(Vulkan REQUIRED)

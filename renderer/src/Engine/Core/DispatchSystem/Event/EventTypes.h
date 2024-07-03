@@ -66,8 +66,11 @@ using opt = std::optional<T>;
 
 //}
 
+#include "vk_struct/vkBuf.h"
+
 #include "gl_types.h"
 #include "vk_types.h"
+#include "ui_types.h"
 
 namespace et{
 

@@ -14,7 +14,7 @@ namespace glfw_callback {
         yic::EventBus::publish(et::vkRenderContext{
                 .size = std::make_pair(width, height),
                 .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height},
-        }, et::vkRenderContext::id::imguiRender);
+        }, et::vkRenderContext::id::mainRender);
     };
 
     inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {

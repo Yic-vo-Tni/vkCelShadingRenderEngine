@@ -20,11 +20,10 @@ namespace yic {
         );
 
         auto ct = EventBus::Get::vkSetupContext();
-        // ImGui Render Pass
         {
-            auto id = et::vkRenderContext::id::imguiRender;
-            auto queue = ct.queue_imGuiGraphics_ref();
-            auto qIndex = ct.qIndex_imGuiGraphics_v();
+            auto id = et::vkRenderContext::id::mainRender;
+            auto queue = ct.qGraphicsPrimary_ref();
+            auto qIndex = ct.qIndexGraphicsPrimary_v();
 
             mImGuiSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
             mImGuiCommand = std::make_unique<vkCommand>(id, qIndex);
@@ -38,38 +37,51 @@ namespace yic {
         auto info = vk::PipelineLayoutCreateInfo();
         layout = EventBus::Get::vkSetupContext().device_ref().createPipelineLayout(info);
         pipeline = std::make_unique<vkPipeline<Graphics>>(EventBus::Get::vkSetupContext().device_ref(), layout,
-                                      EventBus::Get::vkRenderContext(et::vkRenderContext::id::imguiRender).renderPass_ref());
+                                      EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).renderPass_ref());
         pipeline->addShader(spv_path "/v_test.spv", vk::ShaderStageFlagBits::eVertex)
                 .addShader(spv_path "/f_test.spv", vk::ShaderStageFlagBits::eFragment)
                 .create();
 
+        VkDeviceSize size;
+        std::vector<int> t(5);
+        auto buf = vkAllocator::allocBuf(sizeof (int) * t.size(), vk::BufferUsageFlagBits::eVertexBuffer,VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU);
+        t.emplace_back(1);
+        buf->updateBuf(t);
+
+        mTimePerFrame = sf::seconds(1.f / 120.f);
     }
 
     vkRhi::~vkRhi() {
         EventBus::Get::vkSetupContext().device_ref().destroy(layout);
 
-        EventBus::Get::vkSetupContext().queue_mainGraphics_ref().waitIdle();
-        EventBus::Get::vkSetupContext().queue_imGuiGraphics_ref().waitIdle();
+        EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
         EventBus::Get::vkSetupContext().device_ref().waitIdle();
     }
 
     bool vkRhi::ImGuiFrameLoop() {
+        sf::Time start = mClock.getElapsedTime();
+//        sf::Time elapsed = mClock.restart();
+//        while (elapsed < mTimePerFrame){
+//            sf::sleep(mTimePerFrame - elapsed);
+//            elapsed = mClock.getElapsedTime();
+//        }
+
         TaskBus::executeShaderTask();
 
         mImGuiSwapchain->updateEveryFrame();
         mImGuiCommand->beginCommandBuf();
 
-        auto cmd = EventBus::Get::vkRenderContext(et::vkRenderContext::id::imguiRender).cmd_ref();
+        auto cmd = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).cmd_ref();
         vk::Viewport viewport{
                 0.f, 0.f,
-                (float )EventBus::Get::vkRenderContext(et::vkRenderContext::id::imguiRender).width_v(),
-                (float )EventBus::Get::vkRenderContext(et::vkRenderContext::id::imguiRender).height_v(),
+                (float )EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).width_v(),
+                (float )EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).height_v(),
                 0.f, 1.f
         };
         cmd.setViewport(0, viewport);
         vk::Rect2D scissor{
                 {0, 0},
-                EventBus::Get::vkRenderContext(et::vkRenderContext::id::imguiRender).extent_v()
+                EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).extent_v()
         };
         cmd.setScissor(0, scissor);
 
@@ -80,6 +92,11 @@ namespace yic {
 
         mImGuiCommand->endCommandBuf();
         mImGuiSwapchain->submitFrame();
+
+        sf::Time frameTime = mClock.getElapsedTime() - start;
+        if (frameTime < mTimePerFrame){
+            sf::sleep(mTimePerFrame - frameTime);
+        }
 
         return true;
     }

@@ -6,6 +6,9 @@
 #define VKCELSHADINGRENDERER_VKIMGUI_H
 
 #include "Engine/Core/DispatchSystem/Schedulers.h"
+#include "Engine/Utils/Log.h"
+
+#include "Widget/Widget.h"
 
 namespace yic {
 
@@ -17,6 +20,7 @@ namespace yic {
         auto render() -> void;
 
     private:
+        auto base() -> void;
         auto callback() -> void;
     private:
         std::string mId{};
@@ -26,6 +30,8 @@ namespace yic {
         vk::DescriptorPool mDescriptorPool{};
 
         bool mShowDemo{true};
+
+        ui::Widget mWidget{};
     };
 
 } // yic

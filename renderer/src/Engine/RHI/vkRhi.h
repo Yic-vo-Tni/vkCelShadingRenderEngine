@@ -8,11 +8,15 @@
 #include "vkInit.h"
 #include "Engine/Core/vkWindow.h"
 #include "Engine/RHI/vkSwapchain.h"
+#include "Engine/RHI/vkSemaphore.h"
 #include "Engine/RHI/vkFrameRender.h"
 #include "Engine/RHI/vkCommand.h"
 #include "Engine/RHI/vkPipeline.h"
+#include "Engine/RHI/vkAllocator.h"
 
-#include "Editor/UI/Gui/vkImGui.h"
+#include "Editor/Gui/vkImGui.h"
+
+#include "SFML/System.hpp"
 
 namespace yic {
 
@@ -24,6 +28,9 @@ namespace yic {
         auto ImGuiFrameLoop() -> bool;
 
     private:
+        sf::Clock mClock;
+        sf::Time mTimePerFrame;
+
         std::unique_ptr<vkSwapchain> mImGuiSwapchain{};
         std::unique_ptr<vkCommand> mImGuiCommand{};
         std::unique_ptr<vkImGui> mImGui{};

@@ -17,6 +17,8 @@
 
 #include "vulkan/vulkan.hpp"
 
+#include "vma/vk_mem_alloc.h"
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"

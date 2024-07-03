@@ -7,9 +7,13 @@
 
 namespace et {
 
-    struct FrameEntry {
+    struct Frame{
         vk::Image image;
         vk::ImageView imageView;
+    };
+
+    struct FrameEntry {
+        Frame frame;
         vk::Semaphore readSemaphore;
         vk::Semaphore writtenSemaphore;
     };
@@ -30,11 +34,15 @@ namespace et {
         RETURN_REF(physicalDevice);
         RETURN_REF(device);
 
-        RETURN_CUSTOM_REF(queue_imGuiGraphics, queueFamily, queueFamily->getImGuiGraphicsQueue());
-        RETURN_CUSTOM_REF(queue_mainGraphics, queueFamily, queueFamily->getMainGraphicsQueue());
+        RETURN_CUSTOM_REF(qGraphicsPrimary, queueFamily, queueFamily->getPrimaryGraphicsQueue());
+        RETURN_CUSTOM_REF(qGraphicsAuxiliary, queueFamily, queueFamily->getAuxiliaryGraphicsQueue());
+        RETURN_CUSTOM_REF(qTransferUpload, queueFamily, queueFamily->getUploadTransferQueue());
+        RETURN_CUSTOM_REF(qTransferDownload, queueFamily, queueFamily->getDownloadTransferQueue());
 
-        RETURN_CUSTOM_VALUE(qIndex_imGuiGraphics, queueFamily, queueFamily->getImGuiGraphicsFamilyIndex());
-        RETURN_CUSTOM_VALUE(qIndex_mainGraphics, queueFamily, queueFamily->getMainGraphicsFamilyIndex());
+        RETURN_CUSTOM_VALUE(qIndexGraphicsPrimary, queueFamily, queueFamily->getPrimaryGraphicsFamilyIndex());
+        RETURN_CUSTOM_VALUE(qIndexGraphicsAuxiliary, queueFamily, queueFamily->getAuxiliaryGraphicsFamilyIndex());
+        RETURN_CUSTOM_VALUE(qIndexTransferUpload, queueFamily, queueFamily->getUploadTransferFamilyIndex());
+        RETURN_CUSTOM_VALUE(qIndexTransferDownload, queueFamily, queueFamily->getDownloadTransferFamilyIndex());
     };
 
     struct vkPipeline {
@@ -43,6 +51,18 @@ namespace et {
              (opt < std::unordered_map<std::string, vk::Pipeline>>, compute),
              (opt < std::unordered_map<std::string, vk::Pipeline>>, raytracing),
              (opt < vk::DescriptorSet > , descriptorSet));
+    };
+
+    struct vkRenderPass{
+        HANA(vkRenderPass,
+             (opt<vk::RenderPass>, renderPass));
+
+        struct id{
+            static constexpr const char* basicRenderPass = "BasicRenderPass";
+            static constexpr const char* depthRenderPass = "DepthRenderPass";
+            static constexpr const char* shadowRenderPass = "ShadowRenderPass";
+            static constexpr const char* postProcessRenderPass = "PostProcessRenderPass";
+        };
     };
 
 
@@ -58,13 +78,11 @@ namespace et {
              (opt<uint32_t>, activeImageIndex),
              (opt<vk::RenderPass>, renderPass),
              (opt<std::vector<vk::Framebuffer>>, framebuffers),
-             (opt<std::unordered_map<std::string, vk::RenderPass>>, offscreenRenderPass),
-             (opt<std::unordered_map<std::string, std::vector<vk::Framebuffer>>>, offscreenFramebuffers),
              (opt<vk::CommandBuffer>, cmd)
         );
 
         struct id {
-            static constexpr const char *imguiRender{"imguiRender"};
+            static constexpr const char *mainRender{"mainRender"};
         };
 
         RETURN_REF(window);
@@ -82,10 +100,14 @@ namespace et {
         RETURN_CUSTOM_VALUE(width, size, size->first);
         RETURN_CUSTOM_VALUE(height, size, size->second);
         RETURN_CUSTOM_VALUE(imageCount, frameEntries, static_cast<uint32_t>(frameEntries->size()));
+    };
 
-        RETURN_MAP_REF(offscreenRenderPass, std::string);
-        RETURN_MAP_REF(offscreenFramebuffers, std::string);
-
+    struct vkRenderFrame {
+        HANA(vkRenderFrame,
+             (opt < std::vector<Frame>>, frameEntries),
+             (opt < std::vector<vk::Framebuffer>>, framebuffers),
+             (opt<vk::CommandBuffer>, cmd)
+        );
     };
 
 

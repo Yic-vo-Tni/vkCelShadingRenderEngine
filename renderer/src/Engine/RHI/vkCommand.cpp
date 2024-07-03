@@ -48,7 +48,7 @@ namespace yic {
 
         mActiveCommandBuffer.begin(beginInfo);
         {
-            std::vector<vk::ClearValue> cv{vk::ClearColorValue{1.f, 0.f, 0.f, 0.f}};
+            std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
 
             vk::RenderPassBeginInfo renderPassBeginInfo{mRenderPass, framebuffers[imageIndex],
                                                         {{0, 0}, extent}, cv};
