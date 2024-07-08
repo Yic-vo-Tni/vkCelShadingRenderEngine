@@ -44,9 +44,13 @@ namespace yic {
 
         VkDeviceSize size;
         std::vector<int> t(5);
-        auto buf = vkAllocator::allocBuf(sizeof (int) * t.size(), vk::BufferUsageFlagBits::eVertexBuffer,VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU);
+        auto buf = vkAllocator::allocBuf(sizeof (int) * t.size(), vk::BufferUsageFlagBits::eVertexBuffer, vkAllocator::MemoryUsage::eCpuToGpu);
         t.emplace_back(1);
         buf->updateBuf(t);
+
+        auto img = vkAllocator::allocImg(img_path "/4.png");
+
+        auto offImg = vkAllocator::allocImgOffScreen(vkImageConfig{1920, 1080});
 
         mTimePerFrame = sf::seconds(1.f / 120.f);
     }
@@ -60,11 +64,6 @@ namespace yic {
 
     bool vkRhi::ImGuiFrameLoop() {
         sf::Time start = mClock.getElapsedTime();
-//        sf::Time elapsed = mClock.restart();
-//        while (elapsed < mTimePerFrame){
-//            sf::sleep(mTimePerFrame - elapsed);
-//            elapsed = mClock.getElapsedTime();
-//        }
 
         TaskBus::executeShaderTask();
 

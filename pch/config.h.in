@@ -5,8 +5,16 @@
 #ifndef VULKAN_CONFIG_H
 #define VULKAN_CONFIG_H
 
+#ifdef NDEBUG
+#define shader_path "@r_shader_path@"
+#define spv_path "@r_spv_path@"
+#define imgui_ini_path "@r_imgui_ini_path@"
+#define img_path "@r_img_path@"
+#else
 #define shader_path "@shader_path@"
 #define spv_path "@spv_path@"
 #define imgui_ini_path "@imgui_ini_path@"
+#define img_path "@img_path@"
+#endif
 
 #endif //VULKAN_CONFIG_H

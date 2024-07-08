@@ -9,7 +9,7 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
-        ShaderFolderWatcher::start();
+        //ShaderFolderWatcher::start();
 
         if ([]{
             int cpuInfo[4] = {-1};
@@ -26,8 +26,8 @@ namespace yic {
         } else { vkError("TSX is not supported"); }
 
 
-        mRhi = std::make_unique<vkRhi>();
         mFrameLoopThread = std::make_unique<std::thread>([this]{
+            mRhi = std::make_unique<vkRhi>();
             while (mFrameLoop.load()){
                 TaskBus::executeTaskSpecific(tt::RenderTarget_s::eImGuiWindow, {}, true);
             }
@@ -39,7 +39,7 @@ namespace yic {
 
         if (mFrameLoopThread && mFrameLoopThread->joinable())
             mFrameLoopThread->join();
-        ShaderFolderWatcher::end();
+       // ShaderFolderWatcher::end();
 
         return true;
     }

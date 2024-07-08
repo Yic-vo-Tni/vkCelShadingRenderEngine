@@ -128,7 +128,19 @@ namespace yic{
         vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
         vk::SharingMode sharingMode = vk::SharingMode::eExclusive;
 
+        vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
+        vk::ComponentSwizzle componentSwizzle = vk::ComponentSwizzle::eIdentity;
+        vk::ImageSubresourceRange imageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+        bool custom_define = false;
+
+
         explicit vkImageConfig(vk::Extent2D e2d){ extent = vk::Extent3D{e2d, 1}; };
+
+        template<typename T>
+        explicit vkImageConfig(T width, T height) {
+            extent = vk::Extent3D{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
+        };
 
         vkImageConfig& setImageType(vk::ImageType type) {
             imageType = type;
@@ -142,6 +154,12 @@ namespace yic{
 
         vkImageConfig& setExtent(vk::Extent3D e) {
             extent = e;
+            return *this;
+        }
+
+        template<typename T>
+        vkImageConfig& setExtent(T w, T h) {
+            extent = vk::Extent3D{static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
             return *this;
         }
 
@@ -165,6 +183,10 @@ namespace yic{
             return *this;
         }
 
+        vkImageConfig& addUsage(vk::ImageUsageFlags u) {
+            usage |= u;
+            return *this;
+        }
         vkImageConfig& setUsage(vk::ImageUsageFlags u) {
             usage = u;
             return *this;

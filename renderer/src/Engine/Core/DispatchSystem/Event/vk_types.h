@@ -104,9 +104,10 @@ namespace et {
 
     struct vkRenderFrame {
         HANA(vkRenderFrame,
+             (opt < ImVec2 > , size),
              (opt < std::vector<Frame>>, frameEntries),
              (opt < std::vector<vk::Framebuffer>>, framebuffers),
-             (opt<vk::CommandBuffer>, cmd)
+             (opt < vk::CommandBuffer > , cmd)
         );
     };
 

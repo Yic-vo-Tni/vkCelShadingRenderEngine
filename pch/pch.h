@@ -24,6 +24,15 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
 
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include "stb/stb_image.h"
+
 #include "iostream"
 #include "stdexcept"
 #include "vector"

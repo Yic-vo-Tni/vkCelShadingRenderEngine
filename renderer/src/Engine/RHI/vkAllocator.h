@@ -10,23 +10,79 @@
 
 #include "vkCommon.h"
 
+#define DEFINE_STATIC_ACCESSOR(func, param, types) \
+    static auto func param { \
+        return get()->func##_impl types; \
+    }
+#define DEFINE_STATIC_RETYPE_ACCESSOR(func, ret_type, param, types) \
+    static ret_type func param { \
+        return get()->func##_impl types; \
+    }
+
 namespace yic {
 
     class vkAllocator : public std::enable_shared_from_this<vkAllocator>{
+        using imgPath = std::variant<std::string, std::vector<std::string>>;
+    public:
+        enum class MemoryUsage{
+            eGpuOnly = VMA_MEMORY_USAGE_GPU_ONLY,
+            eCpuOnly = VMA_MEMORY_USAGE_CPU_ONLY,
+            eCpuToGpu = VMA_MEMORY_USAGE_CPU_TO_GPU,
+            eGpuToCPU = VMA_MEMORY_USAGE_GPU_TO_CPU,
+        };
+
+        enum class AllocStrategy{
+            eDefault = 0,
+            eMinTime = VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT,
+            eMapped = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            eHostSequentialWrite = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        };
+    private:
+        struct bufCreateInfo{
+            vk::DeviceSize deviceSize;
+            vk::BufferUsageFlags usage;
+
+            MemoryUsage memoryUsage;
+            AllocStrategy allocStrategy;
+        };
+
+        struct buf{
+            VkBuffer buf;
+            VmaAllocation vmaAllocation;
+        };
+        struct img{
+            VkImage img{};
+            VmaAllocation vmaAllocation{};
+            vk::ImageView imgView;
+        };
     public:
         vkGet auto get = [](){ return Singleton<vkAllocator>::get(); };
         vkAllocator();
         ~vkAllocator();
 
-        static auto allocBuf(VkDeviceSize deviceSize, vk::BufferUsageFlags flags, VmaMemoryUsage usage){
-            return get()->allocBuf_impl(deviceSize, nullptr, (VkBufferUsageFlags)flags, usage, false);
-        }
-        static auto allocBuf(VkDeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags,VmaMemoryUsage usage, bool unmap = false) -> vkBuf_sptr {
-            return get()->allocBuf_impl(deviceSize, data, (VkBufferUsageFlags)flags, usage, unmap);
-        };
-        static auto allocStagingBuf(VkDeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags){
-            return get()->allocBuf_staging_impl(deviceSize, data, (VkBufferUsageFlags)flags);
-        }
+        DEFINE_STATIC_ACCESSOR(allocBuf,
+                               (vk::DeviceSize ds, vk::BufferUsageFlags fg, MemoryUsage us),
+                               (ds, nullptr, fg, us, false));
+
+        DEFINE_STATIC_ACCESSOR(allocBuf,
+                    (vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags, MemoryUsage usage, bool unmap = false),
+                    (deviceSize, data, flags, usage, unmap));
+
+        DEFINE_STATIC_ACCESSOR(allocBufStaging,
+                               (vk::DeviceSize ds, const void* data, vk::BufferUsageFlags fg, MemoryUsage us),
+                               (ds, data, fg, us));
+
+        DEFINE_STATIC_ACCESSOR(allocImg,
+                               (const imgPath& pt),
+                               (pt));
+
+        DEFINE_STATIC_ACCESSOR(allocImg,
+                               (const imgPath& pt, vkImageConfig cf),
+                               (pt, cf));
+
+        DEFINE_STATIC_ACCESSOR(allocImgOffScreen,
+                               (const vkImageConfig& cf),
+                               (cf));
 
     private:
         vkAllocator& createTempCmdBuf(){
@@ -50,16 +106,23 @@ namespace yic {
             return *this;
         }
 
-        auto allocBuf_impl(VkDeviceSize deviceSize, const void* data, VkBufferUsageFlags flags, VmaMemoryUsage usage, bool unmap) -> vkBuf_sptr;
-        auto allocBuf_staging_impl(VkDeviceSize deviceSize, const void* data, VkBufferUsageFlags flags) -> vkBuf_sptr;
-
+        auto allocBuf_impl(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, MemoryUsage usage, bool unmap) -> vkBuf_sptr;
+        auto allocBufStaging_impl(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags,
+                                   MemoryUsage usage = MemoryUsage::eGpuOnly,  AllocStrategy allocStrategy = AllocStrategy::eDefault) -> vkBuf_sptr;
+        auto createBuf(const bufCreateInfo& bufCreateInfo) -> buf;
         auto copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize) -> void;
+        auto mapBuf(const buf& buf, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
 
-        auto createOffScreenImage(vkImageConfig config) -> void;
+        auto allocImg_impl(const imgPath& imgPath, vkImageConfig config = vkImageConfig{0, 0}) -> vkImg_sptr;
+        auto allocImgOffScreen_impl(vkImageConfig config) -> vkImg_sptr;
+        auto copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h) -> void;
+        auto transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) -> void;
 
         void t(){
             vk::Extent2D m;
-            createOffScreenImage(vkImageConfig{m}.setArrayLayers(2));
+            allocImgOffScreen_impl(vkImageConfig{m}.setArrayLayers(2));
+
+            allocImg("slfdj");
         }
     private:
         vk::Device mDevice;

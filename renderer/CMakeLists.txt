@@ -40,14 +40,17 @@ target_link_libraries(Renderer PUBLIC
         "imgui"
         ${tbb12}
         sfml-system
+        sfml-audio
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-system-d-2.dll DESTINATION ${Target_dir})
+    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-audio-d-2.dll DESTINATION ${Target_dir})
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-system-2.dll DESTINATION ${Target_dir})
+    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-audio-2.dll DESTINATION ${Target_dir})
 endif ()
 
 

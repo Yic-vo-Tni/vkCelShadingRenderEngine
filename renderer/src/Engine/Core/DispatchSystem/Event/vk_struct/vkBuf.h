@@ -7,14 +7,14 @@
 #ifndef VKCELSHADINGRENDERER_VKBUF_H
 #define VKCELSHADINGRENDERER_VKBUF_H
 
-namespace un {
+namespace yic {
 
     struct vkBuffer {
         vk::Buffer buffer;
         VmaAllocation vmaAllocation;
         void *mappedData = nullptr;
         VmaAllocator &mAllocator;
-        std::function<void()> mUpdateStagingFunc;
+        std::function<void(const void* src)> mUpdateStagingFunc;
 
         vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef)
                 : buffer(buf),
@@ -23,7 +23,7 @@ namespace un {
                   mAllocator(allocatorRef) {
 
         }
-        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef, std::function<void()> updateStagingFunc)
+        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef, std::function<void(const void* src)> updateStagingFunc)
                 : buffer(buf),
                   vmaAllocation(alloc),
                   mappedData(data),
@@ -32,15 +32,10 @@ namespace un {
         }
 
         ~vkBuffer() {
-//            if (mappedData) {
-//                vmaUnmapMemory(mAllocator, vmaAllocation);
-//            }
             vmaDestroyBuffer(mAllocator, buffer, vmaAllocation);
-            //vmaFreeMemory(mAllocator, vmaAllocation);
         }
 
         vkBuffer(const vkBuffer &) = delete;
-
         vkBuffer &operator=(const vkBuffer &) = delete;
 
         vkBuffer(vkBuffer &&other) noexcept
@@ -67,7 +62,7 @@ namespace un {
         template<typename T>
         auto updateBuf(const T &src, bool unmap = false) {
             ensureMapped();
-            memcpy(mappedData, &src, sizeof(src));
+            mUpdateStagingFunc(&src);
             if (unmap)
                 unmapMem();
         }
@@ -76,23 +71,7 @@ namespace un {
         void updateBuf(const std::vector<T> &src, bool unmap = false) {
             ensureMapped();
             if (!src.empty())
-                memcpy(mappedData, src.data(), src.size() * sizeof(T));
-            if (unmap)
-                unmapMem();
-        }
-
-        template<typename T>
-        auto updateBuf(const T &src, size_t size, bool unmap = false) {
-            ensureMapped();
-            memcpy(mappedData, &src, size);
-            if (unmap)
-                unmapMem();
-        }
-
-        template<typename T>
-        auto updateBuf(const T *src, size_t size, size_t offset, bool unmap = false) {
-            ensureMapped();
-            memcpy(static_cast<const uint8_t *>(mappedData) + offset, src, size);
+                mUpdateStagingFunc(src.data());
             if (unmap)
                 unmapMem();
         }
@@ -118,13 +97,48 @@ namespace un {
         VmaAllocation vmaAllocation;
         VmaAllocator &mAllocator;
 
-        vkImage(vk::Image img, VmaAllocation alloc, VmaAllocator &allocatorRef) : image(img), vmaAllocation(alloc), mAllocator(allocatorRef){
+        vkImage(vk::Image img, vk::ImageView imgView, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef)
+                : image(img), imageView(imgView), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef) {
 
         }
+
+        ~vkImage(){
+            mDevice.destroy(image);
+            mDevice.destroy(imageView);
+            vmaFreeMemory(mAllocator, vmaAllocation);
+        }
+
+        vkImage(const vkImage &) = delete;
+        vkImage &operator=(const vkImage &) = delete;
+
+        vkImage(vkImage &&other) noexcept
+        : image(other.image), imageView(other.imageView), vmaAllocation(other.vmaAllocation),
+        mAllocator(other.mAllocator) {
+            other.image = VK_NULL_HANDLE;
+            other.imageView = VK_NULL_HANDLE;
+            other.vmaAllocation = nullptr;
+        }
+
+        vkImage &operator=(vkImage &&other) noexcept {
+            if (this != &other) {
+                this->~vkImage();
+                image = other.image;
+                vmaAllocation = other.vmaAllocation;
+                imageView = other.imageView;
+                other.image = VK_NULL_HANDLE;
+                other.imageView = VK_NULL_HANDLE;
+                other.vmaAllocation = nullptr;
+            }
+            return *this;
+        }
+
+    private:
+        vk::Device mDevice;
     };
 
 }
 
-using vkBuf_sptr = std::shared_ptr<un::vkBuffer>;
+using vkBuf_sptr = std::shared_ptr<yic::vkBuffer>;
+using vkImg_sptr = std::shared_ptr<yic::vkImage>;
 
 #endif //VKCELSHADINGRENDERER_VKBUF_H

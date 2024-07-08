@@ -22,7 +22,7 @@ namespace yic {
 
         vmaCreateAllocator(&allocatorInfo, &mVmaAllocator);
 
-        auto transferCmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(ct.qIndexTransferDownload_v())
+        auto transferCmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(ct.qIndexGraphicsPrimary_v())
                 .setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
         mTransferPool = ct.device_ref().createCommandPool(transferCmdPoolInfo);
     }
@@ -33,95 +33,62 @@ namespace yic {
     }
 
 
-    auto vkAllocator::allocBuf_impl(VkDeviceSize deviceSize, const void *data, VkBufferUsageFlags flags, VmaMemoryUsage usage, bool unmap) -> vkBuf_sptr {
-        VkBufferCreateInfo bufferCreateInfo{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                .size = deviceSize,
+    auto vkAllocator::allocBuf_impl(vk::DeviceSize deviceSize, const void *data,
+                                    vk::BufferUsageFlags flags, MemoryUsage usage,
+                                    bool unmap) -> vkBuf_sptr {
+        bufCreateInfo createInfo{
+                .deviceSize = deviceSize,
                 .usage = flags,
+
+                .memoryUsage = usage,
+                .allocStrategy = unmap ? AllocStrategy::eMinTime : AllocStrategy::eMapped,
         };
+        auto buf = createBuf(createInfo);
 
-        VmaAllocationCreateInfo allocInfo{
-                .flags = unmap ? VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT : VMA_ALLOCATION_CREATE_MAPPED_BIT,
-                .usage = usage,
+        auto mapped = mapBuf(buf, deviceSize, data, unmap);
+
+        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, mapped, mVmaAllocator, [=](const void* src){
+            memcpy(mapped, src, deviceSize);
+        });
+    }
+
+    auto vkAllocator::allocBufStaging_impl(vk::DeviceSize deviceSize, const void *data,
+                                            vk::BufferUsageFlags flags, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
+        auto stagingBufCreateInfo = bufCreateInfo{
+                .deviceSize = deviceSize,
+                .usage = vk::BufferUsageFlagBits::eTransferSrc,
+                .memoryUsage = MemoryUsage::eCpuOnly,
+                .allocStrategy = AllocStrategy::eMapped,
         };
+        auto stagingBuf = createBuf(stagingBufCreateInfo);
+        mapBuf(stagingBuf, deviceSize, data, false);
 
-        VkBuffer buffer;
-        VmaAllocation allocation;
-        void* mappedData = nullptr;
-        vmaCreateBuffer(mVmaAllocator, &bufferCreateInfo, &allocInfo, &buffer, &allocation, nullptr);
+        auto buf = createBuf({
+                                     .deviceSize = deviceSize,
+                                     .usage = vk::BufferUsageFlagBits::eTransferDst | flags,
+                                     .memoryUsage = usage,
+                                     .allocStrategy = allocStrategy,
+                             });
 
-        try {
-            if (data == nullptr){
-                mappedData = allocation->GetMappedData();
-            }
-            if (!unmap && data != nullptr) {
-                mappedData = allocation->GetMappedData();
-                memcpy(mappedData, data, deviceSize);
-            } else if (unmap) {
-                vmaMapMemory(mVmaAllocator, allocation, &mappedData);
-                memcpy(mappedData, data, deviceSize);
-                vmaUnmapMemory(mVmaAllocator, allocation);
-                mappedData = nullptr;
-            }
-        } catch (...) {
-            vmaDestroyBuffer(mVmaAllocator, buffer, allocation);
-            throw;
-        }
+        copyBuf(stagingBuf.buf, buf.buf, deviceSize);
 
-        return std::make_shared<un::vkBuffer>(buffer, allocation, mappedData, mVmaAllocator);
+        vmaUnmapMemory(mVmaAllocator, stagingBuf.vmaAllocation);
+        vmaDestroyBuffer(mVmaAllocator, stagingBuf.buf, stagingBuf.vmaAllocation);
+
+        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, [this, stagingBufCreateInfo, deviceSize, buf](const void* src) {
+            auto stagingBuf = createBuf(stagingBufCreateInfo);
+            mapBuf(stagingBuf, deviceSize, src, false);
+
+            copyBuf(stagingBuf.buf, buf.buf, deviceSize);
+
+            vmaUnmapMemory(mVmaAllocator, stagingBuf.vmaAllocation);
+            vmaDestroyBuffer(mVmaAllocator, stagingBuf.buf, stagingBuf.vmaAllocation);
+        });
     }
 
-    auto vkAllocator::allocBuf_staging_impl(VkDeviceSize deviceSize, const void *data, VkBufferUsageFlags flags) -> vkBuf_sptr {
-            VkBufferCreateInfo stagingBufferInfo{
-                    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                    .size = deviceSize,
-                    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            };
 
-            VmaAllocationCreateInfo stagingAllocInfo{
-                    .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-                    .usage = VMA_MEMORY_USAGE_CPU_ONLY,
-            };
 
-            VkBuffer stagingBuffer;
-            VmaAllocation stagingAllocation;
-            void* stagingMappedData = nullptr;
-            vmaCreateBuffer(mVmaAllocator, &stagingBufferInfo, &stagingAllocInfo, &stagingBuffer, &stagingAllocation,
-                            nullptr);
-
-            memcpy(stagingMappedData, data, deviceSize);
-
-            VkBufferCreateInfo destBufferInfo{
-                    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                    .size = deviceSize,
-                    .usage = flags | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            };
-
-            VmaAllocationCreateInfo destAllocInfo{
-                    .usage = VMA_MEMORY_USAGE_GPU_ONLY,
-            };
-
-            VkBuffer destBuffer;
-            VmaAllocation destAllocation;
-            vmaCreateBuffer(mVmaAllocator, &destBufferInfo, &destAllocInfo, &destBuffer, &destAllocation, nullptr);
-
-            copyBuf(stagingBuffer, destBuffer, deviceSize);
-
-            vmaDestroyBuffer(mVmaAllocator, stagingBuffer, stagingAllocation);
-
-            return std::make_shared<un::vkBuffer>(destBuffer, destAllocation, nullptr, mVmaAllocator, [&](){ });
-    }
-
-    auto vkAllocator::copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize) -> void {
-        createTempCmdBuf();
-        vk::BufferCopy copy{0, 0, deviceSize};
-        mTempCmd.copyBuffer((vk::Buffer)stagingBuf, (vk::Buffer)destBuf, 1, &copy);
-        submitTempCmdBuf();
-    }
-
-    auto vkAllocator::createOffScreenImage(vkImageConfig config) -> void {
+    auto vkAllocator::allocImgOffScreen_impl(vkImageConfig config) -> vkImg_sptr {
         vk::ImageCreateInfo imageInfo{
                 {},
                 config.imageType,
@@ -144,8 +111,162 @@ namespace yic {
 
         vmaCreateImage(mVmaAllocator, &reinterpret_cast<const VkImageCreateInfo&>(imageInfo), &allocInfo, &image, &allocation,
                        nullptr);
+
+        vk::ImageViewCreateInfo imageViewCreateInfo{
+                {},
+                image,
+                config.imageViewType,
+                config.format,
+                config.componentSwizzle,
+                config.imageSubresourceRange
+        };
+
+        auto imageview = mDevice.createImageView(imageViewCreateInfo);
+
+        return std::make_shared<vkImage>(image, imageview, mDevice, allocation, mVmaAllocator);
     }
 
+    auto vkAllocator::allocImg_impl(const imgPath& imgPath, vkImageConfig config) -> vkImg_sptr {
+        int w, h, c;
+        vk::DeviceSize imgSize{0};
+        std::vector<stbi_uc> pixels;
+
+        std::visit([&](auto&& arg){
+            using T = std::decay_t<decltype(arg)>;
+
+            auto load = [&](const std::string & path){
+                auto data = stbi_load(path.c_str(), &w, &h, &c, STBI_rgb_alpha);
+                if (data){
+                    size_t size = w * h * 4;
+                    pixels.insert(pixels.end(), data, data + size);
+                    imgSize += size;
+
+                    stbi_image_free(data);
+                }
+            };
+
+            if constexpr (std::is_same_v<T, std::string>){
+                load(arg);
+            } else if constexpr (std::is_same_v<T, std::vector<std::string>>){
+                for(const auto& p : arg){
+                    load(p);
+                }
+            }
+        }, imgPath);
+
+        if (pixels.empty()){
+            throw std::runtime_error("failed to load tex img");
+        }
+
+        auto stgBuf = createBuf({
+            .deviceSize = imgSize,
+            .usage = vk::BufferUsageFlagBits::eTransferSrc,
+            .memoryUsage = MemoryUsage::eCpuOnly,
+            .allocStrategy = AllocStrategy::eMapped,
+        });
+
+        mapBuf(stgBuf, imgSize, pixels.data(), false);
+
+        auto img = allocImgOffScreen_impl(config.setExtent(w, h));
+
+        copyBufToImg(stgBuf.buf, img->image, (uint32_t)w, (uint32_t)h);
+
+        vmaDestroyBuffer(mVmaAllocator, stgBuf.buf, stgBuf.vmaAllocation);
+
+        return img;
+    }
+
+    auto vkAllocator::createBuf(const bufCreateInfo& bufCreateInfo) -> buf {
+        VkBuffer buf;
+        VmaAllocation allocation;
+
+        VkBufferCreateInfo createInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = bufCreateInfo.deviceSize,
+            .usage = static_cast<VkBufferUsageFlags>(bufCreateInfo.usage),
+        };
+
+        VmaAllocationCreateInfo vmaAllocInfo{
+            .flags = static_cast<VmaAllocationCreateFlags>(bufCreateInfo.allocStrategy),
+            .usage = static_cast<VmaMemoryUsage>(bufCreateInfo.memoryUsage),
+        };
+
+        if (vmaCreateBuffer(mVmaAllocator, &createInfo, &vmaAllocInfo, &buf, &allocation, nullptr) != VK_SUCCESS){
+            throw std::runtime_error("failed to create buf");
+        }
+        return {buf, allocation};
+    }
+
+    auto vkAllocator::copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize) -> void {
+        createTempCmdBuf();
+        vk::BufferCopy copy{0, 0, deviceSize};
+        mTempCmd.copyBuffer((vk::Buffer)stagingBuf, (vk::Buffer)destBuf, 1, &copy);
+        submitTempCmdBuf();
+    }
+
+    auto vkAllocator::mapBuf(const yic::vkAllocator::buf& buf, VkDeviceSize devSize, const void *data, bool unmap)-> void* {
+        void* mappedData = nullptr;
+
+        try {
+            if (data == nullptr){
+                mappedData = buf.vmaAllocation->GetMappedData();
+            }
+            if (!unmap && data != nullptr) {
+                mappedData = buf.vmaAllocation->GetMappedData();
+                memcpy(mappedData, data, devSize);
+            } else if (unmap) {
+                vmaMapMemory(mVmaAllocator, buf.vmaAllocation, &mappedData);
+                memcpy(mappedData, data, devSize);
+                vmaUnmapMemory(mVmaAllocator, buf.vmaAllocation);
+                mappedData = nullptr;
+            }
+        } catch (...) {
+            vmaDestroyBuffer(mVmaAllocator, buf.buf, buf.vmaAllocation);
+            throw;
+        }
+
+        return mappedData;
+    }
+
+    auto vkAllocator::copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h) -> void {
+        createTempCmdBuf();
+        transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+
+        vk::BufferImageCopy region{
+            0, 0, 0,
+            vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+            {0, 0, 0}, {w, h, 1}
+        };
+
+        mTempCmd.copyBufferToImage(buf, img, vk::ImageLayout::eTransferDstOptimal, region);
+
+        transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+        submitTempCmdBuf();
+    }
+
+
+    auto vkAllocator::transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout,
+                                            vk::ImageLayout newLayout) -> void {
+        vk::ImageMemoryBarrier barrier{{}, {}, oldLayout, newLayout,
+                                       vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, image,
+                                       vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+        vk::PipelineStageFlags srcStage, dstStage;
+        if (oldLayout == vk::ImageLayout::eUndefined){
+            barrier.setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
+                    .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+
+            srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
+            dstStage = vk::PipelineStageFlagBits::eTransfer;
+        } else {
+            barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+
+            srcStage = vk::PipelineStageFlagBits::eTransfer;
+            dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+        }
+
+        mTempCmd.pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
+    }
 
 
 
