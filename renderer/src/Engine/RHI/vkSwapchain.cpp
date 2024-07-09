@@ -145,22 +145,31 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
-            mUpdateSize.store(true);
-        }, mId);
-        if (mUpdateSize.load()){
+//        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
+//            mUpdateSize.store(true);
+//        }, mId);
+//        if (mUpdateSize.load()){
+//            mDevice.waitIdle();
+//            mGraphicsQueue.waitIdle();
+//            recreateSwapchain();
+//            mCurrentFrame = 0;
+//            mUpdateSize.store(false);
+//        }
+//        EventBus::subscribeDeferredAuto([&](const et::vkRenderContext& vkRenderContext){
+//            mDevice.waitIdle();
+//            mGraphicsQueue.waitIdle();
+//            recreateSwapchain();
+//            mCurrentFrame = 0;
+//        }, mId);
+        int w, h;
+        auto rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
+        glfwGetFramebufferSize(EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).window_ref(), &w, &h);
+        if (w != rt.currentExtent_v().width || h != rt.currentExtent_v().height){
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
             recreateSwapchain();
             mCurrentFrame = 0;
-            mUpdateSize.store(false);
         }
-//        EventBus::subscribeDeferredAuto([&](const et::vkRenderContext& vkRenderContext){
-//            mGraphicsQueue.waitIdle();
-//            mDevice.waitIdle();
-//            recreateSwapchain();
-//            mCurrentFrame = 0;
-//        }, mId);
 
         if (!acquire())
             throw std::runtime_error("failed to acquire swap chain image");
@@ -184,9 +193,22 @@ namespace yic {
         auto r = mGraphicsQueue.presentKHR(&presentInfoKhr);
         if (r == vk::Result::eSuccess) {
         } else {
-            mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
+            mDevice.waitIdle();
             recreateSwapchain();
+ //           mCurrentFrame = 0;
+//            auto semaphore = mFrameEntries[mCurrentFrame % mImageCount].readSemaphore;
+            auto semaphore = mDevice.createSemaphore(vk::SemaphoreCreateInfo());
+            auto rv = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE);
+            switch (rv.result) {
+                case vk::Result::eSuccess:
+                    mImageIndex = rv.value;
+                    EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex}, mId);
+                    break;
+                default:
+                    break;
+            }
+            mDevice.destroy(semaphore);
         }
 
         mCurrentFrame = (mCurrentFrame + 1) % mImageCount;

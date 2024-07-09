@@ -88,7 +88,6 @@ namespace yic {
         mSwapchain->updateEveryFrame();
         mCommand->beginCommandBuf();
 
-
         auto rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
 
         configureDynamicViewportScissor(rt);
