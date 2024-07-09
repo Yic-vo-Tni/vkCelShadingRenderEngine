@@ -29,7 +29,7 @@ namespace yic {
         mFrameLoopThread = std::make_unique<std::thread>([this]{
             mRhi = std::make_unique<vkRhi>();
             while (mFrameLoop.load()){
-                TaskBus::executeTaskSpecific(tt::RenderTarget_s::eImGuiWindow, {}, true);
+                TaskBus::executeTaskSpecific(tt::RenderTarget_s::eMainWindow, {}, true);
             }
         });
 

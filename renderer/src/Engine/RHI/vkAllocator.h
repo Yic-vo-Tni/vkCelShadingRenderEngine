@@ -7,6 +7,7 @@
 
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Utils/Log.h"
+#include "Engine/RHI/vkAsset.h"
 
 #include "vkCommon.h"
 
@@ -113,7 +114,7 @@ namespace yic {
         auto copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize) -> void;
         auto mapBuf(const buf& buf, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
 
-        auto allocImg_impl(const imgPath& imgPath, vkImageConfig config = vkImageConfig{0, 0}) -> vkImg_sptr;
+        auto allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config = std::nullopt) -> vkImg_sptr;
         auto allocImgOffScreen_impl(vkImageConfig config) -> vkImg_sptr;
         auto copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h) -> void;
         auto transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) -> void;

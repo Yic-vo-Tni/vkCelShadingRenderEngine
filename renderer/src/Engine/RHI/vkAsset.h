@@ -9,7 +9,17 @@
 
 namespace yic {
 
-    struct vkBuffer {
+    struct vkAsset{
+        enum class Type{
+            eBuffer, eImage
+        };
+    protected:
+        Type mType;
+
+        explicit vkAsset(Type type) : mType(type){}
+    };
+
+    struct vkBuffer : vkAsset {
         vk::Buffer buffer;
         VmaAllocation vmaAllocation;
         void *mappedData = nullptr;
@@ -20,14 +30,17 @@ namespace yic {
                 : buffer(buf),
                   vmaAllocation(alloc),
                   mappedData(data),
-                  mAllocator(allocatorRef) {
+                  mAllocator(allocatorRef), vkAsset(vkAsset::Type::eBuffer) {
 
         }
-        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef, std::function<void(const void* src)> updateStagingFunc)
+
+        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef,
+                 std::function<void(const void *src)> updateStagingFunc)
                 : buffer(buf),
                   vmaAllocation(alloc),
                   mappedData(data),
-                  mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)) {
+                  mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)),
+                  vkAsset(vkAsset::Type::eBuffer) {
 
         }
 
@@ -40,7 +53,7 @@ namespace yic {
 
         vkBuffer(vkBuffer &&other) noexcept
                 : buffer(other.buffer), vmaAllocation(other.vmaAllocation), mappedData(other.mappedData),
-                  mAllocator(other.mAllocator) {
+                  mAllocator(other.mAllocator), vkAsset(vkAsset::Type::eBuffer) {
             other.buffer = VK_NULL_HANDLE;
             other.vmaAllocation = nullptr;
             other.mappedData = nullptr;
@@ -87,10 +100,9 @@ namespace yic {
         }
 
     private:
-
     };
 
-    struct vkImage{
+    struct vkImage : vkAsset{
         vk::Image image;
         vk::ImageView imageView;
         vk::Sampler sampler;
@@ -98,7 +110,8 @@ namespace yic {
         VmaAllocator &mAllocator;
 
         vkImage(vk::Image img, vk::ImageView imgView, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef)
-                : image(img), imageView(imgView), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef) {
+                : image(img), imageView(imgView), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef),
+                  vkAsset(vkAsset::Type::eImage) {
 
         }
 
@@ -113,7 +126,7 @@ namespace yic {
 
         vkImage(vkImage &&other) noexcept
         : image(other.image), imageView(other.imageView), vmaAllocation(other.vmaAllocation),
-        mAllocator(other.mAllocator) {
+        mAllocator(other.mAllocator), vkAsset(vkAsset::Type::eImage) {
             other.image = VK_NULL_HANDLE;
             other.imageView = VK_NULL_HANDLE;
             other.vmaAllocation = nullptr;

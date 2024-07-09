@@ -126,7 +126,7 @@ namespace yic {
         return std::make_shared<vkImage>(image, imageview, mDevice, allocation, mVmaAllocator);
     }
 
-    auto vkAllocator::allocImg_impl(const imgPath& imgPath, vkImageConfig config) -> vkImg_sptr {
+    auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config) -> vkImg_sptr {
         int w, h, c;
         vk::DeviceSize imgSize{0};
         std::vector<stbi_uc> pixels;
@@ -167,7 +167,7 @@ namespace yic {
 
         mapBuf(stgBuf, imgSize, pixels.data(), false);
 
-        auto img = allocImgOffScreen_impl(config.setExtent(w, h));
+        auto img = allocImgOffScreen_impl(config.value().setExtent(w, h));
 
         copyBufToImg(stgBuf.buf, img->image, (uint32_t)w, (uint32_t)h);
 

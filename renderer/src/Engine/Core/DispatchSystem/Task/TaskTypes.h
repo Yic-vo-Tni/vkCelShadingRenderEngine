@@ -8,7 +8,7 @@
 namespace tt{
 
     enum class RenderTarget_s{
-       eImGuiWindow, eMainWindow
+       eMainWindow
     };
 
     enum class MainWindow{

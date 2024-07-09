@@ -10,6 +10,7 @@
 #include "Engine/RHI/vkSwapchain.h"
 #include "Engine/RHI/vkSemaphore.h"
 #include "Engine/RHI/vkFrameRender.h"
+#include "Engine/RHI/vkDescriptor.h"
 #include "Engine/RHI/vkCommand.h"
 #include "Engine/RHI/vkPipeline.h"
 #include "Engine/RHI/vkAllocator.h"
@@ -25,14 +26,18 @@ namespace yic {
         vkRhi();
         ~vkRhi();
 
-        auto ImGuiFrameLoop() -> bool;
+        auto FrameLoop() -> bool;
+
+
+    private:
+        auto configureDynamicViewportScissor(et::vkRenderContext rt) -> void;
 
     private:
         sf::Clock mClock;
         sf::Time mTimePerFrame;
 
-        std::unique_ptr<vkSwapchain> mImGuiSwapchain{};
-        std::unique_ptr<vkCommand> mImGuiCommand{};
+        std::unique_ptr<vkSwapchain> mSwapchain{};
+        std::unique_ptr<vkCommand> mCommand{};
         std::unique_ptr<vkImGui> mImGui{};
 
         vk::PipelineLayout layout;
