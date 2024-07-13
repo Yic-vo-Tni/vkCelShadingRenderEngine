@@ -9,6 +9,24 @@
 
 #define HANA(...) BOOST_HANA_DEFINE_STRUCT(__VA_ARGS__)
 
+#define MAKE_OPTIONAL(r, data, elem) (std::optional<BOOST_PP_TUPLE_ELEM(2, 0, elem)>, BOOST_PP_TUPLE_ELEM(2, 1, elem))
+#define HANA_OPT(name, ...) \
+    BOOST_HANA_DEFINE_STRUCT(name, \
+        BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(MAKE_OPTIONAL, _, BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))) \
+    );
+
+#define DEFINE_ID_CONSTS(...) \
+    struct id { \
+        BOOST_PP_SEQ_FOR_EACH_I(DEFINE_STATIC_CONST_STRING, _, BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)) \
+    };
+#define DEFINE_ID_CONSTS_EX(ext, ...) \
+    struct id_##ext { \
+        BOOST_PP_SEQ_FOR_EACH_I(DEFINE_STATIC_CONST_STRING, _, BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)) \
+    };
+
+#define DEFINE_STATIC_CONST_STRING(r, data, i, elem) \
+    static constexpr const char* elem = #elem;
+
 #define RETURN_REF(Member) \
     [[nodiscard]] const auto& Member##_ref() const { \
         if (!Member.has_value()) \

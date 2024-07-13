@@ -72,6 +72,10 @@
 
 #include "boost/hana.hpp"
 #include "boost/process.hpp"
+#include "boost/preprocessor.hpp"
+#include "boost/multi_index_container.hpp"
+#include "boost/multi_index/member.hpp"
+#include "boost/multi_index/ordered_index.hpp"
 
 #include "oneapi/tbb/task_group.h"
 #include "oneapi/tbb/parallel_invoke.h"

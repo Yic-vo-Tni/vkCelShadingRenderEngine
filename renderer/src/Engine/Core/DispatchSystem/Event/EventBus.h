@@ -74,6 +74,23 @@ namespace yic {
                     inst->updateOptional(std::any_cast<Event &>(storedEvent), event);
                 }
             }
+        }
+
+        template<typename Event>
+        static void destroy(const std::string& id = {}) {
+            auto inst = get();
+            auto type = std::type_index(typeid(Event));
+
+            auto& destroy_data = inst->mEventDates[type];
+
+            if (id.empty()){
+                destroy_data.clear();
+            } else{
+                auto it = destroy_data.find(id);
+                if (it != destroy_data.end()){
+                    destroy_data.unsafe_erase(it);
+                }
+            }
 
         }
 
@@ -95,6 +112,10 @@ namespace yic {
                 return getState<et::vkRenderContext>(id);
             }
 
+            static auto vkResource(default_parm_id){
+                return getState<et::vkResource>(id);
+            }
+
             static auto glKeyInput(default_parm_id){
                 return getState<et::glKeyInput>(id);
             }
@@ -111,9 +132,6 @@ namespace yic {
                 return getState<et::glScrollInput>(id);
             }
 
-//            static auto test(default_parm_id){
-//                return getState<et::test>(id);
-//            }
         };
 
         struct GetRef_scoped{

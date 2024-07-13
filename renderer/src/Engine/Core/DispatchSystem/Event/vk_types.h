@@ -5,27 +5,35 @@
 #ifndef VKCELSHADINGRENDERER_VKEVENTTYPES_H
 #define VKCELSHADINGRENDERER_VKEVENTTYPES_H
 
+#include "Engine/RHI/vkAsset.h"
+
+namespace tbb{
+
+    template<typename T>
+    inline tbb::concurrent_unordered_map<std::string, T> make_unordered_map(std::string id, T t) {
+        tbb::concurrent_unordered_map<std::string, T> temp;
+        temp[id] = t;
+        return  temp;
+    }
+}
+
 namespace et {
 
-    struct Frame{
+    struct FrameEntry {
         vk::Image image;
         vk::ImageView imageView;
-    };
-
-    struct FrameEntry {
-        Frame frame;
         vk::Semaphore readSemaphore;
         vk::Semaphore writtenSemaphore;
     };
 
     struct vkSetupContext {
-        HANA(vkSetupContext,
-             (opt<vk::Instance>, instance),
-             (opt<vk::DispatchLoaderDynamic>, dynamicDispatcher),
-             (opt<vk::DebugUtilsMessengerEXT>, debugMessenger),
-             (opt<vk::PhysicalDevice>, physicalDevice),
-             (opt<vk::Device>, device),
-             (opt<yic::QueueFamily>, queueFamily));
+        HANA_OPT(vkSetupContext,
+             (vk::Instance, instance),
+             (vk::DispatchLoaderDynamic, dynamicDispatcher),
+             (vk::DebugUtilsMessengerEXT, debugMessenger),
+             (vk::PhysicalDevice, physicalDevice),
+             (vk::Device, device),
+             (yic::QueueFamily, queueFamily));
 
 
         RETURN_REF(instance);
@@ -45,45 +53,45 @@ namespace et {
         RETURN_CUSTOM_VALUE(qIndexTransferDownload, queueFamily, queueFamily->getDownloadTransferFamilyIndex());
     };
 
-    struct vkPipeline {
-        HANA(vkPipeline,
-             (opt < std::unordered_map<std::string, vk::Pipeline>>, graphics),
-             (opt < std::unordered_map<std::string, vk::Pipeline>>, compute),
-             (opt < std::unordered_map<std::string, vk::Pipeline>>, raytracing),
-             (opt < vk::DescriptorSet > , descriptorSet));
-    };
-
-    struct vkRenderPass{
-        HANA(vkRenderPass,
-             (opt<vk::RenderPass>, renderPass));
-
-        struct id{
-            static constexpr const char* basicRenderPass = "BasicRenderPass";
-            static constexpr const char* depthRenderPass = "DepthRenderPass";
-            static constexpr const char* shadowRenderPass = "ShadowRenderPass";
-            static constexpr const char* postProcessRenderPass = "PostProcessRenderPass";
-        };
-    };
+//    struct vkPipeline {
+//        HANA(vkPipeline,
+//             (opt < std::unordered_map<std::string, vk::Pipeline>>, graphics),
+//             (opt < std::unordered_map<std::string, vk::Pipeline>>, compute),
+//             (opt < std::unordered_map<std::string, vk::Pipeline>>, raytracing),
+//             (opt < vk::DescriptorSet > , descriptorSet));
+//    };
+//
+//    struct vkRenderPass{
+//        HANA(vkRenderPass,
+//             (opt<vk::RenderPass>, renderPass));
+//
+//        struct id{
+//            static constexpr const char* basicRenderPass = "BasicRenderPass";
+//            static constexpr const char* depthRenderPass = "DepthRenderPass";
+//            static constexpr const char* shadowRenderPass = "ShadowRenderPass";
+//            static constexpr const char* postProcessRenderPass = "PostProcessRenderPass";
+//        };
+//    };
 
 
     struct vkRenderContext {
-        HANA(vkRenderContext,
-             (opt<std::pair<int, int>>, size),
-             (opt<vk::Extent2D>, extent),
-             (opt<GLFWwindow*>, window),
-             (opt<vk::SwapchainKHR>, swapchain),
-             (opt<vk::Extent2D>, currentExtent),
-             (opt<std::vector<FrameEntry>>, frameEntries),
-             (opt<vk::SurfaceFormatKHR>, surfaceFormat),
-             (opt<uint32_t>, activeImageIndex),
-             (opt<vk::RenderPass>, renderPass),
-             (opt<std::vector<vk::Framebuffer>>, framebuffers),
-             (opt<vk::CommandBuffer>, cmd)
+        HANA_OPT(vkRenderContext,
+             (ImVec2, size),
+             (vk::Extent2D, extent),
+             (GLFWwindow*, window),
+             (vk::SwapchainKHR, swapchain),
+             (vk::Extent2D, currentExtent),
+             (std::vector<FrameEntry>, frameEntries),
+             (vk::SurfaceFormatKHR, surfaceFormat),
+             (uint32_t, activeImageIndex),
+             (vk::RenderPass, renderPass),
+             (std::vector<vk::Framebuffer>, framebuffers),
+             (vk::CommandBuffer, cmd)
         );
 
-        struct id {
-            static constexpr const char *mainRender{"mainRender"};
-        };
+        DEFINE_ID_CONSTS(
+                mainRender
+        );
 
         RETURN_REF(window);
         RETURN_REF(swapchain);
@@ -97,18 +105,25 @@ namespace et {
         RETURN_VALUE(currentExtent);
         RETURN_VALUE(activeImageIndex);
 
-        RETURN_CUSTOM_VALUE(width, size, size->first);
-        RETURN_CUSTOM_VALUE(height, size, size->second);
+        RETURN_CUSTOM_VALUE(width, size, size->x);
+        RETURN_CUSTOM_VALUE(height, size, size->y);
         RETURN_CUSTOM_VALUE(imageCount, frameEntries, static_cast<uint32_t>(frameEntries->size()));
     };
 
-    struct vkRenderFrame {
-        HANA(vkRenderFrame,
-             (opt < ImVec2 > , size),
-             (opt < std::vector<Frame>>, frameEntries),
-             (opt < std::vector<vk::Framebuffer>>, framebuffers),
-             (opt < vk::CommandBuffer > , cmd)
+    struct vkResource {
+        HANA_OPT(vkResource,
+             (vot::concurrent_shared_ptr_unordered_map<yic::vkBuffer>, buf),
+             (vot::concurrent_shared_ptr_unordered_map<yic::vkImage>, img)
         );
+
+        DEFINE_ID_CONSTS_EX(
+                buf,
+                camera
+        );
+
+        RETURN_REF(buf);
+        RETURN_REF(img);
+
     };
 
 

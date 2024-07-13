@@ -34,6 +34,38 @@ namespace yic {
             });
         }
 
+//        EventBus::update(et::vkResource{
+//            .asset = vk
+//        });
+//        ConcurrentKeyMap <vkAsset> t;
+//        auto img = vkAllocator::allocImg(img_path "/4.png");
+//        t.add(img);
+        auto img = vot::concurrent_shared_ptr_unordered_map<vkImage>(vkAllocator::allocImg(img_path "/4.png"));
+        EventBus::update(et::vkResource{
+            .img = img
+        });
+        auto y = EventBus::Get::vkResource().img_ref().find_ref(img.tempId);
+        vkError(y->id);
+        vkError(EventBus::Get::vkResource().img_ref().size());
+
+        auto buf = vot::concurrent_shared_ptr_unordered_map<vkBuffer>(vkAllocator::allocBuf(5, vk::BufferUsageFlagBits::eTransferDst, vkAllocator::MemoryUsage::eCpuOnly, IdGenerator::uniqueId()));
+        EventBus::update(et::vkResource{
+            .buf = buf
+        });
+        vkError(EventBus::Get::vkResource().buf_ref().size());
+        auto t = EventBus::Get::vkResource().buf_ref().find_ref(buf.tempId)->id;
+        auto t_1 = EventBus::Get::vkResource().buf_ref().find_ref(t)->id;
+        auto buf_2 = vkAllocator::allocBuf(5, vk::BufferUsageFlagBits::eTransferDst, vkAllocator::MemoryUsage::eCpuOnly, IdGenerator::uniqueId());
+        EventBus::update(et::vkResource{
+            .buf = buf_2
+        });
+        vkError(EventBus::Get::vkResource().buf_ref().size());
+        auto x = EventBus::Get::vkResource().buf_ref();
+        EventBus::Get::vkResource().buf_ref().find_ref(buf_2->id)->updateBuf(5);
+        vkError(t);
+        vkError(t_1);
+
+
 //        auto info = vk::PipelineLayoutCreateInfo();
 //        layout = EventBus::Get::vkSetupContext().device_ref().createPipelineLayout(info);
 //        pipeline = std::make_unique<vkPipeline<Graphics>>(EventBus::Get::vkSetupContext().device_ref(), layout,
@@ -51,13 +83,6 @@ namespace yic {
 //        img = vkAllocator::allocImg(img_path "/4.png");
 //
 //        auto offImg = vkAllocator::allocImgOffScreen(vkImageConfig{1920, 1080});
-//
-//        vk::SamplerCreateInfo samplerCreateInfo{{}, vk::Filter::eLinear, vk::Filter::eNearest, vk::SamplerMipmapMode::eLinear,
-//                                                vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
-//                                                0.f, vk::False, 1.f,
-//                                                vk::False, vk::CompareOp::eAlways,
-//                                                0.f, 0.f,
-//                                                vk::BorderColor::eIntOpaqueBlack, vk::False};
 //        mSampler = EventBus::Get::vkSetupContext().device->createSampler(samplerCreateInfo);
 //
 //        mDescriptor.addDesSetLayout({
@@ -74,10 +99,10 @@ namespace yic {
     }
 
     vkRhi::~vkRhi() {
-        EventBus::Get::vkSetupContext().device_ref().destroy(layout);
-
         EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
         EventBus::Get::vkSetupContext().device_ref().waitIdle();
+
+        EventBus::destroy<et::vkResource>();
     }
 
     bool vkRhi::FrameLoop() {

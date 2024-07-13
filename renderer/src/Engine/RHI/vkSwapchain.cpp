@@ -117,8 +117,8 @@ namespace yic {
         for(size_t i = 0; i < mImageCount; i++){
             auto& entry = frameEntries[i];
 
-            entry.frame.image = images[i];
-            entry.frame.imageView = mDevice.createImageView(vk::ImageViewCreateInfo{{},
+            entry.image = images[i];
+            entry.imageView = mDevice.createImageView(vk::ImageViewCreateInfo{{},
                                                                               images[i], vk::ImageViewType::e2D,
                                                                               mSurfaceFormat.format,vk::ComponentSwizzle::eIdentity,
                                                                               vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}});
@@ -145,30 +145,15 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-//        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
-//            mUpdateSize.store(true);
-//        }, mId);
-//        if (mUpdateSize.load()){
-//            mDevice.waitIdle();
-//            mGraphicsQueue.waitIdle();
-//            recreateSwapchain();
-//            mCurrentFrame = 0;
-//            mUpdateSize.store(false);
-//        }
-//        EventBus::subscribeDeferredAuto([&](const et::vkRenderContext& vkRenderContext){
-//            mDevice.waitIdle();
-//            mGraphicsQueue.waitIdle();
-//            recreateSwapchain();
-//            mCurrentFrame = 0;
-//        }, mId);
-        int w, h;
-        auto rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
-        glfwGetFramebufferSize(EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).window_ref(), &w, &h);
-        if (w != rt.currentExtent_v().width || h != rt.currentExtent_v().height){
+        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
+            mUpdateSize.store(true);
+        }, mId);
+        if (mUpdateSize.load()){
             mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
             recreateSwapchain();
             mCurrentFrame = 0;
+            mUpdateSize.store(false);
         }
 
         if (!acquire())
@@ -196,8 +181,6 @@ namespace yic {
             mGraphicsQueue.waitIdle();
             mDevice.waitIdle();
             recreateSwapchain();
- //           mCurrentFrame = 0;
-//            auto semaphore = mFrameEntries[mCurrentFrame % mImageCount].readSemaphore;
             auto semaphore = mDevice.createSemaphore(vk::SemaphoreCreateInfo());
             auto rv = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE);
             switch (rv.result) {
@@ -280,7 +263,7 @@ namespace yic {
 
         Rvk_y("create frame buffer") = [&]{
             for(size_t i = 0; i < mFrameEntries.size(); i++){
-                auto view = mFrameEntries[i].frame.imageView;
+                auto view = mFrameEntries[i].imageView;
 
                 auto createInfo = vk::FramebufferCreateInfo().setRenderPass(mRenderPass)
                         .setAttachments(view)
@@ -303,7 +286,7 @@ namespace yic {
         for(auto& f : mFrameEntries){
             mDevice.destroy(f.readSemaphore);
             mDevice.destroy(f.writtenSemaphore);
-            mDevice.destroy(f.frame.imageView);
+            mDevice.destroy(f.imageView);
         }
     }
 

@@ -9,55 +9,56 @@
 
 namespace yic {
 
-    struct vkAsset{
-        enum class Type{
-            eBuffer, eImage
-        };
-    protected:
-        Type mType;
+//    class vkAsset : public Identifiable{
+//    public:
+//        enum class Type{
+//            eBuffer, eImage
+//        };
+//    public:
+//        vkAsset(std::string id, Type type) : type(type), Identifiable(std::move(id)){};
+//        ~vkAsset() override = default;
+//
+//        Type type;
+//    };
 
-        explicit vkAsset(Type type) : mType(type){}
-    };
-
-    struct vkBuffer : vkAsset {
-        vk::Buffer buffer;
-        VmaAllocation vmaAllocation;
+    struct vkBuffer : public Identifiable{
+        vk::Buffer buffer{};
+        VmaAllocation vmaAllocation{};
         void *mappedData = nullptr;
         VmaAllocator &mAllocator;
-        std::function<void(const void* src)> mUpdateStagingFunc;
+        std::function<void(const void* src)> mUpdateStagingFunc{};
 
-        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef)
-                : buffer(buf),
-                  vmaAllocation(alloc),
-                  mappedData(data),
-                  mAllocator(allocatorRef), vkAsset(vkAsset::Type::eBuffer) {
+//        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef)
+//                : buffer(buf),
+//                  vmaAllocation(alloc),
+//                  mappedData(data),
+//                  mAllocator(allocatorRef){
+//
+//        }
 
-        }
-
-        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef,
+        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef, std::string id,
                  std::function<void(const void *src)> updateStagingFunc)
                 : buffer(buf),
                   vmaAllocation(alloc),
                   mappedData(data),
-                  mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)),
-                  vkAsset(vkAsset::Type::eBuffer) {
+                  mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)), Identifiable(std::move(id)){
 
         }
 
-        ~vkBuffer() {
+        ~vkBuffer() override {
             vmaDestroyBuffer(mAllocator, buffer, vmaAllocation);
         }
 
         vkBuffer(const vkBuffer &) = delete;
         vkBuffer &operator=(const vkBuffer &) = delete;
 
-        vkBuffer(vkBuffer &&other) noexcept
-                : buffer(other.buffer), vmaAllocation(other.vmaAllocation), mappedData(other.mappedData),
-                  mAllocator(other.mAllocator), vkAsset(vkAsset::Type::eBuffer) {
-            other.buffer = VK_NULL_HANDLE;
-            other.vmaAllocation = nullptr;
-            other.mappedData = nullptr;
-        }
+//        vkBuffer(vkBuffer &&other) noexcept
+//                : buffer(other.buffer), vmaAllocation(other.vmaAllocation), mappedData(other.mappedData),
+//                  mAllocator(other.mAllocator) {
+//            other.buffer = VK_NULL_HANDLE;
+//            other.vmaAllocation = nullptr;
+//            other.mappedData = nullptr;
+//        }
 
         vkBuffer &operator=(vkBuffer &&other) noexcept {
             if (this != &other) {
@@ -102,20 +103,25 @@ namespace yic {
     private:
     };
 
-    struct vkImage : vkAsset{
-        vk::Image image;
-        vk::ImageView imageView;
-        vk::Sampler sampler;
-        VmaAllocation vmaAllocation;
+    struct vkImage : public Identifiable{
+        vk::Image image{};
+        vk::ImageView imageView{};
+        vk::Sampler sampler{};
+        VmaAllocation vmaAllocation{};
         VmaAllocator &mAllocator;
 
-        vkImage(vk::Image img, vk::ImageView imgView, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef)
-                : image(img), imageView(imgView), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef),
-                  vkAsset(vkAsset::Type::eImage) {
+//        vkImage(vk::Image img, vk::ImageView imgView, vk::Sampler spr, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef)
+//                : image(img), imageView(imgView), sampler(spr), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef){
+//
+//        }
+        vkImage(vk::Image img, vk::ImageView imgView, vk::Sampler spr, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef, std::string id)
+                : image(img), imageView(imgView), sampler(spr), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef),
+                  Identifiable(std::move(id)){
 
         }
 
-        ~vkImage(){
+        ~vkImage() override{
+            mDevice.destroy(sampler);
             mDevice.destroy(image);
             mDevice.destroy(imageView);
             vmaFreeMemory(mAllocator, vmaAllocation);
@@ -124,13 +130,13 @@ namespace yic {
         vkImage(const vkImage &) = delete;
         vkImage &operator=(const vkImage &) = delete;
 
-        vkImage(vkImage &&other) noexcept
-        : image(other.image), imageView(other.imageView), vmaAllocation(other.vmaAllocation),
-        mAllocator(other.mAllocator), vkAsset(vkAsset::Type::eImage) {
-            other.image = VK_NULL_HANDLE;
-            other.imageView = VK_NULL_HANDLE;
-            other.vmaAllocation = nullptr;
-        }
+//        vkImage(vkImage &&other) noexcept
+//        : image(other.image), imageView(other.imageView), vmaAllocation(other.vmaAllocation),
+//        mAllocator(other.mAllocator) {
+//            other.image = VK_NULL_HANDLE;
+//            other.imageView = VK_NULL_HANDLE;
+//            other.vmaAllocation = nullptr;
+//        }
 
         vkImage &operator=(vkImage &&other) noexcept {
             if (this != &other) {
@@ -146,7 +152,7 @@ namespace yic {
         }
 
     private:
-        vk::Device mDevice;
+        vk::Device mDevice{};
     };
 
 }

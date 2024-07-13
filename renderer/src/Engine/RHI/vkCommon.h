@@ -11,8 +11,6 @@ enum class QueueType {
     eGraphics, eTransfer,
 };
 
-
-
 namespace fn{
 
     inline auto addRequiredExtensions(){
@@ -132,8 +130,23 @@ namespace yic{
         vk::ComponentSwizzle componentSwizzle = vk::ComponentSwizzle::eIdentity;
         vk::ImageSubresourceRange imageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
-        bool custom_define = false;
+        vk::Filter magFilter = vk::Filter::eLinear;
+        vk::Filter minFilter = vk::Filter::eNearest;
+        vk::SamplerMipmapMode samplerMipMap = vk::SamplerMipmapMode::eLinear;
+        vk::SamplerAddressMode u = vk::SamplerAddressMode::eRepeat;
+        vk::SamplerAddressMode v = vk::SamplerAddressMode::eRepeat;
+        vk::SamplerAddressMode w = vk::SamplerAddressMode::eRepeat;
+        float mipLodBias = 0.f;
+        vk::Bool32 anisotropyEnable = vk::False;
+        float maxAnisotropy = 1.f;
+        vk::Bool32 compareEnable = vk::False;
+        vk::CompareOp compareOp = vk::CompareOp::eAlways;
+        float minLod = 0.f;
+        float maxLod = 0.f;
+        vk::BorderColor borderColor = vk::BorderColor::eIntOpaqueBlack;
+        vk::Bool32  unNormalizedCoordinates = vk::False;
 
+        bool custom_define = false;
 
         explicit vkImageConfig(vk::Extent2D e2d){ extent = vk::Extent3D{e2d, 1}; };
 
@@ -158,8 +171,8 @@ namespace yic{
         }
 
         template<typename T>
-        vkImageConfig& setExtent(T w, T h) {
-            extent = vk::Extent3D{static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+        vkImageConfig& setExtent(T w_, T h_) {
+            extent = vk::Extent3D{static_cast<uint32_t>(w_), static_cast<uint32_t>(h_), 1};
             return *this;
         }
 
@@ -183,12 +196,12 @@ namespace yic{
             return *this;
         }
 
-        vkImageConfig& addUsage(vk::ImageUsageFlags u) {
-            usage |= u;
+        vkImageConfig& addUsage(vk::ImageUsageFlags usg) {
+            usage |= usg;
             return *this;
         }
-        vkImageConfig& setUsage(vk::ImageUsageFlags u) {
-            usage = u;
+        vkImageConfig& setUsage(vk::ImageUsageFlags usg) {
+            usage = usg;
             return *this;
         }
 

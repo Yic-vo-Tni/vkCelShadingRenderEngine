@@ -40,8 +40,8 @@ namespace yic {
         std::unique_ptr<vkCommand> mCommand{};
         std::unique_ptr<vkImGui> mImGui{};
 
-        vk::PipelineLayout layout;
-        std::unique_ptr<vkPipeline<Graphics>> pipeline;
+//        vk::PipelineLayout layout;
+//        std::unique_ptr<vkPipeline<Graphics>> pipeline;
     };
 
 } // yic

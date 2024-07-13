@@ -4,6 +4,8 @@
 
 #include "vkAllocator.h"
 
+#include <utility>
+
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
 
@@ -25,6 +27,7 @@ namespace yic {
         auto transferCmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(ct.qIndexGraphicsPrimary_v())
                 .setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
         mTransferPool = ct.device_ref().createCommandPool(transferCmdPoolInfo);
+
     }
 
     vkAllocator::~vkAllocator(){
@@ -34,7 +37,7 @@ namespace yic {
 
 
     auto vkAllocator::allocBuf_impl(vk::DeviceSize deviceSize, const void *data,
-                                    vk::BufferUsageFlags flags, MemoryUsage usage,
+                                    vk::BufferUsageFlags flags, MemoryUsage usage, std::string id,
                                     bool unmap) -> vkBuf_sptr {
         bufCreateInfo createInfo{
                 .deviceSize = deviceSize,
@@ -47,13 +50,13 @@ namespace yic {
 
         auto mapped = mapBuf(buf, deviceSize, data, unmap);
 
-        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, mapped, mVmaAllocator, [=](const void* src){
+        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, mapped, mVmaAllocator, id, [=](const void* src){
             memcpy(mapped, src, deviceSize);
         });
     }
 
     auto vkAllocator::allocBufStaging_impl(vk::DeviceSize deviceSize, const void *data,
-                                            vk::BufferUsageFlags flags, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
+                                            vk::BufferUsageFlags flags, std::string id, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
         auto stagingBufCreateInfo = bufCreateInfo{
                 .deviceSize = deviceSize,
                 .usage = vk::BufferUsageFlagBits::eTransferSrc,
@@ -75,7 +78,7 @@ namespace yic {
         vmaUnmapMemory(mVmaAllocator, stagingBuf.vmaAllocation);
         vmaDestroyBuffer(mVmaAllocator, stagingBuf.buf, stagingBuf.vmaAllocation);
 
-        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, [this, stagingBufCreateInfo, deviceSize, buf](const void* src) {
+        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, stagingBufCreateInfo, deviceSize, buf](const void* src) {
             auto stagingBuf = createBuf(stagingBufCreateInfo);
             mapBuf(stagingBuf, deviceSize, src, false);
 
@@ -88,7 +91,7 @@ namespace yic {
 
 
 
-    auto vkAllocator::allocImgOffScreen_impl(vkImageConfig config) -> vkImg_sptr {
+    auto vkAllocator::allocImgOffScreen_impl(vkImageConfig config, const std::string& id) -> vkImg_sptr {
         vk::ImageCreateInfo imageInfo{
                 {},
                 config.imageType,
@@ -123,10 +126,23 @@ namespace yic {
 
         auto imageview = mDevice.createImageView(imageViewCreateInfo);
 
-        return std::make_shared<vkImage>(image, imageview, mDevice, allocation, mVmaAllocator);
+        vk::SamplerCreateInfo samplerCreateInfo{
+                {},
+                config.magFilter, config.minFilter,
+                config.samplerMipMap,
+                config.u, config.v, config.w,
+                config.mipLodBias, config.anisotropyEnable, config.maxAnisotropy,
+                config.compareEnable, config.compareOp,
+                config.minLod, config.maxLod,
+                config.borderColor, config.unNormalizedCoordinates
+        };
+
+        auto sampler = mDevice.createSampler(samplerCreateInfo);
+
+        return std::make_shared<vkImage>(image, imageview, sampler, mDevice, allocation, mVmaAllocator, id);
     }
 
-    auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config) -> vkImg_sptr {
+    auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {
         int w, h, c;
         vk::DeviceSize imgSize{0};
         std::vector<stbi_uc> pixels;
@@ -135,6 +151,15 @@ namespace yic {
             using T = std::decay_t<decltype(arg)>;
 
             auto load = [&](const std::string & path){
+                if (id.empty()){
+                    size_t lastSlashPos = path.find_last_of("/\\");
+                    if (lastSlashPos != std::string::npos){
+                        id = path.substr(lastSlashPos + 1);
+                    } else{
+                        id = path;
+                    }
+                }
+
                 auto data = stbi_load(path.c_str(), &w, &h, &c, STBI_rgb_alpha);
                 if (data){
                     size_t size = w * h * 4;
@@ -167,7 +192,7 @@ namespace yic {
 
         mapBuf(stgBuf, imgSize, pixels.data(), false);
 
-        auto img = allocImgOffScreen_impl(config.value().setExtent(w, h));
+        auto img = allocImgOffScreen_impl(config.value().setExtent(w, h), std::move(id));
 
         copyBufToImg(stgBuf.buf, img->image, (uint32_t)w, (uint32_t)h);
 
