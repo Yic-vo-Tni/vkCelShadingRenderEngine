@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_VKEVENTTYPES_H
 
 #include "Engine/RHI/vkAsset.h"
+#include "Engine/RHI/vkDescriptor.h"
 
 namespace tbb{
 
@@ -28,12 +29,12 @@ namespace et {
 
     struct vkSetupContext {
         HANA_OPT(vkSetupContext,
-             (vk::Instance, instance),
-             (vk::DispatchLoaderDynamic, dynamicDispatcher),
-             (vk::DebugUtilsMessengerEXT, debugMessenger),
-             (vk::PhysicalDevice, physicalDevice),
-             (vk::Device, device),
-             (yic::QueueFamily, queueFamily));
+                 (vk::Instance, instance),
+                 (vk::DispatchLoaderDynamic, dynamicDispatcher),
+                 (vk::DebugUtilsMessengerEXT, debugMessenger),
+                 (vk::PhysicalDevice, physicalDevice),
+                 (vk::Device, device),
+                 (yic::QueueFamily, queueFamily));
 
 
         RETURN_REF(instance);
@@ -76,17 +77,17 @@ namespace et {
 
     struct vkRenderContext {
         HANA_OPT(vkRenderContext,
-             (ImVec2, size),
-             (vk::Extent2D, extent),
-             (GLFWwindow*, window),
-             (vk::SwapchainKHR, swapchain),
-             (vk::Extent2D, currentExtent),
-             (std::vector<FrameEntry>, frameEntries),
-             (vk::SurfaceFormatKHR, surfaceFormat),
-             (uint32_t, activeImageIndex),
-             (vk::RenderPass, renderPass),
-             (std::vector<vk::Framebuffer>, framebuffers),
-             (vk::CommandBuffer, cmd)
+                 (ImVec2, size),
+                 (vk::Extent2D, extent),
+                 (GLFWwindow * , window),
+                 (vk::SwapchainKHR, swapchain),
+                 (vk::Extent2D, currentExtent),
+                 (std::vector<FrameEntry>, frameEntries),
+                 (vk::SurfaceFormatKHR, surfaceFormat),
+                 (uint32_t, activeImageIndex),
+                 (vk::RenderPass, renderPass),
+                 (std::vector<vk::Framebuffer>, framebuffers),
+                 (vk::CommandBuffer, cmd)
         );
 
         DEFINE_ID_CONSTS(
@@ -112,8 +113,9 @@ namespace et {
 
     struct vkResource {
         HANA_OPT(vkResource,
-             (vot::concurrent_shared_ptr_unordered_map<yic::vkBuffer>, buf),
-             (vot::concurrent_shared_ptr_unordered_map<yic::vkImage>, img)
+                 (vot::concurrent_shared_ptr_unordered_map<yic::vkBuffer>, buf),
+                 (vot::concurrent_shared_ptr_unordered_map<yic::vkImage>, img),
+                 (vot::concurrent_shared_ptr_unordered_map<yic::vkDescriptor>, desc)
         );
 
         DEFINE_ID_CONSTS_EX(
@@ -121,9 +123,14 @@ namespace et {
                 camera
         );
 
+        DEFINE_ID_CONSTS_EX(
+                desc,
+                main
+        )
+
         RETURN_REF(buf);
         RETURN_REF(img);
-
+        RETURN_REF(desc);
     };
 
 

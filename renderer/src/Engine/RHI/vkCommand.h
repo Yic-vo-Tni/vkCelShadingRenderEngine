@@ -17,6 +17,9 @@ namespace yic {
         auto beginCommandBuf() -> void;
         auto endCommandBuf() -> void;
 
+        auto beginRenderPass() -> void;
+        auto endRenderPass() -> void;
+
     private:
         auto createCommandPool() -> vk::CommandPool;
         auto createCommandBuffers() -> std::vector<vk::CommandBuffer>;

@@ -42,29 +42,32 @@ namespace yic {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
         auto imageIndex = EventBus::Get::vkRenderContext(mId).activeImageIndex_v();
-        auto framebuffers = EventBus::Get::vkRenderContext(mId).framebuffers_ref();
-        auto extent = EventBus::Get::vkRenderContext(mId).currentExtent_v();
+
         mActiveCommandBuffer = mCommandBuffers[imageIndex];
 
-        mActiveCommandBuffer.begin(beginInfo);
-        {
-            std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
-
-            vk::RenderPassBeginInfo renderPassBeginInfo{mRenderPass, framebuffers[imageIndex],
-                                                        {{0, 0}, extent}, cv};
-
-            mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-        }
-
         EventBus::update(et::vkRenderContext{.cmd = mActiveCommandBuffer}, mId);
+        mActiveCommandBuffer.begin(beginInfo);
     }
 
     auto vkCommand::endCommandBuf() -> void {
-        mActiveCommandBuffer.endRenderPass();
         mActiveCommandBuffer.end();
     }
 
+    auto vkCommand::beginRenderPass() -> void {
+        auto framebuffers = EventBus::Get::vkRenderContext(mId).framebuffers_ref();
+        auto imageIndex = EventBus::Get::vkRenderContext(mId).activeImageIndex_v();
+        auto extent = EventBus::Get::vkRenderContext(mId).currentExtent_v();
 
+        std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
+        vk::RenderPassBeginInfo renderPassBeginInfo{mRenderPass, framebuffers[imageIndex],
+                                                    {{0, 0}, extent}, cv};
+
+        mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    }
+
+    auto vkCommand::endRenderPass() -> void {
+        mActiveCommandBuffer.endRenderPass();
+    }
 
 
 } // yic

@@ -62,16 +62,16 @@ namespace yic {
         ~vkAllocator();
 
         DEFINE_STATIC_ACCESSOR(allocBuf,
-                               (vk::DeviceSize ds, vk::BufferUsageFlags fg, MemoryUsage us, std::string id),
-                               (ds, nullptr, fg, us, std::move(id), false));
+                               (vk::DeviceSize ds, vk::BufferUsageFlags fg, MemoryUsage us, const std::string& id),
+                               (ds, nullptr, fg, us, id, false));
 
         DEFINE_STATIC_ACCESSOR(allocBuf,
-                    (vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags, MemoryUsage usage, std::string id, bool unmap = false),
-                    (deviceSize, data, flags, usage, std::move(id), unmap));
+                    (vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags, MemoryUsage usage, const std::string& id, bool unmap = false),
+                    (deviceSize, data, flags, usage, id, unmap));
 
         DEFINE_STATIC_ACCESSOR(allocBufStaging,
-                               (vk::DeviceSize ds, const void* data, vk::BufferUsageFlags fg, MemoryUsage us, std::string id),
-                               (ds, data, fg, std::move(id), us));
+                               (vk::DeviceSize ds, const void* data, vk::BufferUsageFlags fg, MemoryUsage us, const std::string& id),
+                               (ds, data, fg, id, us));
 
         DEFINE_STATIC_ACCESSOR(allocImg,
                                (const imgPath& pt),
@@ -107,8 +107,8 @@ namespace yic {
             return *this;
         }
 
-        auto allocBuf_impl(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, MemoryUsage usage, std::string id, bool unmap) -> vkBuf_sptr;
-        auto allocBufStaging_impl(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, std::string id,
+        auto allocBuf_impl(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, MemoryUsage usage, const std::string& id, bool unmap) -> vkBuf_sptr;
+        auto allocBufStaging_impl(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, const std::string& id,
                                    MemoryUsage usage = MemoryUsage::eGpuOnly,  AllocStrategy allocStrategy = AllocStrategy::eDefault) -> vkBuf_sptr;
         auto createBuf(const bufCreateInfo& bufCreateInfo) -> buf;
         auto copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize) -> void;

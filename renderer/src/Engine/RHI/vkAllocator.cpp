@@ -37,7 +37,7 @@ namespace yic {
 
 
     auto vkAllocator::allocBuf_impl(vk::DeviceSize deviceSize, const void *data,
-                                    vk::BufferUsageFlags flags, MemoryUsage usage, std::string id,
+                                    vk::BufferUsageFlags flags, MemoryUsage usage, const std::string& id,
                                     bool unmap) -> vkBuf_sptr {
         bufCreateInfo createInfo{
                 .deviceSize = deviceSize,
@@ -56,7 +56,7 @@ namespace yic {
     }
 
     auto vkAllocator::allocBufStaging_impl(vk::DeviceSize deviceSize, const void *data,
-                                            vk::BufferUsageFlags flags, std::string id, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
+                                            vk::BufferUsageFlags flags, const std::string& id, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
         auto stagingBufCreateInfo = bufCreateInfo{
                 .deviceSize = deviceSize,
                 .usage = vk::BufferUsageFlagBits::eTransferSrc,

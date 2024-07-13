@@ -8,6 +8,7 @@
 #define VKCELSHADINGRENDERER_WIDGET_H
 
 #include "Engine/Utils/Log.h"
+#include "Engine/Core/DispatchSystem/Schedulers.h"
 
 namespace ui {
 

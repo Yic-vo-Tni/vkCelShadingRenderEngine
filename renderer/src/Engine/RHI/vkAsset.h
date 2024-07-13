@@ -16,20 +16,12 @@ namespace yic {
         VmaAllocator &mAllocator;
         std::function<void(const void* src)> mUpdateStagingFunc{};
 
-//        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef)
-//                : buffer(buf),
-//                  vmaAllocation(alloc),
-//                  mappedData(data),
-//                  mAllocator(allocatorRef){
-//
-//        }
-
-        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef, std::string id,
+        vkBuffer(vk::Buffer buf, VmaAllocation alloc, void *data, VmaAllocator &allocatorRef, const std::string& id,
                  std::function<void(const void *src)> updateStagingFunc)
                 : buffer(buf),
                   vmaAllocation(alloc),
                   mappedData(data),
-                  mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)), Identifiable(std::move(id)){
+                  mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)), Identifiable(id){
 
         }
 

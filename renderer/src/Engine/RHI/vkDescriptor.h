@@ -6,16 +6,13 @@
 #define VKCELSHADINGRENDERER_VKDESCRIPTOR_H
 
 #include "Engine/Utils/Log.h"
-#include "Engine/Core/DispatchSystem/Schedulers.h"
 
 namespace yic {
 
-    class vkDescriptor {
+    class vkDescriptor : public Identifiable{
     public:
-        vkDescriptor() {
-            //mDevice = EventBus::Get::vkSetupContext().device_ref();
-        }
-        ~vkDescriptor(){
+        explicit vkDescriptor(const std::string& id) : Identifiable(id) {};
+        ~vkDescriptor() override{
             if (mDesPool) {
                 mDevice.destroyDescriptorPool(mDesPool);
             }
@@ -28,10 +25,18 @@ namespace yic {
         }
 
         [[nodiscard]] inline auto& getDescriptorSet() const { return mDesSet;}
+        [[nodiscard]] inline auto getPipelineLayout() const {
+            vk::PipelineLayoutCreateInfo createInfo{
+                    {}, mDesSetLayouts
+            };
+            return vkCreate("create pipeline layout") = [&]{
+                return mDevice.createPipelineLayout(createInfo);
+            };
+        }
 
         vkDescriptor& addDesSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
         vkDescriptor& createDesPool(std::optional<uint32_t> Reset_MaxSets = std::nullopt);
-        vkDescriptor& pushbackDesSets(uint32_t setIndex);
+        vkDescriptor& pushbackDesSets(uint32_t setIndex = 0);
         vkDescriptor& updateDesSet(const std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> &infos, const size_t& setIndex = 0);
 
 

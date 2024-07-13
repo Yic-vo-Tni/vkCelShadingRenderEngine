@@ -4,6 +4,8 @@
 
 #include "vkDescriptor.h"
 
+#include "Engine/Core/DispatchSystem/Schedulers.h"
+
 namespace yic {
 
     vkDescriptor &vkDescriptor::addDesSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &bindings) {
@@ -45,18 +47,22 @@ namespace yic {
 
     vkDescriptor &vkDescriptor::pushbackDesSets(uint32_t setIndex) {
         vk::DescriptorSetAllocateInfo allocateInfo{mDesPool, mDesSetLayouts};
-        mDesSet.push_back(
-                vkCreate("create des " + std::to_string(setIndex) + "set") = [&] {
-                    return mDevice.allocateDescriptorSets(allocateInfo)[setIndex];
-                }
-        );
+//        mDesSet.push_back(
+//                vkCreate("create des " + std::to_string(setIndex) + "set") = [&] {
+//                    return mDevice.allocateDescriptorSets(allocateInfo)[setIndex];
+//                }
+//        );
+        auto des = vkCreate("create des" + std::to_string(setIndex) + "set") = [&]{
+            return mDevice.allocateDescriptorSets(allocateInfo);
+        };
+        mDesSet.insert(mDesSet.end(), des.begin(), des.end());
 
         return *this;
     }
 
     vkDescriptor &vkDescriptor::updateDesSet(
             const std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> &infos, const size_t& setIndex) {
-        pushbackDesSets(mIndex);
+        pushbackDesSets();
 
         mWriteDesSets.resize(mIndex + 1);
         for(uint32_t i = 0; auto& bind : mBindings[setIndex]){

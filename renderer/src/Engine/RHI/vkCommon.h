@@ -123,7 +123,7 @@ namespace yic{
         uint32_t arrayLayers = 1;
         vk::SampleCountFlagBits sampleCountFlags = vk::SampleCountFlagBits::e1;
         vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
-        vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+        vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment;
         vk::SharingMode sharingMode = vk::SharingMode::eExclusive;
 
         vk::ImageViewType imageViewType = vk::ImageViewType::e2D;

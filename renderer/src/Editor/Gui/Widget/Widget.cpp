@@ -19,7 +19,21 @@ namespace ui {
         ImGui::Begin("Render");
         ImGui::Text("FPS: %.1f", mFps);
 
-        auto viewportSize = ImGui::GetContentRegionAvail();
+        auto desc = EventBus::Get::vkResource().desc_ref().find_ref("t")->getDescriptorSet();
+        auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
+
+        ImVec2 available = ImGui::GetContentRegionAvail();
+        float aspectRatio = 1920.0f / 1080.0f;
+        float imageWidth, imageHeight;
+
+        if (available.x / available.y > aspectRatio) {
+            imageHeight = available.y;
+            imageWidth = imageHeight * aspectRatio;
+        } else {
+            imageWidth = available.x;
+            imageHeight = imageWidth / aspectRatio;
+        }
+        ImGui::Image((ImTextureID)desc[index], ImVec2(imageWidth, imageHeight));
 
         ImGui::End();
     }
