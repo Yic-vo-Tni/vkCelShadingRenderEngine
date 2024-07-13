@@ -91,55 +91,75 @@ namespace yic {
 
 
 
-    auto vkAllocator::allocImgOffScreen_impl(vkImageConfig config, const std::string& id) -> vkImg_sptr {
-        vk::ImageCreateInfo imageInfo{
-                {},
-                config.imageType,
-                config.format,
-                config.extent,
-                config.mipLevels,
-                config.arrayLayers,
-                config.sampleCountFlags,
-                config.tiling,
-                config.usage,
-                config.sharingMode
+    auto vkAllocator::allocImgOffScreen_impl(vkImageConfig config, const std::string& id, size_t count) -> vkImg_sptr {
+        auto createImage = [&]{
+            vk::ImageCreateInfo imageInfo{
+                    {},
+                    config.imageType,
+                    config.format,
+                    config.extent,
+                    config.mipLevels,
+                    config.arrayLayers,
+                    config.sampleCountFlags,
+                    config.tiling,
+                    config.usage,
+                    config.sharingMode
+            };
+
+            VmaAllocationCreateInfo allocInfo{
+                    .usage = VMA_MEMORY_USAGE_GPU_ONLY
+            };
+
+            VkImage image;
+            VmaAllocation allocation;
+
+            vmaCreateImage(mVmaAllocator, &reinterpret_cast<const VkImageCreateInfo&>(imageInfo), &allocInfo, &image, &allocation,
+                           nullptr);
+
+            return std::make_pair(image, allocation);
         };
 
-        VmaAllocationCreateInfo allocInfo{
-            .usage = VMA_MEMORY_USAGE_GPU_ONLY
+        auto createImageView = [&](vk::Image image) {
+            vk::ImageViewCreateInfo imageViewCreateInfo{
+                    {},
+                    image,
+                    config.imageViewType,
+                    config.format,
+                    config.componentSwizzle,
+                    config.imageSubresourceRange
+            };
+
+            return mDevice.createImageView(imageViewCreateInfo);
         };
 
-        VkImage image;
-        VmaAllocation allocation;
+        auto createSampler = [&] {
+            vk::SamplerCreateInfo samplerCreateInfo{
+                    {},
+                    config.magFilter, config.minFilter,
+                    config.samplerMipMap,
+                    config.u, config.v, config.w,
+                    config.mipLodBias, config.anisotropyEnable, config.maxAnisotropy,
+                    config.compareEnable, config.compareOp,
+                    config.minLod, config.maxLod,
+                    config.borderColor, config.unNormalizedCoordinates
+            };
 
-        vmaCreateImage(mVmaAllocator, &reinterpret_cast<const VkImageCreateInfo&>(imageInfo), &allocInfo, &image, &allocation,
-                       nullptr);
-
-        vk::ImageViewCreateInfo imageViewCreateInfo{
-                {},
-                image,
-                config.imageViewType,
-                config.format,
-                config.componentSwizzle,
-                config.imageSubresourceRange
+            return mDevice.createSampler(samplerCreateInfo);
         };
 
-        auto imageview = mDevice.createImageView(imageViewCreateInfo);
+        std::vector<vk::Image> images;
+        std::vector<vk::ImageView> imageViews;
+        std::vector<VmaAllocation> allocations;
 
-        vk::SamplerCreateInfo samplerCreateInfo{
-                {},
-                config.magFilter, config.minFilter,
-                config.samplerMipMap,
-                config.u, config.v, config.w,
-                config.mipLodBias, config.anisotropyEnable, config.maxAnisotropy,
-                config.compareEnable, config.compareOp,
-                config.minLod, config.maxLod,
-                config.borderColor, config.unNormalizedCoordinates
-        };
+        while (count --){
+            auto [img, vma] = createImage();
+            images.emplace_back(img);
+            imageViews.emplace_back(createImageView(img));
+            allocations.emplace_back(vma);
+        }
+        auto sampler = createSampler();
 
-        auto sampler = mDevice.createSampler(samplerCreateInfo);
-
-        return std::make_shared<vkImage>(image, imageview, sampler, mDevice, allocation, mVmaAllocator, id);
+        return std::make_shared<vkImage>(images, imageViews, sampler, mDevice, allocations, mVmaAllocator, id);
     }
 
     auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {
@@ -192,9 +212,9 @@ namespace yic {
 
         mapBuf(stgBuf, imgSize, pixels.data(), false);
 
-        auto img = allocImgOffScreen_impl(config.value().setExtent(w, h), std::move(id));
+        auto img = allocImgOffScreen_impl(config.value().setExtent(w, h), id, 1);
 
-        copyBufToImg(stgBuf.buf, img->image, (uint32_t)w, (uint32_t)h);
+        copyBufToImg(stgBuf.buf, img->images[0], (uint32_t)w, (uint32_t)h);
 
         vmaDestroyBuffer(mVmaAllocator, stgBuf.buf, stgBuf.vmaAllocation);
 

@@ -82,8 +82,8 @@ namespace yic {
                                (pt, cf));
 
         DEFINE_STATIC_ACCESSOR(allocImgOffScreen,
-                               (const vkImageConfig& cf, std::string id),
-                               (cf, std::move(id)));
+                               (const vkImageConfig& cf, const std::string& id, size_t count),
+                               (cf, id, count));
 
     private:
         vkAllocator& createTempCmdBuf(){
@@ -115,16 +115,10 @@ namespace yic {
         auto mapBuf(const buf& buf, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
 
         auto allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config = vkImageConfig{0}, std::string id = {}) -> vkImg_sptr;
-        auto allocImgOffScreen_impl(vkImageConfig config, const std::string& id) -> vkImg_sptr;
+        auto allocImgOffScreen_impl(vkImageConfig config, const std::string& id, size_t count) -> vkImg_sptr;
         auto copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h) -> void;
         auto transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) -> void;
 
-//        void t(){
-//            vk::Extent2D m;
-//            allocImgOffScreen_impl(vkImageConfig{m}.setArrayLayers(2));
-//
-//            allocImg("slfdj");
-//        }
     private:
         vk::Device mDevice;
         vk::Queue mGraphicsQueue;

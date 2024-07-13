@@ -9,18 +9,6 @@
 
 namespace yic {
 
-//    class vkAsset : public Identifiable{
-//    public:
-//        enum class Type{
-//            eBuffer, eImage
-//        };
-//    public:
-//        vkAsset(std::string id, Type type) : type(type), Identifiable(std::move(id)){};
-//        ~vkAsset() override = default;
-//
-//        Type type;
-//    };
-
     struct vkBuffer : public Identifiable{
         vk::Buffer buffer{};
         VmaAllocation vmaAllocation{};
@@ -52,13 +40,13 @@ namespace yic {
         vkBuffer(const vkBuffer &) = delete;
         vkBuffer &operator=(const vkBuffer &) = delete;
 
-//        vkBuffer(vkBuffer &&other) noexcept
-//                : buffer(other.buffer), vmaAllocation(other.vmaAllocation), mappedData(other.mappedData),
-//                  mAllocator(other.mAllocator) {
-//            other.buffer = VK_NULL_HANDLE;
-//            other.vmaAllocation = nullptr;
-//            other.mappedData = nullptr;
-//        }
+        vkBuffer(vkBuffer &&other) noexcept
+                : buffer(other.buffer), vmaAllocation(other.vmaAllocation), mappedData(other.mappedData),
+                  mAllocator(other.mAllocator), Identifiable(other.id) {
+            other.buffer = VK_NULL_HANDLE;
+            other.vmaAllocation = nullptr;
+            other.mappedData = nullptr;
+        }
 
         vkBuffer &operator=(vkBuffer &&other) noexcept {
             if (this != &other) {
@@ -104,49 +92,53 @@ namespace yic {
     };
 
     struct vkImage : public Identifiable{
-        vk::Image image{};
-        vk::ImageView imageView{};
+        std::vector<vk::Image> images;
+        std::vector<vk::ImageView> imageViews;
         vk::Sampler sampler{};
-        VmaAllocation vmaAllocation{};
+        std::vector<VmaAllocation> vmaAllocation{};
         VmaAllocator &mAllocator;
 
-//        vkImage(vk::Image img, vk::ImageView imgView, vk::Sampler spr, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef)
-//                : image(img), imageView(imgView), sampler(spr), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef){
-//
-//        }
-        vkImage(vk::Image img, vk::ImageView imgView, vk::Sampler spr, vk::Device dev, VmaAllocation alloc, VmaAllocator &allocatorRef, std::string id)
-                : image(img), imageView(imgView), sampler(spr), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef),
-                  Identifiable(std::move(id)){
+        size_t imageCount{0};
 
+        vkImage(const std::vector<vk::Image>& imgs, const std::vector<vk::ImageView>& imgViews, vk::Sampler spr, vk::Device dev, const std::vector<VmaAllocation>& alloc, VmaAllocator &allocatorRef, std::string id)
+                : images(imgs), imageViews(imgViews), sampler(spr), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef),
+                  Identifiable(std::move(id)){
+            imageCount = imgs.size();
         }
 
         ~vkImage() override{
             mDevice.destroy(sampler);
-            mDevice.destroy(image);
-            mDevice.destroy(imageView);
-            vmaFreeMemory(mAllocator, vmaAllocation);
+            for(auto i = imageCount; i-- > 0;){
+                mDevice.destroy(images[i]);
+                mDevice.destroy(imageViews[i]);
+                vmaFreeMemory(mAllocator, vmaAllocation[i]);
+            }
         }
 
         vkImage(const vkImage &) = delete;
         vkImage &operator=(const vkImage &) = delete;
 
-//        vkImage(vkImage &&other) noexcept
-//        : image(other.image), imageView(other.imageView), vmaAllocation(other.vmaAllocation),
-//        mAllocator(other.mAllocator) {
-//            other.image = VK_NULL_HANDLE;
-//            other.imageView = VK_NULL_HANDLE;
-//            other.vmaAllocation = nullptr;
-//        }
+        vkImage(vkImage &&other) noexcept
+                : images(std::move(other.images)), imageViews(std::move(other.imageViews)), vmaAllocation(std::move(other.vmaAllocation)),
+                  mAllocator(other.mAllocator), Identifiable(other.id) {
+            for (auto i = imageCount; i -- > 0;){
+                other.images[i] = VK_NULL_HANDLE;
+                other.imageViews[i] = VK_NULL_HANDLE;
+                other.vmaAllocation[i] = nullptr;
+            }
+        }
 
         vkImage &operator=(vkImage &&other) noexcept {
             if (this != &other) {
                 this->~vkImage();
-                image = other.image;
+                images = other.images;
                 vmaAllocation = other.vmaAllocation;
-                imageView = other.imageView;
-                other.image = VK_NULL_HANDLE;
-                other.imageView = VK_NULL_HANDLE;
-                other.vmaAllocation = nullptr;
+                imageViews = other.imageViews;
+                for (auto i = imageCount; i -- > 0;){
+                    other.images[i] = VK_NULL_HANDLE;
+                    other.imageViews[i] = VK_NULL_HANDLE;
+                    other.vmaAllocation[i] = nullptr;
+                }
             }
             return *this;
         }
