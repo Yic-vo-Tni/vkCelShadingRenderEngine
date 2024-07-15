@@ -9,6 +9,7 @@
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
 #include "Engine/RHI/vkCommand.h"
+#include "Editor/Gui/vkImGui.h"
 
 namespace yic {
 
@@ -20,7 +21,7 @@ namespace yic {
         ~vkSwapchain();
 
         auto updateEveryFrame() -> void;
-        auto submitFrame(const std::function<void()>& fun, const std::vector<vk::CommandBuffer>& cmds = {}) -> void;
+        auto submitFrame(const std::vector<vk::CommandBuffer>& cmds = {}, const std::function<void()>& fun = {}) -> void;
     private:
         auto createSurface() -> vk::SurfaceKHR;
         auto createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR;
@@ -55,6 +56,7 @@ namespace yic {
         vk::Extent2D mExtent{};
         vk::SwapchainKHR mSwapchain{};
         std::unique_ptr<vkCommand> mCommand;
+        std::unique_ptr<vkImGui> mImGui;
         uint32_t mGraphicsQueueFamilyIndex{UINT32_MAX};
         uint32_t mImageCount{UINT32_MAX};
         uint32_t mImageIndex{UINT32_MAX};

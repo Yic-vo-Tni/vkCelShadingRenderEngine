@@ -86,21 +86,28 @@ namespace yic {
     struct vkImage : public Identifiable{
         std::vector<vk::Image> images;
         std::vector<vk::ImageView> imageViews;
-        vk::Sampler sampler{};
         std::vector<VmaAllocation> vmaAllocation{};
         VmaAllocator &mAllocator;
 
-        size_t imageCount{0};
+        struct info{
+            size_t imageCount{0};
+            size_t width{};
+            size_t height{};
+        } info_;
 
-        vkImage(const std::vector<vk::Image>& imgs, const std::vector<vk::ImageView>& imgViews, vk::Sampler spr, vk::Device dev, const std::vector<VmaAllocation>& alloc, VmaAllocator &allocatorRef, std::string id)
-                : images(imgs), imageViews(imgViews), sampler(spr), mDevice(dev), vmaAllocation(alloc), mAllocator(allocatorRef),
-                  Identifiable(std::move(id)){
-            imageCount = imgs.size();
+        vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews,
+                vk::Device dev, const std::vector<VmaAllocation> &alloc,
+                VmaAllocator &allocatorRef, vkImageConfig config, const std::string &id)
+                : images(imgs), imageViews(imgViews),
+                  mDevice(dev), vmaAllocation(alloc),
+                  mAllocator(allocatorRef), Identifiable(id) {
+            info_.imageCount = imgs.size();
+            info_.width = config.extent.width;
+            info_.height = config.extent.height;
         }
 
         ~vkImage() override{
-            mDevice.destroy(sampler);
-            for(auto i = imageCount; i-- > 0;){
+            for(auto i = info_.imageCount; i-- > 0;){
                 mDevice.destroy(images[i]);
                 mDevice.destroy(imageViews[i]);
                 vmaFreeMemory(mAllocator, vmaAllocation[i]);
@@ -113,7 +120,7 @@ namespace yic {
         vkImage(vkImage &&other) noexcept
                 : images(std::move(other.images)), imageViews(std::move(other.imageViews)), vmaAllocation(std::move(other.vmaAllocation)),
                   mAllocator(other.mAllocator), Identifiable(other.id) {
-            for (auto i = imageCount; i -- > 0;){
+            for (auto i = info_.imageCount; i -- > 0;){
                 other.images[i] = VK_NULL_HANDLE;
                 other.imageViews[i] = VK_NULL_HANDLE;
                 other.vmaAllocation[i] = nullptr;
@@ -126,7 +133,7 @@ namespace yic {
                 images = other.images;
                 vmaAllocation = other.vmaAllocation;
                 imageViews = other.imageViews;
-                for (auto i = imageCount; i -- > 0;){
+                for (auto i = info_.imageCount; i -- > 0;){
                     other.images[i] = VK_NULL_HANDLE;
                     other.imageViews[i] = VK_NULL_HANDLE;
                     other.vmaAllocation[i] = nullptr;
@@ -141,7 +148,6 @@ namespace yic {
 
 }
 
-using vkBuf_sptr = std::shared_ptr<yic::vkBuffer>;
-using vkImg_sptr = std::shared_ptr<yic::vkImage>;
+
 
 #endif //VKCELSHADINGRENDERER_VKBUF_H

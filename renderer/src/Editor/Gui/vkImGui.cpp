@@ -57,7 +57,7 @@ namespace yic {
         EventBus::Get::vkSetupContext().device_ref().destroy(mDescriptorPool);
     }
 
-    auto vkImGui::render() -> void {
+    auto vkImGui::render(vk::CommandBuffer& cmd) -> void {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -71,7 +71,7 @@ namespace yic {
         //if (mShowDemo) ImGui::ShowDemoWindow(&mShowDemo);
 
         ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), EventBus::Get::vkCommandBuffer(mId).cmd_ref());
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
     }
 
     auto vkImGui::base() -> void {

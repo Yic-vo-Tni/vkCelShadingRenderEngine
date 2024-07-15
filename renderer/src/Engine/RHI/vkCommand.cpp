@@ -38,7 +38,7 @@ namespace yic {
         };
     }
 
-    auto vkCommand::beginCommandBuf(vk::Extent2D extent2D) -> void {
+    auto vkCommand::beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer & {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
         auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
@@ -56,19 +56,26 @@ namespace yic {
         vk::Rect2D scissor{{0, 0}, extent2D};
         mActiveCommandBuffer.setViewport(0, viewport);
         mActiveCommandBuffer.setScissor(0, scissor);
+
+        mExtent = extent2D;
+
+        return mActiveCommandBuffer;
     }
 
     auto vkCommand::endCommandBuf() -> void {
         mActiveCommandBuffer.end();
     }
 
-    auto vkCommand::beginRenderPass(vkRenderPassInfo passInfo) -> void {
+    auto vkCommand::beginRenderPass(RenderPassInfo passInfo) -> void {
         auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
 
+        if (!passInfo.extent.has_value()){
+            passInfo.extent = mExtent;
+        }
         vk::RenderPassBeginInfo renderPassBeginInfo{passInfo.renderPass, passInfo.framebuffers[imageIndex],
-                                                    {passInfo.offset2D, passInfo.extent}, passInfo.clearValues};
+                                                    {passInfo.offset2D, passInfo.extent.value()}, passInfo.clearValues};
 
         mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, passInfo.subpassContents);
     }

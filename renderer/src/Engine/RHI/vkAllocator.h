@@ -7,18 +7,15 @@
 
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Utils/Log.h"
+
+#include "Engine/RHI/vkCommon.h"
 #include "Engine/RHI/vkAsset.h"
+#include "Engine/RHI/vkCommand.h"
+#include "Engine/RHI/vkDescriptor.h"
 
-#include "vkCommon.h"
-
-#define DEFINE_STATIC_ACCESSOR(func, param, types) \
-    static auto func param { \
-        return get()->func##_impl types; \
-    }
-#define DEFINE_STATIC_RETYPE_ACCESSOR(func, ret_type, param, types) \
-    static ret_type func param { \
-        return get()->func##_impl types; \
-    }
+using vkBuf_sptr = std::shared_ptr<yic::vkBuffer>;
+using vkImg_sptr = std::shared_ptr<yic::vkImage>;
+using vkDesc_sptr = std::shared_ptr<yic::vkDescriptor>;
 
 namespace yic {
 
@@ -119,7 +116,19 @@ namespace yic {
         auto copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h) -> void;
         auto transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) -> void;
 
+    public:
+        static auto allocDesc(const std::string& id) -> vkDesc_sptr{
+            auto desc = std::make_shared<vkDescriptor>(id);
+            EventBus::update(et::vkResource{
+               .desc = desc,
+            });
+            return desc;
+        };
+
     private:
+        et::vkSetupContext ct;
+        et::vkRenderContext rt;
+
         vk::Device mDevice;
         vk::Queue mGraphicsQueue;
 

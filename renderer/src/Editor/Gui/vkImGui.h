@@ -17,7 +17,7 @@ namespace yic {
         vkImGui(std::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex);
         ~vkImGui();
 
-        auto render() -> void;
+        auto render(vk::CommandBuffer& cmd) -> void;
 
     private:
         auto base() -> void;

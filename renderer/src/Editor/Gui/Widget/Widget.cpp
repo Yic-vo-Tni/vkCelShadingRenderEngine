@@ -19,7 +19,7 @@ namespace ui {
         ImGui::Begin("Render");
         ImGui::Text("FPS: %.1f", mFps);
 
-        auto desc = EventBus::Get::vkResource().desc_ref().find_ref("t")->getDescriptorSet();
+        auto desc = EventBus::Get::vkResource().desc_ref().find_ref("Primary")->getDescriptorSet();
         auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         ImVec2 available = ImGui::GetContentRegionAvail();

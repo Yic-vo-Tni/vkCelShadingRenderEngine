@@ -18,13 +18,7 @@ namespace yic {
         vkPipeline(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass) : state(device, layout, renderPass){}
     };
 
-//    void x(){
-//        vk::Device d;
-//        vk::PipelineLayout l;
-//        vk::RenderPass r;
-//        std::shared_ptr<vkPipeline<Graphics>> p;
-
-
+    using GraphicsPipeline = vkPipeline<Graphics>;
 
 //    structgetmputeState : public State<ComputeState>{};
 //    struct RayTracingState : public State<RayTracingState>{};

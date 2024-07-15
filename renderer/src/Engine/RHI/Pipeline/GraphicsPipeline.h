@@ -56,7 +56,8 @@ namespace yic {
             return *this;
         }
 
-        Graphics& addShader(const std::string& path, vk::ShaderStageFlagBits flags){
+        Graphics& addShader(std::string path, vk::ShaderStageFlagBits flags){
+            path = spv_path + std::string("/") + path;
             auto t = [this, path, flags]{
                 std::vector<char> v;
                 std::ranges::copy(fo::loadFile(path), std::back_inserter(v));

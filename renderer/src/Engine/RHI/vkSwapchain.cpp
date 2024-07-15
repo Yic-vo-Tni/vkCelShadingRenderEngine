@@ -32,6 +32,7 @@ namespace yic {
                 .framebuffers = mFramebuffers,
         }, mId);
 
+        mImGui = std::make_unique<vkImGui>(id, graphicsQueue, queueFamilyIndex);
     }
 
     vkSwapchain::~vkSwapchain() {
@@ -53,13 +54,6 @@ namespace yic {
         } else {
             throw std::runtime_error("failed to create glfw surface");
         }
-//        auto createInfo = VkWin32SurfaceCreateInfoKHR();
-//        createInfo.hwnd = mWindow;
-//        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-//        createInfo.hinstance = GetModuleHandle(nullptr);
-//        if (vkCreateWin32SurfaceKHR(mInstance, &createInfo, nullptr, &tempSurface) == VK_SUCCESS){
-//            return tempSurface;
-//        }
 
         Rvk_y("create surface") = [&] {
             return tempSurface;
@@ -146,10 +140,18 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
-            mUpdateSize.store(true);
-        }, mId);
-        if (mUpdateSize.load()){
+//        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
+//            mUpdateSize.store(true);
+//        }, mId);
+//        if (mUpdateSize.load()){
+//            mGraphicsQueue.waitIdle();
+//            recreateSwapchain();
+//            mCurrentFrame = 0;
+//            mUpdateSize.store(false);
+//        }
+        int w, h;
+        glfwGetFramebufferSize(EventBus::Get::vkRenderContext(mId).window_ref(), &w, &h);
+        if (w != mExtent.width || h != mExtent.height){
             mGraphicsQueue.waitIdle();
             recreateSwapchain();
             mCurrentFrame = 0;
@@ -163,14 +165,14 @@ namespace yic {
             throw std::runtime_error("failed to wait fence\n");
     }
 
-    auto vkSwapchain::submitFrame(const std::function<void()>& fun, const std::vector<vk::CommandBuffer>& cmds) -> void {
-        mCommand->beginCommandBuf(mExtent);
-        mCommand->beginRenderPass(vkCommand::vkRenderPassInfo{
+    auto vkSwapchain::submitFrame(const std::vector<vk::CommandBuffer>& cmds, const std::function<void()>& fun) -> void {
+        auto& cmd = mCommand->beginCommandBuf(mExtent);
+        mCommand->beginRenderPass(vkCommand::RenderPassInfo{
                 mRenderPass, mFramebuffers, mExtent,
-                vkCommand::vkClearValueBuilder::colorClearValue()
+                vkCommand::ClearValue::Color()
         });
 
-        fun();
+        mImGui->render(cmd);
 
         mCommand->endRenderPass();
         mCommand->endCommandBuf();
@@ -180,7 +182,6 @@ namespace yic {
         auto waitStage = std::vector<vk::PipelineStageFlags>{vk::PipelineStageFlagBits::eColorAttachmentOutput};
 
         auto i = mCurrentFrame % mImageCount;
-        auto cmd = EventBus::Get::vkCommandBuffer(mId).cmd_ref();
         auto finalCmds = cmds;
         finalCmds.emplace_back(cmd);
         vk::SubmitInfo info{mFrameEntries[i].readSemaphore, waitStage, finalCmds, mFrameEntries[i].writtenSemaphore};

@@ -12,10 +12,12 @@
 namespace yic {
 
     vkAllocator::vkAllocator() {
-        auto ct = EventBus::Get::vkSetupContext();
+        ct = EventBus::Get::vkSetupContext();
 
         mDevice = ct.device_ref();
         mGraphicsQueue = ct.qGraphicsPrimary_ref();
+
+        vkDescriptor::FixSampler::get();
 
         auto allocatorInfo = VmaAllocatorCreateInfo();
         allocatorInfo.instance = ct.instance_ref();
@@ -24,14 +26,15 @@ namespace yic {
 
         vmaCreateAllocator(&allocatorInfo, &mVmaAllocator);
 
-        auto transferCmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(ct.qIndexGraphicsPrimary_v())
+        auto transferCmdPoolInfo = vk::CommandPoolCreateInfo()
+                .setQueueFamilyIndex(ct.qIndexGraphicsPrimary_v())
                 .setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
         mTransferPool = ct.device_ref().createCommandPool(transferCmdPoolInfo);
 
     }
 
     vkAllocator::~vkAllocator(){
-        EventBus::Get::vkSetupContext().device_ref().destroy(mTransferPool);
+        ct.device->destroy(mTransferPool);
         vmaDestroyAllocator(mVmaAllocator);
     }
 
@@ -132,21 +135,6 @@ namespace yic {
             return mDevice.createImageView(imageViewCreateInfo);
         };
 
-        auto createSampler = [&] {
-            vk::SamplerCreateInfo samplerCreateInfo{
-                    {},
-                    config.magFilter, config.minFilter,
-                    config.samplerMipMap,
-                    config.u, config.v, config.w,
-                    config.mipLodBias, config.anisotropyEnable, config.maxAnisotropy,
-                    config.compareEnable, config.compareOp,
-                    config.minLod, config.maxLod,
-                    config.borderColor, config.unNormalizedCoordinates
-            };
-
-            return mDevice.createSampler(samplerCreateInfo);
-        };
-
         std::vector<vk::Image> images;
         std::vector<vk::ImageView> imageViews;
         std::vector<VmaAllocation> allocations;
@@ -157,9 +145,8 @@ namespace yic {
             imageViews.emplace_back(createImageView(img));
             allocations.emplace_back(vma);
         }
-        auto sampler = createSampler();
 
-        return std::make_shared<vkImage>(images, imageViews, sampler, mDevice, allocations, mVmaAllocator, id);
+        return std::make_shared<vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config,id);
     }
 
     auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {

@@ -47,11 +47,7 @@ namespace yic {
 
     vkDescriptor &vkDescriptor::pushbackDesSets(uint32_t setIndex) {
         vk::DescriptorSetAllocateInfo allocateInfo{mDesPool, mDesSetLayouts};
-//        mDesSet.push_back(
-//                vkCreate("create des " + std::to_string(setIndex) + "set") = [&] {
-//                    return mDevice.allocateDescriptorSets(allocateInfo)[setIndex];
-//                }
-//        );
+
         auto des = vkCreate("create des" + std::to_string(setIndex) + "set") = [&]{
             return mDevice.allocateDescriptorSets(allocateInfo);
         };
@@ -86,4 +82,67 @@ namespace yic {
         return *this;
     }
 
+    vkDescriptor &vkDescriptor::updateDesSet(uint32_t Reset_MaxSets,
+                                             const std::vector<std::variant<ImgInfo, BufInfo>> &infos,
+                                             const size_t &setIndex) {
+        createDesPool(Reset_MaxSets);
+
+        for (int i = 0; i < Reset_MaxSets; i++) {
+            std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> v;
+            for (auto &info: infos) {
+                std::visit([&](auto &&arg) {
+                    using T = std::decay_t<decltype(arg)>;
+
+                    if constexpr (std::is_same_v<T, BufInfo>) {
+                        v.emplace_back(vk::DescriptorBufferInfo{arg.buffer[i] ? arg.buffer[i] : arg.buffer.back(),
+                                                                arg.offset[i] ? arg.offset[i] : arg.offset.back(),
+                                                                arg.range[i] ? arg.range[i] : arg.range.back()});
+                    } else if constexpr (std::is_same_v<T, ImgInfo>) {
+                        v.emplace_back(vk::DescriptorImageInfo{arg.sampler,
+                                                               arg.imageViews[i] ? arg.imageViews[i] : arg.imageViews.back(),
+                                                               arg.imageLayout});
+                    }
+                }, info);
+            }
+
+            updateDesSet(v, setIndex);
+        }
+
+        return *this;
+    }
+
+    ///---------------------------------------------------------------------------------------------------------------------///
+
+    vk::Sampler vkDescriptor::FixSampler::eDefault;
+
+    vkDescriptor::FixSampler::FixSampler() {
+        auto dev = EventBus::Get::vkSetupContext().device_ref();
+
+        eDefault = dev.createSampler(vk::SamplerCreateInfo{
+                {},
+                vk::Filter::eLinear, vk::Filter::eNearest, vk::SamplerMipmapMode::eLinear,
+                vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
+                0.f, vk::False, 1.f,
+                vk::False, vk::CompareOp::eAlways, 0.f, 0.f,
+                vk::BorderColor::eIntOpaqueBlack, vk::False
+        });
+    }
+
+    vkDescriptor::FixSampler::~FixSampler() {
+        auto dev = EventBus::Get::vkSetupContext().device_ref();
+        dev.destroy(eDefault);
+    }
+
+    auto vkDescriptor::FixSampler::createSampler() -> vk::Sampler {
+        auto dev = EventBus::Get::vkSetupContext().device_ref();
+
+        return dev.createSampler(vk::SamplerCreateInfo{
+                {},
+                vk::Filter::eLinear, vk::Filter::eNearest, vk::SamplerMipmapMode::eLinear,
+                vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
+                0.f, vk::False, 1.f,
+                vk::False, vk::CompareOp::eAlways, 0.f, 0.f,
+                vk::BorderColor::eIntOpaqueBlack, vk::False
+        });
+    }
 } // yic
