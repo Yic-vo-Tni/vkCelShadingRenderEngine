@@ -71,7 +71,7 @@ namespace yic {
         //if (mShowDemo) ImGui::ShowDemoWindow(&mShowDemo);
 
         ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), EventBus::Get::vkRenderContext(mId).cmd_ref());
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), EventBus::Get::vkCommandBuffer(mId).cmd_ref());
     }
 
     auto vkImGui::base() -> void {

@@ -26,7 +26,6 @@ namespace yic {
             auto qIndex = ct.qIndexGraphicsPrimary_v();
 
             mSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
-            mCommand = std::make_unique<vkCommand>(id, qIndex);
             mImGui = std::make_unique<vkImGui>(id, queue, qIndex);
 
             TaskBus::registerTask(tt::RenderTarget_s::eMainWindow, [this] {
@@ -34,12 +33,69 @@ namespace yic {
             });
         }
 
+        ///////////////////////
 
+        t();
+        ////////////////////////
+
+        mTimePerFrame = sf::seconds(1.f / 120.f);
+    }
+
+    vkRhi::~vkRhi() {
+        EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
+        EventBus::Get::vkSetupContext().device_ref().waitIdle();
+
+        EventBus::destroy<et::vkResource>();
+    }
+
+    bool vkRhi::FrameLoop() {
+        sf::Time start = mClock.getElapsedTime();
+
+        TaskBus::executeShaderTask();
+
+        mSwapchain->updateEveryFrame();
+
+        ///////////////////////////////////////////////////////////////////////
+
+        t_cmd->beginCommandBuf(vk::Extent2D{1920, 1080});
+        auto cmd = EventBus::Get::vkCommandBuffer("t").cmd_ref();
+        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
+        t_cmd->beginRenderPass(vkCommand::vkRenderPassInfo{
+           renderPass, frameBuffers, ext, vkCommand::vkClearValueBuilder::colorClearValue()
+        });
+
+        cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+        cmd.draw(3, 1, 0, 0);
+
+        t_cmd->endRenderPass();
+        t_cmd->endCommandBuf();
+
+        //////////////////////////////////////////////////////////////////////
+
+
+        std::vector<vk::CommandBuffer> cmds = {
+            cmd
+        };
+        mSwapchain->submitFrame([this]{
+            mImGui->render();
+        }, cmds);
+
+        sf::Time frameTime = mClock.getElapsedTime() - start;
+        if (frameTime < mTimePerFrame){
+            sf::sleep(mTimePerFrame - frameTime);
+        }
+
+        return true;
+    }
+
+    auto vkRhi::t() -> void {
+        auto ct = EventBus::Get::vkSetupContext();
+        t_cmd = std::make_unique<vkCommand>("t", ct.qIndexGraphicsPrimary_v(), EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).imageCount_v());
         ext = vk::Extent2D{1920, 1080};
         off_image = vkAllocator::allocImgOffScreen(vkImageConfig{ext}, "m", EventBus::Get::vkRenderContext(
                 et::vkRenderContext::id::mainRender).imageCount_v());
         EventBus::update(et::vkResource{
-            .img = off_image
+                .img = off_image
         });
         auto device = EventBus::Get::vkSetupContext().device_ref();
         std::vector<vk::AttachmentReference> attachRef{{0, vk::ImageLayout::eColorAttachmentOptimal}};
@@ -78,37 +134,10 @@ namespace yic {
             frameBuffers.emplace_back(device.createFramebuffer(createInfo));
         }
 
-/// alloc image / buf test
-//        auto img = vot::concurrent_shared_ptr_unordered_map<vkImage>(vkAllocator::allocImg(img_path "/4.png"));
-//        EventBus::update(et::vkResource{
-//            .img = off_image
-//        });
-//        auto y = EventBus::Get::vkResource().img_ref().find_ref(img.tempId);
-//        vkError(y->id);
-//        vkError(EventBus::Get::vkResource().img_ref().size());
-//
-//        auto buf = vot::concurrent_shared_ptr_unordered_map<vkBuffer>(vkAllocator::allocBuf(5, vk::BufferUsageFlagBits::eTransferDst, vkAllocator::MemoryUsage::eCpuOnly, IdGenerator::uniqueId()));
-//        EventBus::update(et::vkResource{
-//            .buf = buf
-//        });
-//        vkError(EventBus::Get::vkResource().buf_ref().size());
-//        auto t = EventBus::Get::vkResource().buf_ref().find_ref(buf.tempId)->id;
-//        auto t_1 = EventBus::Get::vkResource().buf_ref().find_ref(t)->id;
-//        auto buf_2 = vkAllocator::allocBuf(5, vk::BufferUsageFlagBits::eTransferDst, vkAllocator::MemoryUsage::eCpuOnly, IdGenerator::uniqueId());
-//        EventBus::update(et::vkResource{
-//            .buf = buf_2
-//        });
-//        vkError(EventBus::Get::vkResource().buf_ref().size());
-//        auto x = EventBus::Get::vkResource().buf_ref();
-//        EventBus::Get::vkResource().buf_ref().find_ref(buf_2->id)->updateBuf(5);
-//        vkError(t);
-//        vkError(t_1);
-
-/// pipeline / set test
         descriptor = std::make_shared<vkDescriptor>("t");
         descriptor->addDesSetLayout({
-            vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
-        });
+                                            vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+                                    });
         descriptor->createDesPool(3);
         for (auto i = 0; i < 3; i++) {
             descriptor->updateDesSet(
@@ -119,7 +148,7 @@ namespace yic {
             );
         }
         EventBus::update(et::vkResource{
-            .desc = descriptor
+                .desc = descriptor
         });
 
         pipeline = std::make_unique<vkPipeline<Graphics>>(EventBus::Get::vkSetupContext().device_ref(), descriptor->getPipelineLayout(),
@@ -128,87 +157,6 @@ namespace yic {
                 .addShader(spv_path "/f_test.spv", vk::ShaderStageFlagBits::eFragment)
                 .create();
 
-//        VkDeviceSize size;
-//        std::vector<int> t(5);
-//        auto buf = vkAllocator::allocBuf(sizeof (int) * t.size(), vk::BufferUsageFlagBits::eVertexBuffer, vkAllocator::MemoryUsage::eCpuToGpu);
-//        t.emplace_back(1);
-//        buf->updateBuf(t);
-
-//        img = vkAllocator::allocImg(img_path "/4.png");
-//
-//        auto offImg = vkAllocator::allocImgOffScreen(vkImageConfig{1920, 1080});
-//        mSampler = EventBus::Get::vkSetupContext().device->createSampler(samplerCreateInfo);
-//
-//        mDescriptor.addDesSetLayout({
-//            vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
-//        });
-//
-//        mDescriptor.createDesPool()
-//                   // .pushbackDesSets(0)
-//                    .updateDesSet({
-//                        vk::DescriptorImageInfo{mSampler, img->imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
-//                    });
-
-        mTimePerFrame = sf::seconds(1.f / 120.f);
-    }
-
-    vkRhi::~vkRhi() {
-        EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
-        EventBus::Get::vkSetupContext().device_ref().waitIdle();
-
-        EventBus::destroy<et::vkResource>();
-    }
-
-    bool vkRhi::FrameLoop() {
-        sf::Time start = mClock.getElapsedTime();
-
-        TaskBus::executeShaderTask();
-
-        mSwapchain->updateEveryFrame();
-        mCommand->beginCommandBuf();
-
-        auto rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
-        configureDynamicViewportScissor(rt);
-
-        auto cmd = rt.cmd_ref();
-        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
-
-        std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
-        vk::RenderPassBeginInfo renderPassBeginInfo{renderPass, frameBuffers[imageIndex],
-                                                    {{0, 0}, ext}, cv};
-
-        cmd.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-
-        cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
-        cmd.draw(3, 1, 0, 0);
-
-        cmd.endRenderPass();
-
-        mCommand->beginRenderPass();
-
-        mImGui->render();
-
-        mCommand->endRenderPass();
-        mCommand->endCommandBuf();
-        mSwapchain->submitFrame();
-
-        sf::Time frameTime = mClock.getElapsedTime() - start;
-        if (frameTime < mTimePerFrame){
-            sf::sleep(mTimePerFrame - frameTime);
-        }
-
-        return true;
-    }
-
-    auto vkRhi::configureDynamicViewportScissor(et::vkRenderContext rt) -> void {
-        auto cmd = rt.cmd_ref();
-        vk::Viewport viewport{0.f, 0.f,
-                              static_cast<float>(rt.width_v()), static_cast<float>(rt.height_v()),
-                              0.f, 1.f
-        };
-        cmd.setViewport(0, viewport);
-        vk::Rect2D scissor{{0, 0}, rt.extent_v()};
-        cmd.setScissor(0, scissor);
     }
 
 

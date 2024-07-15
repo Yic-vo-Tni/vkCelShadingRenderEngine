@@ -86,8 +86,8 @@ namespace et {
                  (vk::SurfaceFormatKHR, surfaceFormat),
                  (uint32_t, activeImageIndex),
                  (vk::RenderPass, renderPass),
-                 (std::vector<vk::Framebuffer>, framebuffers),
-                 (vk::CommandBuffer, cmd)
+                 (std::vector<vk::Framebuffer>, framebuffers)
+        //         (vk::CommandBuffer, cmd)
         );
 
         DEFINE_ID_CONSTS(
@@ -100,7 +100,7 @@ namespace et {
         RETURN_REF(surfaceFormat);
         RETURN_REF(renderPass);
         RETURN_REF(framebuffers);
-        RETURN_REF(cmd);
+     //   RETURN_REF(cmd);
 
         RETURN_VALUE(extent);
         RETURN_VALUE(currentExtent);
@@ -109,6 +109,13 @@ namespace et {
         RETURN_CUSTOM_VALUE(width, size, size->x);
         RETURN_CUSTOM_VALUE(height, size, size->y);
         RETURN_CUSTOM_VALUE(imageCount, frameEntries, static_cast<uint32_t>(frameEntries->size()));
+    };
+
+    struct vkCommandBuffer{
+        HANA_OPT(vkCommandBuffer,
+                 (vk::CommandBuffer, cmd));
+
+        RETURN_REF(cmd);
     };
 
     struct vkResource {

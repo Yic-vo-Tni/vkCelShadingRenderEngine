@@ -112,6 +112,10 @@ namespace yic {
                 return getState<et::vkRenderContext>(id);
             }
 
+            static auto vkCommandBuffer(parm_id) {
+                return getState<et::vkCommandBuffer>(id);
+            }
+
             static auto vkResource(default_parm_id){
                 return getState<et::vkResource>(id);
             }

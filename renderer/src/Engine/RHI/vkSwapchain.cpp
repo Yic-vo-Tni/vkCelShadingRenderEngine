@@ -21,14 +21,15 @@ namespace yic {
             mFrameEntries(createFrameEntries()),
             mRenderPass(createRenderPass()),
             mFramebuffers(createFrameBuffers()),
-            mFences(createFences()) {
+            mFences(createFences()){
+        mCommand = std::make_unique<vkCommand>(id, queueFamilyIndex, mImageCount);
 
         EventBus::update(et::vkRenderContext{
                 .swapchain = mSwapchain,
                 .frameEntries = mFrameEntries,
                 .surfaceFormat = mSurfaceFormat,
                 .renderPass = mRenderPass,
-                .framebuffers = mFramebuffers
+                .framebuffers = mFramebuffers,
         }, mId);
 
     }
@@ -149,7 +150,6 @@ namespace yic {
             mUpdateSize.store(true);
         }, mId);
         if (mUpdateSize.load()){
-            mDevice.waitIdle();
             mGraphicsQueue.waitIdle();
             recreateSwapchain();
             mCurrentFrame = 0;
@@ -163,14 +163,27 @@ namespace yic {
             throw std::runtime_error("failed to wait fence\n");
     }
 
-    auto vkSwapchain::submitFrame() -> void {
+    auto vkSwapchain::submitFrame(const std::function<void()>& fun, const std::vector<vk::CommandBuffer>& cmds) -> void {
+        mCommand->beginCommandBuf(mExtent);
+        mCommand->beginRenderPass(vkCommand::vkRenderPassInfo{
+                mRenderPass, mFramebuffers, mExtent,
+                vkCommand::vkClearValueBuilder::colorClearValue()
+        });
+
+        fun();
+
+        mCommand->endRenderPass();
+        mCommand->endCommandBuf();
+
         mDevice.resetFences(mFences[mImageIndex]);
 
         auto waitStage = std::vector<vk::PipelineStageFlags>{vk::PipelineStageFlagBits::eColorAttachmentOutput};
-        auto cmd = EventBus::Get::vkRenderContext(mId).cmd_ref();
 
         auto i = mCurrentFrame % mImageCount;
-        vk::SubmitInfo info{mFrameEntries[i].readSemaphore, waitStage, cmd, mFrameEntries[i].writtenSemaphore};
+        auto cmd = EventBus::Get::vkCommandBuffer(mId).cmd_ref();
+        auto finalCmds = cmds;
+        finalCmds.emplace_back(cmd);
+        vk::SubmitInfo info{mFrameEntries[i].readSemaphore, waitStage, finalCmds, mFrameEntries[i].writtenSemaphore};
 
         mGraphicsQueue.submit(info, mFences[mImageIndex]);
         vk::PresentInfoKHR presentInfoKhr{mFrameEntries[i].writtenSemaphore, mSwapchain, mCurrentFrame};
@@ -179,7 +192,6 @@ namespace yic {
         if (r == vk::Result::eSuccess) {
         } else {
             mGraphicsQueue.waitIdle();
-            mDevice.waitIdle();
             recreateSwapchain();
             auto semaphore = mDevice.createSemaphore(vk::SemaphoreCreateInfo());
             auto rv = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE);
@@ -209,7 +221,6 @@ namespace yic {
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR:
                 mGraphicsQueue.waitIdle();
-                mDevice.waitIdle();
                 recreateSwapchain();
                 mCurrentFrame = 0;
                 return true;
@@ -230,6 +241,7 @@ namespace yic {
         mFramebuffers = createFrameBuffers();
 
         EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .framebuffers = mFramebuffers}, mId);
+
     }
 
     auto vkSwapchain::createRenderPass() -> vk::RenderPass {

@@ -8,6 +8,8 @@
 #include "Engine/Utils/Log.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
+#include "Engine/RHI/vkCommand.h"
+
 namespace yic {
 
     class vkSwapchain : nonCopyable{
@@ -18,7 +20,7 @@ namespace yic {
         ~vkSwapchain();
 
         auto updateEveryFrame() -> void;
-        auto submitFrame() -> void;
+        auto submitFrame(const std::function<void()>& fun, const std::vector<vk::CommandBuffer>& cmds = {}) -> void;
     private:
         auto createSurface() -> vk::SurfaceKHR;
         auto createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR;
@@ -52,6 +54,7 @@ namespace yic {
         vk::SurfaceFormatKHR mSurfaceFormat;
         vk::Extent2D mExtent{};
         vk::SwapchainKHR mSwapchain{};
+        std::unique_ptr<vkCommand> mCommand;
         uint32_t mGraphicsQueueFamilyIndex{UINT32_MAX};
         uint32_t mImageCount{UINT32_MAX};
         uint32_t mImageIndex{UINT32_MAX};

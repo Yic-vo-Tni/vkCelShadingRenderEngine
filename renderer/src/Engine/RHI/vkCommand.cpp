@@ -4,16 +4,16 @@
 
 #include "vkCommand.h"
 
+#include <utility>
+
 namespace yic {
 
-    vkCommand::vkCommand(const std::string &id, const uint32_t &qIndex)
-            : mId(id),
+    vkCommand::vkCommand(std::string id, const uint32_t &qIndex, const uint32_t& CommandBufferCount)
+            : mId(std::move(id)),
               mQueueIndex(qIndex),
               mDevice(EventBus::Get::vkSetupContext().device_ref()),
-              mRenderPass(EventBus::Get::vkRenderContext(id).renderPass_ref()),
-              mFrameBuffers(EventBus::Get::vkRenderContext(id).framebuffers_ref()),
               mCommandPool(createCommandPool()),
-              mCommandBuffers(createCommandBuffers()) {
+              mCommandBuffers(createCommandBuffers(CommandBufferCount)) {
 
     }
 
@@ -29,40 +29,48 @@ namespace yic {
         };
     }
 
-    auto vkCommand::createCommandBuffers() -> std::vector<vk::CommandBuffer> {
+    auto vkCommand::createCommandBuffers(uint32_t cmdCount) -> std::vector<vk::CommandBuffer> {
         Rvk_y("create cmd") = [&]{
             return mDevice.allocateCommandBuffers(
                     vk::CommandBufferAllocateInfo().setCommandPool(mCommandPool)
-                                                            .setCommandBufferCount(EventBus::Get::vkRenderContext(mId).imageCount_v())
+                                                            .setCommandBufferCount(cmdCount)
                                                             .setLevel(vk::CommandBufferLevel::ePrimary));
         };
     }
 
-    auto vkCommand::beginCommandBuf() -> void {
+    auto vkCommand::beginCommandBuf(vk::Extent2D extent2D) -> void {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
-        auto imageIndex = EventBus::Get::vkRenderContext(mId).activeImageIndex_v();
+        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         mActiveCommandBuffer = mCommandBuffers[imageIndex];
 
-        EventBus::update(et::vkRenderContext{.cmd = mActiveCommandBuffer}, mId);
+        EventBus::update(et::vkCommandBuffer{.cmd = mActiveCommandBuffer}, mId);
         mActiveCommandBuffer.begin(beginInfo);
+
+        vk::Viewport viewport{
+                0.f, 0.f,
+                static_cast<float>(extent2D.width), static_cast<float>(extent2D.height),
+                0.f, 1.f
+        };
+        vk::Rect2D scissor{{0, 0}, extent2D};
+        mActiveCommandBuffer.setViewport(0, viewport);
+        mActiveCommandBuffer.setScissor(0, scissor);
     }
 
     auto vkCommand::endCommandBuf() -> void {
         mActiveCommandBuffer.end();
     }
 
-    auto vkCommand::beginRenderPass() -> void {
-        auto framebuffers = EventBus::Get::vkRenderContext(mId).framebuffers_ref();
-        auto imageIndex = EventBus::Get::vkRenderContext(mId).activeImageIndex_v();
-        auto extent = EventBus::Get::vkRenderContext(mId).currentExtent_v();
+    auto vkCommand::beginRenderPass(vkRenderPassInfo passInfo) -> void {
+        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
-        vk::RenderPassBeginInfo renderPassBeginInfo{mRenderPass, framebuffers[imageIndex],
-                                                    {{0, 0}, extent}, cv};
 
-        mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+        vk::RenderPassBeginInfo renderPassBeginInfo{passInfo.renderPass, passInfo.framebuffers[imageIndex],
+                                                    {passInfo.offset2D, passInfo.extent}, passInfo.clearValues};
+
+        mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, passInfo.subpassContents);
     }
 
     auto vkCommand::endRenderPass() -> void {

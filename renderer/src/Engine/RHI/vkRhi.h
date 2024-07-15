@@ -30,17 +30,16 @@ namespace yic {
 
 
     private:
-        auto configureDynamicViewportScissor(et::vkRenderContext rt) -> void;
+        auto t() -> void;
 
     private:
         sf::Clock mClock;
         sf::Time mTimePerFrame;
 
         std::unique_ptr<vkSwapchain> mSwapchain{};
-        std::unique_ptr<vkCommand> mCommand{};
         std::unique_ptr<vkImGui> mImGui{};
 
-
+        std::unique_ptr<vkCommand> t_cmd{};
         ///
         vkImg_sptr off_image;
         vk::Extent2D ext;
