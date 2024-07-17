@@ -17,7 +17,12 @@ namespace yic {
         };
     public:
         Graphics(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass);
+        Graphics(vk::Device device, vk::RenderPass renderPass);
         ~Graphics(){
+            if (mPipelineLayout){
+                mDevice.destroy(mPipelineLayout);
+            }
+
             for(auto& m : shaderModules){
                 mDevice.destroy(m.second.shaderModule);
             }
@@ -102,10 +107,12 @@ namespace yic {
         }
 
         [[nodiscard]] inline auto& Get() const { return mPipeline;}
+    private:
+        auto init(vk::PipelineLayout layout, vk::RenderPass renderPass) -> void;
 
     private:
         vk::Device mDevice{};
-
+        vk::PipelineLayout mPipelineLayout{};
         vk::Pipeline mPipeline{};
     public:
         vk::GraphicsPipelineCreateInfo createInfo{};

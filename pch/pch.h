@@ -84,6 +84,8 @@
 #include "oneapi/tbb/spin_rw_mutex.h"
 #include "oneapi/tbb/queuing_rw_mutex.h"
 
+#include "magic_enum/include/magic_enum/magic_enum.hpp"
+
 #ifdef NDEBUG
 const bool enableDebug = false;
 #else

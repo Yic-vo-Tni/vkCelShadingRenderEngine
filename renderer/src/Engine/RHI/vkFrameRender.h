@@ -5,98 +5,71 @@
 #ifndef VKCELSHADINGRENDERER_VKFRAMERENDER_H
 #define VKCELSHADINGRENDERER_VKFRAMERENDER_H
 
+#include "Engine/Utils/Log.h"
+#include "Engine/Utils/TypeConcepts.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
+
+#include "Engine/RHI/vkAsset.h"
 
 namespace yic {
 
     class vkFrameRender {
     public:
+        vkGet auto get = [](){ return Singleton<vkFrameRender>::get(); };
+
         vkFrameRender();
         ~vkFrameRender();
 
-    private:
-        auto createRenderPass(const std::vector<vk::AttachmentDescription>& attachDes,
-                              const std::vector<vk::SubpassDescription>& subpass,
-                              const std::vector<vk::SubpassDependency>& dependency,
-                              const std::string& des = {}) -> vk::RenderPass;
-        auto createFrameBuffer(vk::RenderPass renderPass, vk::Extent2D extent, const std::vector<std::vector<vk::ImageView>>& attach) -> std::vector<vk::Framebuffer>;
+        template<typename T> requires(tp::Same_orVector<T, std::shared_ptr<vkImage>>)
+        static auto createFramebuffers(vk::RenderPass renderPass, const T& imgSptrs) -> std::vector<vk::Framebuffer>;
+
+        template<typename...Args> requires tp::Same_Args<std::shared_ptr<vkImage>, Args...>
+        static auto createFramebuffers(vk::RenderPass renderPass, const Args&... imgSptr) -> std::vector<vk::Framebuffer>{
+            std::vector<std::shared_ptr<vkImage>> imgSptrs;
+
+            (..., (imgSptrs.emplace_back(imgSptr)));
+
+            return createFramebuffers(renderPass, imgSptrs);;
+        };
 
     private:
-        vk::Device mDevice{};
-
-    };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    class vkRenderPassInfo : public std::enable_shared_from_this<vkRenderPassInfo>{
+        auto DepthFormat() -> vk::Format;
     public:
-        auto addAttachDes(const vk::AttachmentDescription& attachDes){
-            mAttachDes.emplace_back(attachDes);
-            return shared_from_this();
-        }
+        static vk::RenderPass eColorRenderPass;
+        static vk::RenderPass eColorDepthStencilRenderPass;
 
-        auto addAttachRef(uint32_t attachIndex, vk::ImageLayout layout){
-            auto ref = vk::AttachmentReference().setAttachment(attachIndex)
-                                                            .setLayout(layout);
-            mAttachRef.emplace_back(ref);
-            return shared_from_this();
-        }
-
-        auto addSubpass(const vk::SubpassDescription& subpass){
-            mSubpass.emplace_back(subpass);
-            return shared_from_this();
-        }
-
-        auto addDependency(const vk::SubpassDependency& dependency){
-            mDependency.emplace_back(dependency);
-            return shared_from_this();
-        }
-
-        auto create(vk::Device device){
-            auto createInfo = vk::RenderPassCreateInfo()
-                    .setAttachments(mAttachDes)
-                    .setSubpasses(mSubpass)
-                    .setDependencies(mDependency);
-
-            mRenderPass = vkCreate("create render pass") = [&] {
-                return device.createRenderPass(createInfo);
-            };
-            return shared_from_this();
-        }
     private:
-        vk::RenderPass mRenderPass{};
+        et::vkSetupContext ct;
 
-        std::vector<vk::AttachmentDescription> mAttachDes{};
-        std::vector<vk::AttachmentReference> mAttachRef{};
-        std::vector<vk::SubpassDescription> mSubpass{};
-        std::vector<vk::SubpassDependency> mDependency{};
     };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 } // yic
 

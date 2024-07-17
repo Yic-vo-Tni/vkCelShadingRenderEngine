@@ -26,7 +26,7 @@ namespace yic {
             auto qIndex = ct.qIndexGraphicsPrimary_v();
 
             mSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
-            mRender = std::make_unique<vkRender>();
+            RenderProcessManager::get();
 
             TaskBus::registerTask(tt::RenderTarget_s::eMainWindow, [this] {
                 FrameLoop();
@@ -50,9 +50,10 @@ namespace yic {
 
         mSwapchain->updateEveryFrame();
 
-        std::vector<vk::CommandBuffer> cmds = {
-            mRender->render()
-        };
+//        std::vector<vk::CommandBuffer> cmds = {
+//            mRender->render()
+//        };
+        auto cmds = RenderProcessManager::RenderProcedure();
 
         mSwapchain->submitFrame(cmds);
 

@@ -7,6 +7,39 @@
 namespace yic {
 
     Graphics::Graphics(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass) : mDevice(device) {
+        init(layout, renderPass);
+    }
+    Graphics::Graphics(vk::Device device, vk::RenderPass renderPass) : mDevice(device) {
+        mPipelineLayout = device.createPipelineLayout(vk::PipelineLayoutCreateInfo());
+        init(mPipelineLayout, renderPass);
+    }
+
+    void Graphics::updateState() {
+        if (blendAttachmentStates.empty()){
+            blendAttachmentStates.emplace_back(makePipelineColorBlendAttachments());
+            colorBlendState.setAttachments(blendAttachmentStates);
+        }
+        colorBlendState.setAttachments(blendAttachmentStates);
+
+        dynamicState.setDynamicStates(dynamicStates);
+
+        vertexInputState.setVertexAttributeDescriptions(attributeDescriptions)
+                .setVertexBindingDescriptions(bindingDescriptions);
+
+        if(viewports.empty()){
+            viewportState.setViewportCount(1);
+        } else{
+            viewportState.setViewports(viewports);
+        }
+
+        if (scissors.empty()){
+            viewportState.setScissorCount(1);
+        } else{
+            viewportState.setScissors(scissors);
+        }
+    }
+
+    auto Graphics::init(vk::PipelineLayout layout, vk::RenderPass renderPass) -> void {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eTriangleList)
                 .setPrimitiveRestartEnable({});
 
@@ -53,31 +86,6 @@ namespace yic {
                 .setPColorBlendState(&colorBlendState)
                 .setLayout(layout)
                 .setRenderPass(renderPass);
-    }
-
-    void Graphics::updateState() {
-        if (blendAttachmentStates.empty()){
-            blendAttachmentStates.emplace_back(makePipelineColorBlendAttachments());
-            colorBlendState.setAttachments(blendAttachmentStates);
-        }
-        colorBlendState.setAttachments(blendAttachmentStates);
-
-        dynamicState.setDynamicStates(dynamicStates);
-
-        vertexInputState.setVertexAttributeDescriptions(attributeDescriptions)
-                .setVertexBindingDescriptions(bindingDescriptions);
-
-        if(viewports.empty()){
-            viewportState.setViewportCount(1);
-        } else{
-            viewportState.setViewports(viewports);
-        }
-
-        if (scissors.empty()){
-            viewportState.setScissorCount(1);
-        } else{
-            viewportState.setScissors(scissors);
-        }
     }
 
 } // yic

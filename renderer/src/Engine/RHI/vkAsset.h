@@ -87,6 +87,10 @@ namespace yic {
         std::vector<vk::Image> images;
         std::vector<vk::ImageView> imageViews;
         std::vector<VmaAllocation> vmaAllocation{};
+        vk::Image depthImage = VK_NULL_HANDLE;
+        vk::ImageView depthImageView = VK_NULL_HANDLE;
+        VmaAllocation depthVmaAllocation{};
+        std::vector<vk::Framebuffer> framebuffers{};
         VmaAllocator &mAllocator;
 
         struct info{
@@ -105,8 +109,42 @@ namespace yic {
             info_.width = config.extent.width;
             info_.height = config.extent.height;
         }
+        vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews, const std::vector<VmaAllocation> &alloc,
+                const vk::Image& depthImg, const vk::ImageView& depthImgViews, const VmaAllocation& depthAlloc,
+                vk::Device dev, VmaAllocator &allocatorRef, vkImageConfig config, const std::string &id)
+                : images(imgs), imageViews(imgViews), vmaAllocation(alloc),
+                  depthImage(depthImg), depthImageView(depthImgViews), depthVmaAllocation(depthAlloc),
+                  mDevice(dev), mAllocator(allocatorRef), Identifiable(id) {
+            info_.imageCount = imgs.size();
+            info_.width = config.extent.width;
+            info_.height = config.extent.height;
+        }
+        vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews, const std::vector<VmaAllocation> &alloc,
+                const vk::Image& depthImg, const vk::ImageView& depthImgViews, const VmaAllocation& depthAlloc,
+                const std::vector<vk::Framebuffer>& framebuffers,
+                vk::Device dev, VmaAllocator &allocatorRef, vkImageConfig config, const std::string &id)
+                : images(imgs), imageViews(imgViews), vmaAllocation(alloc),
+                  depthImage(depthImg), depthImageView(depthImgViews), depthVmaAllocation(depthAlloc),
+                  framebuffers(framebuffers),
+                  mDevice(dev), mAllocator(allocatorRef), Identifiable(id) {
+            info_.imageCount = imgs.size();
+            info_.width = config.extent.width;
+            info_.height = config.extent.height;
+        }
 
         ~vkImage() override{
+            for(auto& fb : framebuffers){
+                if (fb){
+                    mDevice.destroy(fb);
+                }
+            }
+
+            if (depthImage) {
+                mDevice.destroy(depthImage);
+                mDevice.destroy(depthImageView);
+                vmaFreeMemory(mAllocator, depthVmaAllocation);
+            }
+
             for(auto i = info_.imageCount; i-- > 0;){
                 mDevice.destroy(images[i]);
                 mDevice.destroy(imageViews[i]);
@@ -142,9 +180,12 @@ namespace yic {
             return *this;
         }
 
-    private:
+    protected:
         vk::Device mDevice{};
     };
+
+
+
 
 }
 

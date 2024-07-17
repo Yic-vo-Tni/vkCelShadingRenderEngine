@@ -116,6 +116,13 @@ namespace fn{
 
 namespace yic{
     struct vkImageConfig{
+        enum ImageFlags {
+            eNone = 0,
+            eColor = 1 << 0,
+            eDepth = 1 << 1,
+            eDepthStencil = 1 << 2,
+        };
+        ImageFlags imageFlags = eColor;
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::Format format = vk::Format::eR8G8B8A8Unorm;
         vk::Extent3D extent = {};
@@ -146,6 +153,9 @@ namespace yic{
         vk::BorderColor borderColor = vk::BorderColor::eIntOpaqueBlack;
         vk::Bool32  unNormalizedCoordinates = vk::False;
 
+        vk::RenderPass renderPass;
+
+        //bool bFramebuffers = false;
         bool custom_define = false;
 
         explicit vkImageConfig(vk::Extent2D e2d){ extent = vk::Extent3D{e2d, 1}; };
@@ -154,6 +164,20 @@ namespace yic{
         explicit vkImageConfig(T width, T height) {
             extent = vk::Extent3D{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
         };
+
+//        vkImageConfig& enableFramebuffers(){
+//            bFramebuffers = true;
+//            return *this;
+//        }
+        vkImageConfig& setRenderPass(vk::RenderPass rp){
+            renderPass = rp;
+            return *this;
+        }
+
+        vkImageConfig& setImageFlags(ImageFlags flags) {
+            imageFlags = flags;
+            return *this;
+        }
 
         vkImageConfig& setImageType(vk::ImageType type) {
             imageType = type;
@@ -207,6 +231,11 @@ namespace yic{
 
         vkImageConfig& setSharingMode(vk::SharingMode mode) {
             sharingMode = mode;
+            return *this;
+        }
+
+        vkImageConfig& setAspect(vk::ImageAspectFlags flags){
+            imageSubresourceRange.aspectMask = flags;
             return *this;
         }
     };

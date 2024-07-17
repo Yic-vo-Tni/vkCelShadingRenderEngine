@@ -11,7 +11,7 @@
 #include "Engine/RHI/vkSemaphore.h"
 #include "Engine/RHI/vkFrameRender.h"
 #include "Engine/RHI/vkDescriptor.h"
-#include "Engine/RHI/vkRender.h"
+#include "Engine/RHI/RenderProcessManager.h"
 
 #include "SFML/System.hpp"
 
@@ -23,8 +23,6 @@ namespace yic {
         ~vkRhi();
 
         auto FrameLoop() -> bool;
-
-
     private:
 
     private:
@@ -32,7 +30,6 @@ namespace yic {
         sf::Time mTimePerFrame;
 
         std::unique_ptr<vkSwapchain> mSwapchain{};
-        std::unique_ptr<vkRender> mRender{};
     };
 
 } // yic

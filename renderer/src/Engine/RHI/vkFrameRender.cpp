@@ -6,45 +6,117 @@
 
 namespace yic {
 
-//    vkFrameRender::vkFrameRender() : mDevice(EventBus::Get::vkSetupContext().device_v()) {
-//
-//    }
-//
-//    vkFrameRender::~vkFrameRender() {
-//
-//    }
-//
-//    auto vkFrameRender::createRenderPass(const std::vector<vk::AttachmentDescription> &attachDes,
-//                                         const std::vector<vk::SubpassDescription> &subpass,
-//                                         const std::vector<vk::SubpassDependency> &dependency, const std::string& des) -> vk::RenderPass {
-//        vk::RenderPassCreateInfo createInfo{{}, attachDes, subpass, dependency};
-//
-//        Rvk_t("create " + des + " render pass", spdlog::level::warn) = [&] {
-//            return mDevice.createRenderPass(createInfo);
-//        };
-//    }
-//
-//    auto vkFrameRender::createFrameBuffer(vk::RenderPass renderPass, vk::Extent2D extent, const std::vector<std::vector<vk::ImageView>>& attach) -> std::vector<vk::Framebuffer> {
-//        std::vector<vk::Framebuffer> framebuffers;
-//        framebuffers.resize(attach.size());
-//
-//        Rvk_y("create frame buffer") = [&]{
-//            for(size_t i = 0; i < attach.size(); i++){
-//              auto createInfo = vk::FramebufferCreateInfo().setRenderPass(renderPass)
-//                                                    .setAttachments(attach[i])
-//                                                    .setWidth(extent.width)
-//                                                    .setHeight(extent.height)
-//                                                    .setLayers(1);
-//
-//              framebuffers[i] = mDevice.createFramebuffer(createInfo);
-//            }
-//
-//            return framebuffers;
-//        };
-//    }
+    vk::RenderPass vkFrameRender::eColorRenderPass;
+    vk::RenderPass vkFrameRender::eColorDepthStencilRenderPass;
+
+    vkFrameRender::vkFrameRender() {
+        ct = EventBus::Get::vkSetupContext();
+
+        std::vector<vk::AttachmentReference> attachColorRef{
+                {0, vk::ImageLayout::eColorAttachmentOptimal},
+        };
+        vk::AttachmentReference attachColorDepthRef{vk::AttachmentUnused, vk::ImageLayout::eUndefined};
+
+        std::vector<vk::AttachmentDescription> attachDes{
+                {{},
+                        vk::Format::eR8G8B8A8Unorm, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear,
+                        vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare,
+                        vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eShaderReadOnlyOptimal},};
+        std::vector<vk::SubpassDescription> subpassColor{
+                {{},
+                 vk::PipelineBindPoint::eGraphics, {},
+                 attachColorRef, {}, &attachColorDepthRef, {}}};
+
+        vk::RenderPassCreateInfo createInfo{{}, attachDes, subpassColor, {}};
+        eColorRenderPass = vkCreate("create depth stencil render pass") = [&]{
+            return ct.device->createRenderPass(createInfo);};
+
+        attachDes.emplace_back(vk::AttachmentDescription{
+                {},
+                DepthFormat(), vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eDontCare,
+                vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eShaderReadOnlyOptimal});
+
+        attachColorDepthRef.setAttachment(1)
+                        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+        createInfo.setAttachments(attachDes);
+
+        eColorDepthStencilRenderPass = vkCreate("create depth stencil render pass") = [&]{
+            return ct.device->createRenderPass(createInfo);};
+
+    }
+
+    vkFrameRender::~vkFrameRender() {
+        ct.device->destroy(eColorRenderPass);
+        ct.device->destroy(eColorDepthStencilRenderPass);
+    }
+
+    template<typename T>
+    requires(tp::Same_orVector<T, std::shared_ptr<vkImage>>)
+    auto vkFrameRender::createFramebuffers(vk::RenderPass renderPass, const T &imgSptrs) -> std::vector<vk::Framebuffer> {
+        std::vector<vk::Framebuffer> framebuffers;
+
+        using type = std::decay_t<T>;
+
+        auto createInfo
+                = [&]<tp::Same_orVector<vk::ImageView> viewType>(const std::shared_ptr<vkImage> &sharedPtr,
+                                                                 const viewType &views) {
+                    return vk::FramebufferCreateInfo().setRenderPass(renderPass)
+                            .setWidth(sharedPtr->info_.width)
+                            .setHeight(sharedPtr->info_.height)
+                            .setLayers(1)
+                            .setAttachments(views);
+                };
+
+        std::vector<vk::ImageView> views;
+        if constexpr (std::is_same_v<type, std::shared_ptr<vkImage>>){
+            for (size_t i = 0; i < imgSptrs->info_.imageCount; i++) {
+                views.clear();
+                views.emplace_back(imgSptrs->imageViews[i]);
+                if (imgSptrs->depthImageView){
+                    views.emplace_back(imgSptrs->depthImageView);
+                }
+
+                framebuffers.emplace_back(get()->ct.device_ref().createFramebuffer(createInfo(imgSptrs, views)));
+            }
+        } else if constexpr (std::is_same_v<type, std::vector<std::shared_ptr<vkImage>>>){
+            for(size_t i = 0; i < imgSptrs.front()->info_.imageCount; i++){
+                views.clear();
+                for (auto &img: imgSptrs) {
+                    auto& view = img->info_.imageCount > i ? img->imageViews[i] : img->imageViews.front();
+                    views.emplace_back(view);
+                }
+
+                framebuffers.emplace_back(get()->ct.device->createFramebuffer(createInfo(imgSptrs.front(), views)));
+            }
+        }
+
+        return framebuffers;
+    }
+    template auto vkFrameRender::createFramebuffers<std::shared_ptr<vkImage>>(vk::RenderPass renderPass, const std::shared_ptr<vkImage>& imgSptrs) -> std::vector<vk::Framebuffer>;
+    template auto vkFrameRender::createFramebuffers<std::vector<std::shared_ptr<vkImage>>>(vk::RenderPass renderPass, const std::vector<std::shared_ptr<vkImage>>& imgSptrs) -> std::vector<vk::Framebuffer>;
 
 
+    auto vkFrameRender::DepthFormat() -> vk::Format {
+        auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
 
+        for(const auto& f : { vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint, vk::Format::eD16UnormS8Uint}){
+            auto formatProp = ct.physicalDevice->getFormatProperties(f);
+            if( (formatProp.optimalTilingFeatures & feature) == feature){
+                return f;
+            }
+        }
+        return vk::Format::eD16UnormS8Uint;
+    }
 
 
 } // yic

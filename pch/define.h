@@ -14,6 +14,12 @@
     static auto func param { \
         return get()->func##_impl types; \
     }
+
+#define DEFINE_STATIC_CUSTOM_ACCESSOR(name, func, param, types) \
+    static auto name param { \
+        return get()->func types; \
+    }
+
 #define DEFINE_STATIC_RETYPE_ACCESSOR(func, ret_type, param, types) \
     static ret_type func param { \
         return get()->func##_impl types; \

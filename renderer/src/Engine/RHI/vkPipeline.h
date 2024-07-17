@@ -15,50 +15,11 @@ namespace yic {
     public:
         template<typename... Args>
         explicit vkPipeline(Args&&...args) : state(std::forward<Args>(args)...){}
-        vkPipeline(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass) : state(device, layout, renderPass){}
+        vkPipeline(vk::PipelineLayout layout, vk::RenderPass renderPass) : state(EventBus::Get::vkSetupContext().device_ref(), layout, renderPass){}
+        vkPipeline(vk::RenderPass renderPass) : state(EventBus::Get::vkSetupContext().device_ref(), renderPass){}
     };
 
     using GraphicsPipeline = vkPipeline<Graphics>;
-
-//    structgetmputeState : public State<ComputeState>{};
-//    struct RayTracingState : public State<RayTracingState>{};
-//
-//
-//    struct UseGeometryShader{};
-//    struct UseRayTracing{};
-//    struct EnableMultiSampling{};
-//
-//    template<typename T>
-//    struct GeometryShaderTrait{
-//        static constexpr int v = 0;
-//    };
-//    template<>
-//    struct GeometryShaderTrait<UseGeometryShader>{
-//        static constexpr int v = 1;
-//    };
-//
-//    struct GraphicsStateWithGeometry : UseGeometryShader{};
-//
-//    template<typename state, int GeometryShaderFeature = GeometryShaderTrait<state>::v, int MultisamplingFeature = 0>
-//    class vkPipeline : public state {
-//        template<typename T, typename = void>
-//        struct initializer{ static void init(){} };
-//        template<typename T>
-//        struct initializer<T, std::enable_if_t<std::is_same_v<T, Graphics>>>{
-//            static void init(){}
-//        };
-//    public:
-//        vkPipeline() : state(){
-//            initializer<state>::init();
-//        }
-//
-//    private:
-//        template<typename T>
-//        typename std::enable_if_t<std::is_same_v<T, UseGeometryShader>, void>
-//        setupGeometry(){
-//
-//        }
-//    };
 
 } // yic
 

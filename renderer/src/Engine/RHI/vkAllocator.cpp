@@ -30,7 +30,6 @@ namespace yic {
                 .setQueueFamilyIndex(ct.qIndexGraphicsPrimary_v())
                 .setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
         mTransferPool = ct.device_ref().createCommandPool(transferCmdPoolInfo);
-
     }
 
     vkAllocator::~vkAllocator(){
@@ -138,6 +137,9 @@ namespace yic {
         std::vector<vk::Image> images;
         std::vector<vk::ImageView> imageViews;
         std::vector<VmaAllocation> allocations;
+        images.reserve(count);
+        imageViews.reserve(count);
+        allocations.reserve(count);
 
         while (count --){
             auto [img, vma] = createImage();
@@ -146,7 +148,63 @@ namespace yic {
             allocations.emplace_back(vma);
         }
 
-        return std::make_shared<vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config,id);
+        if (config.imageFlags == vkImageConfig::eColor){
+            auto img = std::make_shared<vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config,id);
+            EventBus::update(et::vkResource{
+                .img = img
+            });
+            return img;
+        }
+        if ((config.imageFlags & (vkImageConfig::eDepthStencil | vkImageConfig::eColor)) != 0){
+            auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+
+            auto depthFormat = [&] {
+                for (const auto &f: {vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,
+                                     vk::Format::eD16UnormS8Uint}) {
+                    auto formatProp = ct.physicalDevice->getFormatProperties(f);
+                    if ((formatProp.optimalTilingFeatures & feature) == feature) {
+                        return f;
+                    }
+                }
+                return vk::Format::eD16UnormS8Uint;
+            }();
+
+            config.setFormat(depthFormat).setUsage(
+                    vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled).setAspect(
+                    vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+            auto [depthImage, depthVma] = createImage();
+            auto depthImageView = createImageView(depthImage);
+
+
+            if (config.renderPass) {
+                std::vector<vk::Framebuffer> framebuffers;
+                for (size_t i = 0; i < images.size(); i++) {
+                    std::vector<vk::ImageView> views;
+                    views.emplace_back(imageViews[i]);
+                    views.emplace_back(depthImageView);
+
+                    auto createInfo = vk::FramebufferCreateInfo().setRenderPass(config.renderPass)
+                            .setWidth(config.extent.width)
+                            .setHeight(config.extent.height)
+                            .setLayers(1)
+                            .setAttachments(views);
+
+                    framebuffers.emplace_back(mDevice.createFramebuffer(createInfo));
+                }
+
+                auto img = std::make_shared<vkImage>(images, imageViews, allocations,
+                                                 depthImage, depthImageView, depthVma,
+                                                 framebuffers,mDevice, mVmaAllocator, config, id);
+                EventBus::update(et::vkResource{.img = img});
+                return img;
+            }
+            auto img = std::make_shared<vkImage>(images, imageViews, allocations, depthImage, depthImageView, depthVma,
+                                             mDevice, mVmaAllocator, config, id);
+            EventBus::update(et::vkResource{.img = img});
+            return img;
+        }
+
+        throw std::runtime_error("failed to create off img");
     }
 
     auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {

@@ -145,4 +145,36 @@ namespace yic {
                 vk::BorderColor::eIntOpaqueBlack, vk::False
         });
     }
+
+    auto ImGuiDescriptorManager::updateImage(const std::string &id, const std::vector<vk::ImageView> &views) -> void {
+        auto desc = std::make_shared<vkDescriptor>(id);
+        EventBus::update(et::vkResource{
+            .desc = desc
+        });
+
+        desc->addDesSetLayout({vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1,
+                                                              vk::ShaderStageFlagBits::eFragment}});
+        desc->updateDesSet(views.size(), {vkDescriptor::ImgInfo{views}});
+    }
+
+    auto ImGuiDescriptorManager::drawImage(const std::string &id, const ImVec2& imageSize, const uint32_t& index) -> void {
+        auto& descs = EventBus::Get::vkResource().desc_ref().find_ref(id)->getDescriptorSets();
+
+        if (index == UINT32_MAX){
+            for(auto& desc : descs){
+                ImGui::Image((ImTextureID)desc, imageSize);
+            }
+        } else{
+            ImGui::Image((ImTextureID)descs[index], imageSize);
+        }
+
+    }
+
+//    auto ImGuiDescriptorManager::drawImage(const std::string &id, const std::vector<vk::ImageView> &views,
+//                                           const ImVec2 &imageSize, const int &index) -> void {
+//        updateImage(id, views);
+//        drawImage(id, imageSize, index);
+//    }
+
+
 } // yic

@@ -48,7 +48,7 @@ namespace yic {
             }
         }
 
-        [[nodiscard]] inline auto& getDescriptorSet() const { return mDesSet;}
+        [[nodiscard]] inline auto& getDescriptorSets() const { return mDesSet;}
         [[nodiscard]] inline auto getPipelineLayout() {
             vk::PipelineLayoutCreateInfo createInfo{
                     {}, mDesSetLayouts
@@ -77,6 +77,18 @@ namespace yic {
         std::vector<vk::DescriptorPoolSize> mPoolSize{};
         std::vector<vk::DescriptorSet> mDesSet{};
         std::vector<std::vector<vk::WriteDescriptorSet>> mWriteDesSets{};
+    };
+
+    class ImGuiDescriptorManager{
+    public:
+        vkGet auto get = []{ return Singleton<ImGuiDescriptorManager>::get(); };
+
+        static auto updateImage(const std::string& id, const std::vector<vk::ImageView>& views) -> void;
+        static auto drawImage(const std::string& id, const ImVec2& imageSize, const uint32_t& index = UINT32_MAX) -> void;
+        //static auto drawImage(const std::string& id, const std::vector<vk::ImageView>& views, const ImVec2& imageSize, const int& index = -1) -> void;
+
+    private:
+
     };
 
 } // yic

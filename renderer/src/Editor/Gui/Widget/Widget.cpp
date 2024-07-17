@@ -19,7 +19,6 @@ namespace ui {
         ImGui::Begin("Render");
         ImGui::Text("FPS: %.1f", mFps);
 
-        auto desc = EventBus::Get::vkResource().desc_ref().find_ref("Primary")->getDescriptorSet();
         auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         ImVec2 available = ImGui::GetContentRegionAvail();
@@ -33,7 +32,7 @@ namespace ui {
             imageWidth = available.x;
             imageHeight = imageWidth / aspectRatio;
         }
-        ImGui::Image((ImTextureID)desc[index], ImVec2(imageWidth, imageHeight));
+        ImGuiDescriptorManager::drawImage(enum_name(RenderProcessPhases::ePrimary), ImVec2(imageWidth, imageHeight), index);
 
         ImGui::End();
     }

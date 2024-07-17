@@ -140,18 +140,10 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-//        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
-//            mUpdateSize.store(true);
-//        }, mId);
-//        if (mUpdateSize.load()){
-//            mGraphicsQueue.waitIdle();
-//            recreateSwapchain();
-//            mCurrentFrame = 0;
-//            mUpdateSize.store(false);
-//        }
-        int w, h;
-        glfwGetFramebufferSize(EventBus::Get::vkRenderContext(mId).window_ref(), &w, &h);
-        if (w != mExtent.width || h != mExtent.height){
+        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
+            mUpdateSize.store(true);
+        }, mId);
+        if (mUpdateSize.load()){
             mGraphicsQueue.waitIdle();
             recreateSwapchain();
             mCurrentFrame = 0;
@@ -202,7 +194,8 @@ namespace yic {
                     EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex}, mId);
                     break;
                 default:
-                    break;
+                    mDevice.destroy(semaphore);
+                    return;
             }
             mDevice.destroy(semaphore);
         }

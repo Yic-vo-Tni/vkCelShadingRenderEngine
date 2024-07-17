@@ -82,6 +82,15 @@ namespace yic {
                                (const vkImageConfig& cf, const std::string& id, size_t count),
                                (cf, id, count));
 
+        DEFINE_STATIC_CUSTOM_ACCESSOR(allocImgOffScreen_DepthStencil, allocImgOffScreen_impl,
+                                      (vkImageConfig cf, const std::string& id, size_t count),
+                                      (cf.setImageFlags(static_cast<vkImageConfig::ImageFlags>(vkImageConfig::eColor | vkImageConfig::eDepth)), id, count));
+
+        DEFINE_STATIC_CUSTOM_ACCESSOR(allocImgOffScreen_DepthStencilAndFramebuffers, allocImgOffScreen_impl,
+                                      (vkImageConfig cf, vk::RenderPass rp, const std::string& id, size_t count),
+                                      (cf.setImageFlags(static_cast<vkImageConfig::ImageFlags>(vkImageConfig::eColor | vkImageConfig::eDepth)).setRenderPass(rp), id, count));
+
+
     private:
         vkAllocator& createTempCmdBuf(){
             vk::CommandBufferAllocateInfo allocateInfo{mTransferPool, vk::CommandBufferLevel::ePrimary, 1};
