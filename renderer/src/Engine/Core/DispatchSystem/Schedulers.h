@@ -9,6 +9,4 @@
 #include "Engine/Core/DispatchSystem/Task/TaskBus.h"
 
 
-
-
 #endif //VKCELSHADINGRENDERER_SCHEDULERS_H

@@ -44,23 +44,17 @@ namespace yic {
     }
 
     bool vkRhi::FrameLoop() {
-        sf::Time start = mClock.getElapsedTime();
+        auto start = mClock.getElapsedTime();
 
-        TaskBus::executeShaderTask();
-
+        ShaderHotReLoader::executeShaderTask();
         mSwapchain->updateEveryFrame();
 
-//        std::vector<vk::CommandBuffer> cmds = {
-//            mRender->render()
-//        };
         auto cmds = RenderProcessManager::RenderProcedure();
-
         mSwapchain->submitFrame(cmds);
 
-        sf::Time frameTime = mClock.getElapsedTime() - start;
-        if (frameTime < mTimePerFrame){
+        auto frameTime = mClock.getElapsedTime() - start;
+        if (frameTime < mTimePerFrame)
             sf::sleep(mTimePerFrame - frameTime);
-        }
 
         return true;
     }

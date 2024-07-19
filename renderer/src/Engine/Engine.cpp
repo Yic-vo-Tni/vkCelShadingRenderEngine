@@ -9,7 +9,7 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
-        //ShaderFolderWatcher::start();
+        ShaderFolderWatcher::start();
 
         if ([]{
             int cpuInfo[4] = {-1};
@@ -39,7 +39,8 @@ namespace yic {
 
         if (mFrameLoopThread && mFrameLoopThread->joinable())
             mFrameLoopThread->join();
-        //ShaderFolderWatcher::end();
+        ShaderEditor::end();
+        ShaderFolderWatcher::end();
 
         return true;
     }

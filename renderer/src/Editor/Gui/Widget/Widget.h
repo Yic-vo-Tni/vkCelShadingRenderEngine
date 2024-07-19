@@ -10,6 +10,8 @@
 #include "Engine/Utils/Log.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
+#include "Editor/ShaderEditor/ShaderEditor.h"
+
 namespace ui {
 
     using namespace yic;
@@ -18,6 +20,7 @@ namespace ui {
     public:
         explicit Widget() {
             mLastFrameTime = std::chrono::steady_clock::now();
+            ShaderEditor::get();
         };
         ~Widget() = default;
 

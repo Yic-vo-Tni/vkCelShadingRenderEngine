@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_ENGINE_H
 
 #include "Engine/Core/vkWindow.h"
-#include "Engine/Core/FileOperator/ShaderHotReloader.h"
+#include "Engine/Core/FileOperator/ShaderFolderWatcher.h"
 #include "Engine/RHI/vkRhi.h"
 
 namespace yic {

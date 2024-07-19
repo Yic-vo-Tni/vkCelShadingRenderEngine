@@ -36,6 +36,7 @@ find_library(tbb12 tbb12 PATHS external/tbb)
 include(FetchContent)
 
 file(GLOB_RECURSE pch_files pch/*.h)
+file(GLOB wx_dlls external/wxWidget/*.dll)
 
 add_executable(vkCelShadingRenderer main.cpp)
 target_precompile_headers(vkCelShadingRenderer PUBLIC ${pch_files})
@@ -50,6 +51,7 @@ target_link_libraries(vkCelShadingRenderer PUBLIC
 )
 
 file(INSTALL external/tbb/libtbb12.dll DESTINATION ${CMAKE_BINARY_DIR})
+file(INSTALL ${wx_dlls} DESTINATION ${CMAKE_BINARY_DIR})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     file(INSTALL renderer/assets DESTINATION ${CMAKE_BINARY_DIR})

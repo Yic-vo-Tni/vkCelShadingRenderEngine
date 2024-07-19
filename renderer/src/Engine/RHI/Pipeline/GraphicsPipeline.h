@@ -75,7 +75,7 @@ namespace yic {
                 shaderModules[path].flags = flags;
             };
 
-            TaskBus::registerShaderFileTask(path, [this, t]{
+            ShaderHotReLoader::registerShaderFileTask(path, [this, t]{
                 t();
                 createPipeline();
             });
@@ -138,7 +138,6 @@ namespace yic {
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
         std::unordered_map<std::string, ShaderModule> shaderModules{};
-        //std::vector<vk::ShaderModule> temporaryModules{};
     };
 
 } // yic

@@ -8,6 +8,7 @@
 #include "Engine/Utils/Log.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Core/FileOperator/FileOperation.h"
+#include "Engine/Core/DispatchSystem/Task/ShaderHotReload/ShaderHotReloader.h"
 
 namespace yic{
     template<typename I>

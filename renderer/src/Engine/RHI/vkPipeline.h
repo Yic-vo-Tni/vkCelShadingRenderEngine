@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_VKPIPELINE_H
 
 #include "Pipeline/GraphicsPipeline.h"
-#include "Engine/Core/FileOperator/ShaderHotReloader.h"
+#include "Engine/Core/FileOperator/ShaderFolderWatcher.h"
 
 namespace yic {
 

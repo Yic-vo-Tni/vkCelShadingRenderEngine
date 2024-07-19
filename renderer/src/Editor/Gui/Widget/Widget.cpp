@@ -34,11 +34,30 @@ namespace ui {
         }
         ImGuiDescriptorManager::drawImage(enum_name(RenderProcessPhases::ePrimary), ImVec2(imageWidth, imageHeight), index);
 
+        if (ImGui::Selectable("  Click Me")) {
+            ShaderEditor::openShaderFile(R"(F:\Yicvot\vkCelShadingRenderer\renderer\assets\shaders\v_test.vert)");
+        }
+
         ImGui::End();
     }
 
     auto Widget::vkViewWindow() -> void {
         ImGui::Begin("View");
+
+//        // First part of the window
+//        ImGui::BeginChild("Child1", ImVec2(20, 20), true);
+//        ImGui::Text("First Part of the Window");
+//        // You can put anything here
+//        ImGui::EndChild();
+//
+//        // Splitter code here
+//        ImGui::InvisibleButton("splitter", ImVec2(-1, 8.0));
+//
+//        // Second part of the window
+//        ImGui::BeginChild("Child2", ImVec2(0, 20), true);
+//        ImGui::Text("Second Part of the Window");
+//        // You can put anything here
+//        ImGui::EndChild();
 
         ImGui::End();
     }

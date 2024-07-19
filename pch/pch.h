@@ -86,6 +86,14 @@
 
 #include "magic_enum/include/magic_enum/magic_enum.hpp"
 
+#include "flecs/flecs.h"
+
+#include "wx/wx.h"
+#include "wx/stc/stc.h"
+#include "wx/file.h"
+#include "wx/button.h"
+#include "wx/aui/auibook.h"
+
 #ifdef NDEBUG
 const bool enableDebug = false;
 #else

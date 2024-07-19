@@ -2,11 +2,11 @@
 // Created by lenovo on 6/9/2024.
 //
 
-#ifndef VKCELSHADINGRENDERER_SHADERHOTRELOADER_H
-#define VKCELSHADINGRENDERER_SHADERHOTRELOADER_H
+#ifndef VKCELSHADINGRENDERER_SHADERFOLDERWATCHER_H
+#define VKCELSHADINGRENDERER_SHADERFOLDERWATCHER_H
 
 #include "Engine/Utils/Log.h"
-#include "Engine/Core/DispatchSystem/Schedulers.h"
+#include "Engine/Core/DispatchSystem/Task/ShaderHotReload/ShaderHotReloader.h"
 
 namespace yic{
 
@@ -19,7 +19,7 @@ namespace yic{
         explicit ShaderFolderWatcher(const std::string& path) : mPath([&]{ if (!path.empty()) { return path;}
             throw std::runtime_error("You must init and give a path to shader_directory");
         }()){
-            compileShaders();
+            //compileShaders();
 
             for(const auto& file : fs::recursive_directory_iterator(path)){
                 if (fs::is_regular_file(file.path())){
@@ -34,7 +34,7 @@ namespace yic{
         static void end(){
             get()->run.exchange(false);
             if (get()->mShaderReLoader.joinable())
-                get()->mShaderReLoader.join();
+                get()->mShaderReLoader.detach();
         }
 
     private:
@@ -62,7 +62,6 @@ namespace yic{
         void watch(){
             while (run.load()){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-//                mReLoad = false;
 
                 auto it = mPaths.begin();
                 while (it != mPaths.end()){
@@ -75,9 +74,7 @@ namespace yic{
                             it->second = current_time;
                             vkTrance("File updated: " + it->first);
                             compileShaders();
-                            //TaskBus::executeShaderTask(convertToSpvPath(it->first));
-                            TaskBus::recordShaderUpdatePath(convertToSpvPath(it->first));
-//                            mReLoad = true;
+                            ShaderHotReLoader::recordShaderUpdatePath(convertToSpvPath(it->first));
                         }
                         ++it;
                     }
@@ -90,8 +87,6 @@ namespace yic{
                     }
                 }
 
-//                if (mReLoad)
-//                    compileShaders();
             }
         }
     private:
@@ -99,9 +94,8 @@ namespace yic{
         std::map<std::string, fs::file_time_type> mPaths;
         std::atomic<bool> run{true};
         std::thread mShaderReLoader{};
-        //bool mReLoad{false};
     };
 
 }
 
-#endif //VKCELSHADINGRENDERER_SHADERHOTRELOADER_H
+#endif //VKCELSHADINGRENDERER_SHADERFOLDERWATCHER_H
