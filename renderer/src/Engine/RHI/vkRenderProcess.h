@@ -22,6 +22,7 @@ namespace yic {
         vkRenderProcess(vk::Extent2D extent, std::string id);
         ~vkRenderProcess();
 
+        auto prepare() -> void;
         auto appendCommandRecord(const fn_cmdRecord& record) -> void;
         auto process() -> vk::CommandBuffer;
 
@@ -29,11 +30,14 @@ namespace yic {
         et::vkSetupContext ct;
         et::vkRenderContext rt;
 
+        std::atomic_bool mUpdate{false};
         std::string mId;
         vkImg_sptr mOffImage;
         vk::Extent2D mExtent;
         std::unique_ptr<vkCommand> mCommand;
         std::vector<fn_cmdRecord> mCommandBufferRecords;
+
+        bool mUpdateDes{true};
     };
 
 

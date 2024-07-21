@@ -8,7 +8,7 @@ namespace yic {
 
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h}, mWindow(createWindow()) {
         EventBus::update(et::vkRenderContext{
-                ImVec2(mWidth, mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
+                ImVec2((float)mWidth, (float)mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
         }, et::vkRenderContext::id::mainRender);
 
         if_debug {
@@ -22,11 +22,8 @@ namespace yic {
 
         try {
             while (!glfwWindowShouldClose(GetWindow())) {
+                InputHandlers::withDraw();
                 glfwPollEvents();
-
-                InputHandlers::get(GetWindow())->withDraw();
-
-                callback(GetWindow());
             }
         } catch (const std::exception &e) {
             std::cerr << "Exception caught in run loop: " << e.what() << "\n";

@@ -14,10 +14,6 @@ namespace yic {
         vkFrameRender::get();
 
         mCommand = std::make_unique<vkCommand>(mId, ct.qIndexGraphicsPrimary_v(), rt.imageCount_v());
-
-        mOffImage = vkAllocator::allocImgOffScreen_DepthStencilAndFramebuffers(vkImageConfig{{mExtent}}, vkFrameRender::eColorDepthStencilRenderPass, mId, rt.imageCount_v());
-
-        ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
     }
 
     vkRenderProcess::~vkRenderProcess() = default;
@@ -25,6 +21,10 @@ namespace yic {
 
     auto vkRenderProcess::process() -> vk::CommandBuffer{
         auto& cmd = mCommand->beginCommandBuf(mExtent);
+        if (mOffImage == nullptr){
+            mCommand->endCommandBuf();
+            return cmd;
+        }
         mCommand->beginRenderPass(vkCommand::RenderPassInfo{
                 vkFrameRender::eColorDepthStencilRenderPass, mOffImage->framebuffers, vkCommand::ClearValue::ColorDepth()
         });
@@ -41,6 +41,19 @@ namespace yic {
 
     auto vkRenderProcess::appendCommandRecord(const vkRenderProcess::fn_cmdRecord &record) -> void {
         mCommandBufferRecords.emplace_back(record);
+    }
+
+    auto vkRenderProcess::prepare() -> void {
+        EventBus::subscribeAuto([&](const et::uiWidgetContext& uiWidgetContext){
+            mUpdate.store(true);
+        }, mId);
+
+        if (mUpdate){
+            EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
+            mOffImage = vkAllocator::allocImgOffScreen_DepthStencilAndFramebuffers(vkImageConfig{{mExtent}}, vkFrameRender::eColorDepthStencilRenderPass, mId, rt.imageCount_v());
+            ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
+            mUpdate.store(false);
+        }
     }
 
 

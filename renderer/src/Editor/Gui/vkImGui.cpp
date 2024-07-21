@@ -64,7 +64,7 @@ namespace yic {
 
         base();
 
-        mWidget.render();
+        mWidgetManager.render();
 
         callback();
 

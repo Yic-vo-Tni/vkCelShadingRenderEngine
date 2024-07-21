@@ -37,8 +37,15 @@
         if (!Member.has_value()) \
             throw std::runtime_error(#Member " is not exist"); \
         return Member.value(); \
-    } \
+    }                      \
 
+#define CHECK_MEMBER_EXISTS(Member) \
+    [[nodiscard]] bool Member##_exists() const { \
+        return Member.has_value(); \
+    } \
+    [[nodiscard]] bool Member##_exists() { \
+        return Member.has_value(); \
+    } \
 
 #define RETURN_CUSTOM_REF(MethodName, Member, CustomLogic) \
     [[nodiscard]] const auto& MethodName##_ref() const { \

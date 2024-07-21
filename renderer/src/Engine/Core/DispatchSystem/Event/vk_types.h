@@ -54,26 +54,6 @@ namespace et {
         RETURN_CUSTOM_VALUE(qIndexTransferDownload, queueFamily, queueFamily->getDownloadTransferFamilyIndex());
     };
 
-//    struct vkPipeline {
-//        HANA(vkPipeline,
-//             (opt < std::unordered_map<std::string, vk::Pipeline>>, graphics),
-//             (opt < std::unordered_map<std::string, vk::Pipeline>>, compute),
-//             (opt < std::unordered_map<std::string, vk::Pipeline>>, raytracing),
-//             (opt < vk::DescriptorSet > , descriptorSet));
-//    };
-//
-//    struct vkRenderPass{
-//        HANA(vkRenderPass,
-//             (opt<vk::RenderPass>, renderPass));
-//
-//        struct id{
-//            static constexpr const char* basicRenderPass = "BasicRenderPass";
-//            static constexpr const char* depthRenderPass = "DepthRenderPass";
-//            static constexpr const char* shadowRenderPass = "ShadowRenderPass";
-//            static constexpr const char* postProcessRenderPass = "PostProcessRenderPass";
-//        };
-//    };
-
 
     struct vkRenderContext {
         HANA_OPT(vkRenderContext,
@@ -138,6 +118,8 @@ namespace et {
         RETURN_REF(buf);
         RETURN_REF(img);
         RETURN_REF(desc);
+
+        CHECK_MEMBER_EXISTS(desc);
     };
 
 

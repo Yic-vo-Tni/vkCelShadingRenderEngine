@@ -23,7 +23,7 @@ namespace yic {
             return false;
         }()){
             vkInfo("TSX is supported");
-        } else { vkError("TSX is not supported"); }
+        } else { vkWarn("TSX is not supported"); }
 
 
         mFrameLoopThread = std::make_unique<std::thread>([this]{

@@ -8,7 +8,7 @@
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Utils/Log.h"
 
-#include "Widget/Widget.h"
+#include "Widget/WidgetManager.h"
 
 namespace yic {
 
@@ -31,7 +31,7 @@ namespace yic {
 
         bool mShowDemo{true};
 
-        ui::Widget mWidget{};
+        ui::WidgetManager mWidgetManager{};
     };
 
 } // yic

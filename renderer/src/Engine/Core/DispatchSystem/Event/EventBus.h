@@ -234,7 +234,8 @@ namespace yic {
                     return std::any_cast<T>(eventDate.states);
                 }
             }
-            throw std::runtime_error("state not found for the requested type.");
+            //throw std::runtime_error("state not found for the requested type.");
+            return {};
         }
 
         template<typename T>

@@ -16,33 +16,18 @@ namespace ui {
 
     using namespace yic;
 
-    class Widget {
+    class Widget{
     public:
-        explicit Widget() {
-            mLastFrameTime = std::chrono::steady_clock::now();
-            ShaderEditor::get();
-        };
-        ~Widget() = default;
+        explicit Widget(std::string  name) : mWindowName(std::move(name)){ };
 
-        void render();
+        virtual auto record()->void = 0;
 
-        void show() { mVisible = true;}
-        void hide() { mVisible = false;}
-
+        auto getName() { return mWindowName; }
     private:
-        auto vkRenderWindow() -> void;
-        auto vkViewWindow() -> void;
-        auto vkControlPanelWindow() -> void;
-        auto vkConsoleWindow() -> void;
-
-        auto calculateFPS() -> void;
-    protected:
-        std::chrono::steady_clock::time_point mLastFrameTime;
-        std::chrono::steady_clock::time_point mLastFpsTime;
-        float mFps = 0.f;
-        float mFpsTimer = 0.f;
-        bool mVisible{};
+        std::string mWindowName;
     };
+
+
 
 } // ui
 

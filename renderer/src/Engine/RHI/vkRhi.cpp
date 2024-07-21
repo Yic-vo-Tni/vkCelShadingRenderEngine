@@ -40,23 +40,37 @@ namespace yic {
         EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
         EventBus::Get::vkSetupContext().device_ref().waitIdle();
 
+        RenderProcessManager::clear();
         EventBus::destroy<et::vkResource>();
     }
 
     bool vkRhi::FrameLoop() {
-        auto start = mClock.getElapsedTime();
+        beginFrame();
 
         ShaderHotReLoader::executeShaderTask();
+        RenderProcessManager::prepare();
         mSwapchain->updateEveryFrame();
 
         auto cmds = RenderProcessManager::RenderProcedure();
         mSwapchain->submitFrame(cmds);
 
-        auto frameTime = mClock.getElapsedTime() - start;
-        if (frameTime < mTimePerFrame)
-            sf::sleep(mTimePerFrame - frameTime);
+        endFrame();
 
         return true;
+    }
+
+    auto vkRhi::beginFrame() -> void {
+        mStart = mClock.getElapsedTime();
+    }
+
+    auto vkRhi::endFrame() -> void {
+        mFrameTime = mClock.getElapsedTime() - mStart;
+        EventBus::update(et::frameTime{
+                .frameTime = mFrameTime.asSeconds()
+        });
+        if (mFrameTime < mTimePerFrame)
+            sf::sleep(mTimePerFrame - mFrameTime);
+
     }
 
 

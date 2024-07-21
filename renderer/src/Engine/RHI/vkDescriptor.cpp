@@ -158,6 +158,12 @@ namespace yic {
     }
 
     auto ImGuiDescriptorManager::drawImage(const std::string &id, const ImVec2& imageSize, const uint32_t& index) -> void {
+        if (!EventBus::Get::vkResource().desc_exists())
+            return;
+
+        if (EventBus::Get::vkResource().desc_ref().find_ref(id) == nullptr){
+            return;
+        }
         auto& descs = EventBus::Get::vkResource().desc_ref().find_ref(id)->getDescriptorSets();
 
         if (index == UINT32_MAX){

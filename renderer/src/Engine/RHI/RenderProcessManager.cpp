@@ -11,13 +11,22 @@ namespace yic {
 
         mRenderProcess[enum_name(RenderProcessPhases::ePrimary)] = std::make_shared<vkRenderProcess>(et, enum_name(RenderProcessPhases::ePrimary));
 
-        mPipeline = std::make_shared<GraphicsPipeline>(vkFrameRender::eColorDepthStencilRenderPass);
+        mCameraBuf = vkAllocator::allocBuf(sizeof (glm::mat4), vk::BufferUsageFlagBits::eUniformBuffer, vkAllocator::MemoryUsage::eCpuToGpu, "camera");
+        mDescriptor = vkAllocator::allocDesc(IdGenerator::uniqueId());
+        mDescriptor->addDesSetLayout({
+            vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex},
+        });
+        mPipeline = std::make_shared<GraphicsPipeline>(mDescriptor->getPipelineLayout(), vkFrameRender::eColorDepthStencilRenderPass);
+        mPipeline->rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
         mPipeline->addShader("v_test.spv", vk::ShaderStageFlagBits::eVertex)
                 .addShader("f_test.spv", vk::ShaderStageFlagBits::eFragment)
                 .create();
+        mDescriptor->updateDesSet({vkDescriptor::BufInfo{mCameraBuf->buffer}});
 
         mRenderProcess[enum_name(RenderProcessPhases::ePrimary)]->appendCommandRecord([&](vk::CommandBuffer& cmd){
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline->Get());
+            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mDescriptor->getPipelineLayout(), 0, mDescriptor->getDescriptorSets(),
+                                   nullptr);
             cmd.draw(3, 1, 0, 0);
         });
     }
@@ -26,13 +35,28 @@ namespace yic {
 
     auto RenderProcessManager::RenderProcedure() -> std::vector<vk::CommandBuffer> {
         auto& cmds = get()->cmds;
-        auto RenderProcess = [&](RenderProcessPhases phases){
-            return get()->mRenderProcess[enum_name(RenderProcessPhases::ePrimary)];
-        };
+
         cmds.clear();
-        cmds.emplace_back(RenderProcess(RenderProcessPhases::ePrimary)->process());
+
+        for(auto& key : {RenderProcessPhases::ePrimary}){
+            auto it = get()->mRenderProcess.find(enum_name(key));
+            if (it != get()->mRenderProcess.end()){
+                cmds.emplace_back(it->second->process());
+            }
+        }
 
         return {cmds.begin(), cmds.end()};
+    }
+
+    auto RenderProcessManager::prepare() -> void {
+        sc::globalCamera.computeViewProjMatrix();
+        get()->mCameraBuf->updateBuf(sc::globalCamera.getVpMatrix());
+
+        tbb::parallel_for_each(get()->mRenderProcess.begin(), get()->mRenderProcess.end(), [](auto& it){
+            if (it.second){
+                it.second->prepare();
+            }
+        });
     }
 
 } // yic

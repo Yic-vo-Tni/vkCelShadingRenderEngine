@@ -28,6 +28,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtx/quaternion.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
@@ -83,6 +85,7 @@
 #include "oneapi/tbb/concurrent_unordered_map.h"
 #include "oneapi/tbb/spin_rw_mutex.h"
 #include "oneapi/tbb/queuing_rw_mutex.h"
+#include "oneapi/tbb/parallel_for_each.h"
 
 #include "magic_enum/include/magic_enum/magic_enum.hpp"
 

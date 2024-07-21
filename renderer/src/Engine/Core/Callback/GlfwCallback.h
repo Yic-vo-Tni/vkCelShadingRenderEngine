@@ -12,7 +12,7 @@ namespace glfw_callback {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *w, int width, int height) {
         yic::EventBus::publish(et::vkRenderContext{
-                .size = ImVec2(width, height),
+                .size = ImVec2((float)width, (float)height),
                 .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height},
         }, et::vkRenderContext::id::mainRender);
     };
@@ -55,7 +55,11 @@ inline auto callback = [](GLFWwindow* w){
     glfwSetWindowSizeCallback(w, glfw_callback::setWindowSizeCallback);
     glfwSetCursorPosCallback(w, glfw_callback::setCursorPosCallback);
     glfwSetScrollCallback(w, glfw_callback::setScrollBack);
-  //  glfwSetWindowFocusCallback(w, glfw_callback::setWindowFocusCallback);
+};
+
+inline auto cameraCallback = [](GLFWwindow* w){
+    glfwSetCursorPosCallback(w, glfw_callback::setCursorPosCallback);
+    glfwSetScrollCallback(w, glfw_callback::setScrollBack);
 };
 
 #endif //VKCELSHADINGRENDERER_GLFWCALLBACK_H

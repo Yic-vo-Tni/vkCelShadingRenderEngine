@@ -5,35 +5,34 @@
 #ifndef VKCELSHADINGRENDERER_INPUTHANDLERS_H
 #define VKCELSHADINGRENDERER_INPUTHANDLERS_H
 
+#include "Engine/Core/Callback/GlfwCallback.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Core/Input/CommandParser.h"
+#include "Engine/ECS/Camera/Camera.h"
 
 namespace yic {
 
     class InputHandlers {
     public:
-        explicit InputHandlers(GLFWwindow *w);
-        vkGet auto get = [](GLFWwindow* w){ return Singleton<InputHandlers>::get(w);};
+        explicit InputHandlers();
+        vkGet auto get = [](){ return Singleton<InputHandlers>::get();};
 
-        void withDraw();
+        static void withDraw();
     private:
+        auto globalCamera() -> void;
         void handleUserInput(int key, int action);
         void registerCmd(int key, const std::string &name, std::function<std::shared_ptr<Command>()> commandFactory);
         void undoLastCommand();
 
+
+    private:
         GLFWwindow* mWindow;
         bool undo = false;
         std::unordered_map<int, std::function<std::shared_ptr<Command>()>> mCommands;
         std::stack<std::shared_ptr<Command>> mCommandHistory;
 
-
-   //     CommandParser mCommandParser;
-
-
-//        std::queue<std::string> mInputQueue;
-//        std::mutex mQueueMutex;
-//        std::condition_variable mQueueCondVar;
-//        bool mRunning{true};
+        bool firstClick = true;
+        double xLast{}, yLast{};
     };
 
 } // yic

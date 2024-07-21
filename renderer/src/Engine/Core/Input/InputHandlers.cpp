@@ -8,31 +8,33 @@
 
 namespace yic {
 
-    InputHandlers::InputHandlers(GLFWwindow *w) : mWindow{w}{
+    InputHandlers::InputHandlers() : mWindow{EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).window_ref()}{
         registerCmd(GLFW_KEY_ESCAPE, "exit", [&]() { return std::make_shared<ExitCommand>(mWindow); });
         registerCmd(GLFW_KEY_SPACE, "test", [&]() { return std::make_shared<TestCommand>(mWindow); });
 
-//        glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods){
-//            auto inputHandlers = InputHandlers::get(window);
-//            inputHandlers->handleUserInput(key, action);
-//        });
 
         EventBus::subscribeAuto([&](const et::glKeyInput& input){
-            auto inputHandlers = InputHandlers::get(mWindow);
+            auto inputHandlers = InputHandlers::get();
             inputHandlers->handleUserInput(input.key.value(), input.action.value());
         });
+
+        callback(mWindow);
     }
 
     void InputHandlers::withDraw() {
-        auto ctrl = glfwGetKey(mWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
-        auto z = glfwGetKey(mWindow, GLFW_KEY_Z) == GLFW_PRESS;
+        auto inst = get();
 
-        if (ctrl && z && !undo){
-            undoLastCommand();
-            undo = true;
+        auto ctrl = glfwGetKey(inst->mWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+        auto z = glfwGetKey(inst->mWindow, GLFW_KEY_Z) == GLFW_PRESS;
+
+        if (ctrl && z && !inst->undo){
+            inst->undoLastCommand();
+            inst->undo = true;
         } else if (!ctrl || !z){
-            undo = false;
+            inst->undo = false;
         }
+
+        inst->globalCamera();
     }
 
     void InputHandlers::handleUserInput(int key, int action) {
@@ -56,34 +58,53 @@ namespace yic {
         mCommands[key] = std::move(commandFactory);
     }
 
+    auto InputHandlers::globalCamera() -> void {
+        if (!EventBus::Get::val<et::frameTime>().frameTime_exists())
+            return;
+        auto cameraSpeed = EventBus::Get::val<et::frameTime>().frameTime_v() * sc::globalCamera.getDynamicSpeed();
+
+        auto glfwKeyPress = [&](int key){
+            return (glfwGetKey(mWindow, key) == GLFW_PRESS);
+        };
+        auto glfwMouseButtonPress = [&](int button){
+            return (glfwGetMouseButton(mWindow, button) == GLFW_PRESS);
+        };
+        auto glfwMouseButtonRelease = [&](int button){
+            return (glfwGetMouseButton(mWindow, button) == GLFW_RELEASE);
+        };
+
+        if (glfwKeyPress(GLFW_KEY_W))
+            sc::globalCamera.getPosition() += cameraSpeed * sc::globalCamera.getCameraFront();
+        if (glfwKeyPress(GLFW_KEY_S))
+            sc::globalCamera.getPosition() -= cameraSpeed * sc::globalCamera.getCameraFront();
+        if (glfwKeyPress(GLFW_KEY_A))
+            sc::globalCamera.getPosition() -= glm::normalize(glm::cross(sc::globalCamera.getCameraFront(), sc::globalCamera.getCameraUp())) * cameraSpeed;
+        if (glfwKeyPress(GLFW_KEY_D))
+            sc::globalCamera.getPosition() += glm::normalize(glm::cross(sc::globalCamera.getCameraFront(), sc::globalCamera.getCameraUp())) * cameraSpeed;
 
 
-//    void InputHandlers::enqueueUserInput(const std::string &input) {
-//        {
-//            std::lock_guard<std::mutex> lock(mQueueMutex);
-//            mInputQueue.push(input);
-//        }
-//        mQueueCondVar.notify_one();
-//    }
-//
-//    void InputHandlers::processQueueInput() {
-//        std::unique_lock<std::mutex> lock(mQueueMutex);
-//        while (!mInputQueue.empty()){
-//            std::string input = std::move(mInputQueue.front());
-//            mInputQueue.pop();
-//            lock.unlock();
-//            handleUserInput(input);
-//            lock.lock();
-//        }
-//    }
-//
-//    void InputHandlers::stop() {
-//        {
-//            std::lock_guard<std::mutex> lock(mQueueMutex);
-//            mRunning = false;
-//        }
-//        mQueueCondVar.notify_all();
-//    }
+        if (glfwMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)){
+            if (firstClick){
+                glfwSetCursorPos(mWindow, xLast, yLast);
+                firstClick = false;
+            }
+            glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xPos, double yPos){
+                sc::globalCamera.mouseCallback(xPos, yPos);
+            });
+            glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xOffset, double yOffset){
+                sc::globalCamera.scrollCallback(xOffset, yOffset);
+            });
+
+        }
+        if (glfwMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)){
+            glfwGetCursorPos(mWindow, &xLast, &yLast);
+            glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            cameraCallback(mWindow);
+            firstClick = true;
+            sc::globalCamera.firstMouse = true;
+        }
+    }
 
 
 } // yic

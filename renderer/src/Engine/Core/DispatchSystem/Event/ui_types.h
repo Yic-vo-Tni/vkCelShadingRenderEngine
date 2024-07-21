@@ -13,11 +13,8 @@ namespace et{
         HANA(uiWidgetContext,
              (opt<ImVec2>, viewportSize));
 
-        struct id {
-            static constexpr const char *RenderWindow{"RenderWindow"};
-        };
-
         RETURN_VALUE(viewportSize);
+        CHECK_MEMBER_EXISTS(viewportSize);
         RETURN_CUSTOM_VALUE(viewport_width, viewportSize, viewportSize->x);
         RETURN_CUSTOM_VALUE(viewport_height, viewportSize, viewportSize->y);
     };

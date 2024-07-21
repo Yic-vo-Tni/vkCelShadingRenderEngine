@@ -155,27 +155,22 @@ namespace yic {
         vkImage(const vkImage &) = delete;
         vkImage &operator=(const vkImage &) = delete;
 
+
         vkImage(vkImage &&other) noexcept
                 : images(std::move(other.images)), imageViews(std::move(other.imageViews)), vmaAllocation(std::move(other.vmaAllocation)),
-                  mAllocator(other.mAllocator), Identifiable(other.id) {
-            for (auto i = info_.imageCount; i -- > 0;){
-                other.images[i] = VK_NULL_HANDLE;
-                other.imageViews[i] = VK_NULL_HANDLE;
-                other.vmaAllocation[i] = nullptr;
-            }
+                  depthImage(std::exchange(other.depthImage, VK_NULL_HANDLE)),
+                  depthImageView(std::exchange(other.depthImageView, VK_NULL_HANDLE)),
+                  depthVmaAllocation(std::exchange(other.depthVmaAllocation, {})),
+                  framebuffers(std::move(other.framebuffers)),
+                  mDevice(other.mDevice), mAllocator(other.mAllocator), info_(other.info_),
+                  Identifiable(other.id) {
+            other.info_ = {};
         }
 
         vkImage &operator=(vkImage &&other) noexcept {
             if (this != &other) {
                 this->~vkImage();
-                images = other.images;
-                vmaAllocation = other.vmaAllocation;
-                imageViews = other.imageViews;
-                for (auto i = info_.imageCount; i -- > 0;){
-                    other.images[i] = VK_NULL_HANDLE;
-                    other.imageViews[i] = VK_NULL_HANDLE;
-                    other.vmaAllocation[i] = nullptr;
-                }
+                new (this) vkImage(std::move(other));
             }
             return *this;
         }

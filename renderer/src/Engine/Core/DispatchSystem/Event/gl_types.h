@@ -38,6 +38,14 @@ namespace et{
              (opt<double>, yoffset));
     };
 
+    struct frameTime{
+        HANA_OPT(frameTime,
+             (float, frameTime));
+
+        RETURN_VALUE(frameTime);
+        CHECK_MEMBER_EXISTS(frameTime);
+    };
+
 }
 
 #endif //VKCELSHADINGRENDERER_GL_TYPES_H

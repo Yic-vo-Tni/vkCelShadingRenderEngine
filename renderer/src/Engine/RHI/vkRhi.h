@@ -24,7 +24,10 @@ namespace yic {
 
         auto FrameLoop() -> bool;
     private:
-
+        sf::Time mStart;
+        sf::Time mFrameTime;
+        auto beginFrame() -> void;
+        auto endFrame() -> void;
     private:
         sf::Clock mClock;
         sf::Time mTimePerFrame;

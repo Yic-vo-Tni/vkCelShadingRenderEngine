@@ -32,6 +32,8 @@ namespace yic {
             std::vector<vk::Buffer> buffer;
             std::vector<vk::DeviceSize> offset{0};
             std::vector<vk::DeviceSize> range{VK_WHOLE_SIZE};
+
+            BufInfo(vk::Buffer buffer) : buffer(std::vector<vk::Buffer>{buffer}){}
         };
     public:
         explicit vkDescriptor(const std::string& id) : Identifiable(id) {};
@@ -64,6 +66,10 @@ namespace yic {
         vkDescriptor& pushbackDesSets(uint32_t setIndex = 0);
         vkDescriptor& updateDesSet(const std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> &infos, const size_t& setIndex = 0);
         vkDescriptor& updateDesSet(uint32_t Reset_MaxSets, const std::vector<std::variant<ImgInfo, BufInfo>> &infos, const size_t& setIndex = 0);
+        vkDescriptor& updateDesSet(const std::vector<std::variant<ImgInfo, BufInfo>> &infos, const size_t& setIndex = 0){
+            updateDesSet(1, infos, setIndex);
+            return *this;
+        };
 
     private:
         vk::Device mDevice;
