@@ -2,40 +2,36 @@
 // Created by lenovo on 7/8/2024.
 //
 
-#include "vkDescriptor.h"
+#include "Descriptor.h"
 
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
 namespace yic {
 
-    vkDescriptor &vkDescriptor::addDesSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &bindings) {
-        mDevice = EventBus::Get::vkSetupContext().device_ref();
+    Descriptor::Descriptor(const std::string &id, PipelineDesSetLayout& setLayout) :
+            Identifiable(id), mSetLayout(setLayout), mDevice(EventBus::Get::vkSetupContext().device_ref()) {
 
-        for(const auto& bind : bindings){
-            mPoolSize.emplace_back(bind.descriptorType, bind.descriptorCount);
-        }
-
-        mMaxSets++;
-
-        mBindings.push_back(bindings);
-        vk::DescriptorSetLayoutCreateInfo createInfo{{}, bindings};
-
-        mDesSetLayouts.emplace_back(
-                vkCreate("create descriptor set layout") = [&] {
-                    return mDevice.createDescriptorSetLayout(createInfo);
-                });
-
-        return *this;
     }
 
-    vkDescriptor &vkDescriptor::createDesPool(std::optional<uint32_t> Reset_MaxSets) {
+    Descriptor &Descriptor::createDesPool(std::optional<uint32_t> Reset_MaxSets) {
         if (Reset_MaxSets.has_value()){
-            mMaxSets = Reset_MaxSets.value();
+            mSetLayout.maxSets = Reset_MaxSets.value();
+        }
+
+        if (mSetLayout.desSetLayouts.empty()) {
+            for (auto &bindings: mSetLayout.bindings) {
+                vk::DescriptorSetLayoutCreateInfo createInfo{{}, bindings};
+
+                mSetLayout.desSetLayouts.emplace_back(
+                        vkCreate("create descriptor set layout") = [&] {
+                            return mDevice.createDescriptorSetLayout(createInfo);
+                        });
+            }
         }
 
         vk::DescriptorPoolCreateInfo createInfo{
             vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-            mMaxSets, mPoolSize
+            mSetLayout.maxSets, mSetLayout.poolSize
         };
 
         mDesPool = vkCreate("create des pool") = [&]{
@@ -45,23 +41,24 @@ namespace yic {
         return *this;
     }
 
-    vkDescriptor &vkDescriptor::pushbackDesSets(uint32_t setIndex) {
-        vk::DescriptorSetAllocateInfo allocateInfo{mDesPool, mDesSetLayouts};
+    Descriptor &Descriptor::pushbackDesSets(uint32_t setIndex) {
+        vk::DescriptorSetAllocateInfo allocateInfo{mDesPool, mSetLayout.desSetLayouts};
 
-        auto des = vkCreate("create des" + std::to_string(setIndex) + "set") = [&]{
-            return mDevice.allocateDescriptorSets(allocateInfo);
+        auto des = vkCreate("create des" + std::to_string(setIndex) + "set", spdlog::level::trace) = [&]{
+            return mDevice.allocateDescriptorSets(allocateInfo)[setIndex];
         };
-        mDesSet.insert(mDesSet.end(), des.begin(), des.end());
+        //mDesSet.insert(mDesSet.end(), des.begin(), des.end());
+        mDesSet.emplace_back(des);
 
         return *this;
     }
 
-    vkDescriptor &vkDescriptor::updateDesSet(
+    Descriptor &Descriptor::updateDesSet(
             const std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> &infos, const size_t& setIndex) {
         pushbackDesSets();
 
         mWriteDesSets.resize(mIndex + 1);
-        for(uint32_t i = 0; auto& bind : mBindings[setIndex]){
+        for(uint32_t i = 0; auto& bind : mSetLayout.bindings[setIndex]){
             std::visit([&](auto&& arg){
                 using T = std::decay_t<decltype(arg)>;
 
@@ -82,7 +79,7 @@ namespace yic {
         return *this;
     }
 
-    vkDescriptor &vkDescriptor::updateDesSet(uint32_t Reset_MaxSets,
+    Descriptor &Descriptor::updateDesSet(uint32_t Reset_MaxSets,
                                              const std::vector<std::variant<ImgInfo, BufInfo>> &infos,
                                              const size_t &setIndex) {
         createDesPool(Reset_MaxSets);
@@ -94,16 +91,20 @@ namespace yic {
                     using T = std::decay_t<decltype(arg)>;
 
                     if constexpr (std::is_same_v<T, BufInfo>) {
-                        v.emplace_back(vk::DescriptorBufferInfo{arg.buffer[i] ? arg.buffer[i] : arg.buffer.back(),
-                                                                arg.offset[i] ? arg.offset[i] : arg.offset.back(),
-                                                                arg.range[i] ? arg.range[i] : arg.range.back()});
+                        vk::Buffer buffer = (i < arg.buffer.size()) ? arg.buffer[i] : arg.buffer.back();
+                        vk::DeviceSize offset = (i < arg.offset.size()) ? arg.offset[i] : arg.offset.back();
+                        vk::DeviceSize range = (i < arg.range.size()) ? arg.range[i] : arg.range.back();
+
+                        v.emplace_back(vk::DescriptorBufferInfo{buffer, offset, range});
                     } else if constexpr (std::is_same_v<T, ImgInfo>) {
-                        v.emplace_back(vk::DescriptorImageInfo{arg.sampler,
-                                                               arg.imageViews[i] ? arg.imageViews[i] : arg.imageViews.back(),
-                                                               arg.imageLayout});
+                        vk::ImageView imageView = (i < arg.imageViews.size()) ? arg.imageViews[i] : arg.imageViews.back();
+
+                        v.emplace_back(vk::DescriptorImageInfo{arg.sampler, imageView, arg.imageLayout});
                     }
                 }, info);
             }
+
+            auto x = v;
 
             updateDesSet(v, setIndex);
         }
@@ -113,9 +114,9 @@ namespace yic {
 
     ///---------------------------------------------------------------------------------------------------------------------///
 
-    vk::Sampler vkDescriptor::FixSampler::eDefault;
+    vk::Sampler FixSampler::eDefault;
 
-    vkDescriptor::FixSampler::FixSampler() {
+    FixSampler::FixSampler() {
         auto dev = EventBus::Get::vkSetupContext().device_ref();
 
         eDefault = dev.createSampler(vk::SamplerCreateInfo{
@@ -128,12 +129,12 @@ namespace yic {
         });
     }
 
-    vkDescriptor::FixSampler::~FixSampler() {
+    FixSampler::~FixSampler() {
         auto dev = EventBus::Get::vkSetupContext().device_ref();
         dev.destroy(eDefault);
     }
 
-    auto vkDescriptor::FixSampler::createSampler() -> vk::Sampler {
+    auto FixSampler::createSampler() -> vk::Sampler {
         auto dev = EventBus::Get::vkSetupContext().device_ref();
 
         return dev.createSampler(vk::SamplerCreateInfo{
@@ -147,14 +148,16 @@ namespace yic {
     }
 
     auto ImGuiDescriptorManager::updateImage(const std::string &id, const std::vector<vk::ImageView> &views) -> void {
-        auto desc = std::make_shared<vkDescriptor>(id);
+        auto setLayout = get()->mSetLayout;
+
+        auto desc = std::make_shared<Descriptor>(id, *setLayout);
         EventBus::update(et::vkResource{
             .desc = desc
         });
 
-        desc->addDesSetLayout({vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1,
-                                                              vk::ShaderStageFlagBits::eFragment}});
-        desc->updateDesSet(views.size(), {vkDescriptor::ImgInfo{views}});
+//        desc->addDesSetLayout({vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1,
+//                                                              vk::ShaderStageFlagBits::eFragment}});
+        desc->updateDesSet(views.size(), {ImgInfo{views}});
     }
 
     auto ImGuiDescriptorManager::drawImage(const std::string &id, const ImVec2& imageSize, const uint32_t& index) -> void {
@@ -176,11 +179,15 @@ namespace yic {
 
     }
 
-//    auto ImGuiDescriptorManager::drawImage(const std::string &id, const std::vector<vk::ImageView> &views,
-//                                           const ImVec2 &imageSize, const int &index) -> void {
-//        updateImage(id, views);
-//        drawImage(id, imageSize, index);
-//    }
+    ImGuiDescriptorManager::ImGuiDescriptorManager() {
+        mSetLayout = std::make_shared<PipelineDesSetLayout>(EventBus::Get::vkSetupContext().device_ref());
+
+        mSetLayout->addDesSetLayout(0, 0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
+        mSetLayout->createDesSetLayout();
+    }
+    ImGuiDescriptorManager::~ImGuiDescriptorManager() {
+        mSetLayout.reset();
+    }
 
 
 } // yic

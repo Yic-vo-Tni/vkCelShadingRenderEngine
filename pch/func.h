@@ -27,4 +27,17 @@
 //    return std::nullopt;
 //}
 
+template<typename Key, typename Value>
+using lru_cache_t = typename caches::fixed_sized_cache<Key, Value, caches::LRUCachePolicy>;
+
+inline auto runningTIme(const std::function<void()>& fn) -> void{
+    auto start = std::chrono::high_resolution_clock::now();
+
+    fn();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    std::cout << elapsed.count() << "ms\n";
+}
+
 #endif //VKCELSHADINGRENDERER_FUNC_H

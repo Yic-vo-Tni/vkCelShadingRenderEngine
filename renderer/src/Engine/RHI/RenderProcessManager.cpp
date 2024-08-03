@@ -7,27 +7,24 @@
 namespace yic {
 
     RenderProcessManager::RenderProcessManager() {
-        vk::Extent2D et{1920, 1080};
+        mRenderProcess[enum_name(RenderProcessPhases::ePrimary)] = std::make_shared<RenderProcess>(enum_name(RenderProcessPhases::ePrimary));
 
-        mRenderProcess[enum_name(RenderProcessPhases::ePrimary)] = std::make_shared<vkRenderProcess>(et, enum_name(RenderProcessPhases::ePrimary));
+        mRenderGroup = RenderGroup::configure(FrameRender::eColorDepthStencilRenderPass)
+                ->addDesSetLayout_1(0, 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+                ->addPushConstantRange_2(vk::ShaderStageFlagBits::eVertex, 0, sizeof (glm::mat4))
+                ->addBindingDescription_3(0, sizeof(sc::Vertex), vk::VertexInputRate::eVertex)
+                ->addAttributeDescription_4(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(sc::Vertex, pos))
+                ->addAttributeDescription_4(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(sc::Vertex, nor))
+                ->addAttributeDescription_4(2, 0, vk::Format::eR32G32Sfloat, offsetof(sc::Vertex, uv))
+                ->addShader_5("v_test.spv", vk::ShaderStageFlagBits::eVertex)
+                ->addShader_5("f_test.spv", vk::ShaderStageFlagBits::eFragment)
+        //        ->addModel(R"(E:\Material\model\Nilou\Nilou.pmx)")
+                ->build();
 
-        mCameraBuf = vkAllocator::allocBuf(sizeof (glm::mat4), vk::BufferUsageFlagBits::eUniformBuffer, vkAllocator::MemoryUsage::eCpuToGpu, "camera");
-        mDescriptor = vkAllocator::allocDesc(IdGenerator::uniqueId());
-        mDescriptor->addDesSetLayout({
-            vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex},
-        });
-        mPipeline = std::make_shared<GraphicsPipeline>(mDescriptor->getPipelineLayout(), vkFrameRender::eColorDepthStencilRenderPass);
-        mPipeline->rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
-        mPipeline->addShader("v_test.spv", vk::ShaderStageFlagBits::eVertex)
-                .addShader("f_test.spv", vk::ShaderStageFlagBits::eFragment)
-                .create();
-        mDescriptor->updateDesSet({vkDescriptor::BufInfo{mCameraBuf->buffer}});
-
-        mRenderProcess[enum_name(RenderProcessPhases::ePrimary)]->appendCommandRecord([&](vk::CommandBuffer& cmd){
-            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline->Get());
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mDescriptor->getPipelineLayout(), 0, mDescriptor->getDescriptorSets(),
-                                   nullptr);
-            cmd.draw(3, 1, 0, 0);
+        yic::EventBus::subscribeAuto([&](const et::modelPath& modelPaths){
+            for(auto& pt : modelPaths.paths_ref()){
+                mRenderGroup->addModel(pt);
+            }
         });
     }
 
@@ -41,7 +38,8 @@ namespace yic {
         for(auto& key : {RenderProcessPhases::ePrimary}){
             auto it = get()->mRenderProcess.find(enum_name(key));
             if (it != get()->mRenderProcess.end()){
-                cmds.emplace_back(it->second->process());
+                if (it->second->process().has_value())
+                    cmds.emplace_back(it->second->process().value());
             }
         }
 
@@ -50,13 +48,21 @@ namespace yic {
 
     auto RenderProcessManager::prepare() -> void {
         sc::globalCamera.computeViewProjMatrix();
-        get()->mCameraBuf->updateBuf(sc::globalCamera.getVpMatrix());
 
         tbb::parallel_for_each(get()->mRenderProcess.begin(), get()->mRenderProcess.end(), [](auto& it){
             if (it.second){
                 it.second->prepare();
             }
         });
+
+        get()->mRenderProcess[enum_name(RenderProcessPhases::ePrimary)]->appendCommandRecord([&](vk::CommandBuffer &cmd) {
+            get()->mRenderGroup->render(cmd)
+                    .bindPipeline()
+                    .pushConstants(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4),
+                                   sc::globalCamera.getVpMatrix())
+                    .drawModel();
+        });
+
     }
 
 } // yic

@@ -94,6 +94,7 @@ using opt = std::optional<T>;
 #include "gl_types.h"
 #include "vk_types.h"
 #include "ui_types.h"
+#include "ecs_types.h"
 
 namespace et{
 

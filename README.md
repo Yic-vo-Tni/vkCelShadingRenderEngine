@@ -26,13 +26,11 @@
 
 - 需要Vulkan SDK
 - 需要MinGW，CMake、Git
-- 需要自行下载vma库，boost库的hana和filesystem以及tbb
-    - filesystem和tbb需要自行编译，tbb用的是oneapi文件夹的版本
+- 需要自行下载vma，tbb（版本忘了）= =，imgui v1.90.9-docking, wx v3.2.5，boost的hana、filesystem、preprocessor,
+    - filesystem、tbb、wx需要自行编译，tbb用的是oneapi文件夹的版本
     - 开始的时候没打算用CMake的FetchContext功能，之前给我留下了不好映像 ：）
 - 其他库会通过CMake的FetchContext功能自动拉取
-    - 需要注释掉renderer文件夹下CMakeLists的下载操作
-    - 注释完后构建CMake，然后编译
-    - 编译完成后，再取消注释构建编译运行就可以了，会自动下载dll文件
+    - 编译完自动下载dll
   
 
 

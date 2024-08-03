@@ -30,7 +30,7 @@ namespace sc {
         glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
     public:
         bool firstMouse = true;
-        Camera() : position(0.f, 0.f, 5.f), orientation(glm::quat(1., 0., 0., 0.)) {}
+        Camera() : position(0.f, 0.f, 25.f), orientation(glm::quat(1., 0., 0., 0.)) {}
         [[nodiscard]] inline auto& getPosition()  { return position;}
         [[nodiscard]] inline auto& getCameraFront() const { return cameraFront;}
         [[nodiscard]] inline auto& getCameraUp() const { return cameraUp;}

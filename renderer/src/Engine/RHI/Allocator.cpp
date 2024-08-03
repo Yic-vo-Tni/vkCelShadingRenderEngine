@@ -2,7 +2,7 @@
 // Created by lenovo on 6/22/2024.
 //
 
-#include "vkAllocator.h"
+#include "Allocator.h"
 
 #include <utility>
 
@@ -11,34 +11,32 @@
 
 namespace yic {
 
-    vkAllocator::vkAllocator() {
+    Allocator::Allocator() {
         ct = EventBus::Get::vkSetupContext();
 
         mDevice = ct.device_ref();
-        mGraphicsQueue = ct.qGraphicsPrimary_ref();
+        mGraphicsQueue = ct.qGraphicsAuxiliary_ref();
 
-        vkDescriptor::FixSampler::get();
+        FixSampler::get();
 
         auto allocatorInfo = VmaAllocatorCreateInfo();
+        //allocatorInfo.flags = VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
         allocatorInfo.instance = ct.instance_ref();
         allocatorInfo.physicalDevice = ct.physicalDevice_ref();
         allocatorInfo.device = ct.device_ref();
 
         vmaCreateAllocator(&allocatorInfo, &mVmaAllocator);
 
-        auto transferCmdPoolInfo = vk::CommandPoolCreateInfo()
-                .setQueueFamilyIndex(ct.qIndexGraphicsPrimary_v())
-                .setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-        mTransferPool = ct.device_ref().createCommandPool(transferCmdPoolInfo);
+        mCommandBufCoordinator = std::make_unique<CommandBufferCoordinator>(mDevice, ct.qIndexGraphicsAuxiliary_v(), ct.qGraphicsAuxiliary_ref());
     }
 
-    vkAllocator::~vkAllocator(){
-        ct.device->destroy(mTransferPool);
+    Allocator::~Allocator(){
+        mCommandBufCoordinator.reset();
         vmaDestroyAllocator(mVmaAllocator);
     }
 
 
-    auto vkAllocator::allocBuf_impl(vk::DeviceSize deviceSize, const void *data,
+    auto Allocator::allocBuf_impl(vk::DeviceSize deviceSize, const void *data,
                                     vk::BufferUsageFlags flags, MemoryUsage usage, const std::string& id,
                                     bool unmap) -> vkBuf_sptr {
         bufCreateInfo createInfo{
@@ -57,16 +55,12 @@ namespace yic {
         });
     }
 
-    auto vkAllocator::allocBufStaging_impl(vk::DeviceSize deviceSize, const void *data,
+    auto Allocator::allocBufStaging_impl(vk::DeviceSize deviceSize, const void *data,
                                             vk::BufferUsageFlags flags, const std::string& id, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
-        auto stagingBufCreateInfo = bufCreateInfo{
-                .deviceSize = deviceSize,
-                .usage = vk::BufferUsageFlagBits::eTransferSrc,
-                .memoryUsage = MemoryUsage::eCpuOnly,
-                .allocStrategy = AllocStrategy::eMapped,
-        };
-        auto stagingBuf = createBuf(stagingBufCreateInfo);
-        mapBuf(stagingBuf, deviceSize, data, false);
+
+        auto stagingBuf = acquireStagingBuf(deviceSize);
+
+        mapBuf(stagingBuf.stgBuf, deviceSize, data, false);
 
         auto buf = createBuf({
                                      .deviceSize = deviceSize,
@@ -75,25 +69,27 @@ namespace yic {
                                      .allocStrategy = allocStrategy,
                              });
 
-        copyBuf(stagingBuf.buf, buf.buf, deviceSize);
-
-        vmaUnmapMemory(mVmaAllocator, stagingBuf.vmaAllocation);
-        vmaDestroyBuffer(mVmaAllocator, stagingBuf.buf, stagingBuf.vmaAllocation);
-
-        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, stagingBufCreateInfo, deviceSize, buf](const void* src) {
-            auto stagingBuf = createBuf(stagingBufCreateInfo);
-            mapBuf(stagingBuf, deviceSize, src, false);
-
-            copyBuf(stagingBuf.buf, buf.buf, deviceSize);
-
-            vmaUnmapMemory(mVmaAllocator, stagingBuf.vmaAllocation);
-            vmaDestroyBuffer(mVmaAllocator, stagingBuf.buf, stagingBuf.vmaAllocation);
+        mCommandBufCoordinator->cmdDraw([&](vk::CommandBuffer& cmd){
+            copyBuf(stagingBuf.stgBuf.buf, buf.buf, deviceSize, cmd);
+            resetBuf(stagingBuf, cmd);
         });
+        releaseStagingBuf(stagingBuf);
+
+        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, deviceSize, buf](const void* src) {
+            auto stagingBuf = acquireStagingBuf(deviceSize);
+            mapBuf(stagingBuf.stgBuf, deviceSize, src, false);
+
+            mCommandBufCoordinator->cmdDraw([&](vk::CommandBuffer& cmd){
+                copyBuf(stagingBuf.stgBuf.buf, buf.buf, deviceSize, cmd);
+                resetBuf(stagingBuf, cmd);
+            });
+        });
+
     }
 
 
 
-    auto vkAllocator::allocImgOffScreen_impl(vkImageConfig config, const std::string& id, size_t count) -> vkImg_sptr {
+    auto Allocator::allocImgOffScreen_impl(vkImageConfig config, const std::string& id, size_t count) -> vkImg_sptr {
         auto createImage = [&]{
             vk::ImageCreateInfo imageInfo{
                     {},
@@ -207,10 +203,36 @@ namespace yic {
         throw std::runtime_error("failed to create off img");
     }
 
-    auto vkAllocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {
+    auto Allocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {
         int w, h, c;
         vk::DeviceSize imgSize{0};
         std::vector<stbi_uc> pixels;
+
+        auto readFile = [&](const std::wstring& path) -> std::vector<unsigned char> {
+            HANDLE fileHandle = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (fileHandle == INVALID_HANDLE_VALUE) {
+                std::cerr << "Failed to open file" << std::endl;
+                return {};
+            }
+
+            LARGE_INTEGER fileSize;
+            if (!GetFileSizeEx(fileHandle, &fileSize)) {
+                CloseHandle(fileHandle);
+                std::cerr << "Failed to get file size" << std::endl;
+                return {};
+            }
+
+            std::vector<unsigned char> buffer(static_cast<size_t>(fileSize.QuadPart));
+            DWORD bytesRead;
+            if (!ReadFile(fileHandle, buffer.data(), static_cast<DWORD>(fileSize.QuadPart), &bytesRead, nullptr) || bytesRead != fileSize.QuadPart) {
+                CloseHandle(fileHandle);
+                std::cerr << "Failed to read file" << std::endl;
+                return {};
+            }
+
+            CloseHandle(fileHandle);
+            return buffer;
+        };
 
         std::visit([&](auto&& arg){
             using T = std::decay_t<decltype(arg)>;
@@ -225,7 +247,14 @@ namespace yic {
                     }
                 }
 
-                auto data = stbi_load(path.c_str(), &w, &h, &c, STBI_rgb_alpha);
+                auto pt = boost::locale::conv::utf_to_utf<wchar_t>(path);
+                auto imgData = readFile(pt);
+                if (imgData.empty())
+                    vkError("failed to read img data");
+                auto data = stbi_load_from_memory(imgData.data(), static_cast<int>(imgData.size()), &w, &h, &c, STBI_rgb_alpha);
+                if (data == nullptr){
+                    vkError(stbi_failure_reason());
+                }
                 if (data){
                     size_t size = w * h * 4;
                     pixels.insert(pixels.end(), data, data + size);
@@ -248,25 +277,22 @@ namespace yic {
             throw std::runtime_error("failed to load tex img");
         }
 
-        auto stgBuf = createBuf({
-            .deviceSize = imgSize,
-            .usage = vk::BufferUsageFlagBits::eTransferSrc,
-            .memoryUsage = MemoryUsage::eCpuOnly,
-            .allocStrategy = AllocStrategy::eMapped,
-        });
-
-        mapBuf(stgBuf, imgSize, pixels.data(), false);
+        auto stgBuf = acquireStagingBuf(imgSize);
+        mapBuf(stgBuf.stgBuf, imgSize, pixels.data(), false);
 
         auto img = allocImgOffScreen_impl(config.value().setExtent(w, h), id, 1);
 
-        copyBufToImg(stgBuf.buf, img->images[0], (uint32_t)w, (uint32_t)h);
+        mCommandBufCoordinator->cmdDraw([&](vk::CommandBuffer& cmd){
+            copyBufToImg(stgBuf.stgBuf.buf, img->images[0], (uint32_t)w, (uint32_t)h, cmd);
+            resetBuf(stgBuf, cmd);
+        });
 
-        vmaDestroyBuffer(mVmaAllocator, stgBuf.buf, stgBuf.vmaAllocation);
+        releaseStagingBuf(stgBuf);
 
         return img;
     }
 
-    auto vkAllocator::createBuf(const bufCreateInfo& bufCreateInfo) -> buf {
+    auto Allocator::createBuf(const bufCreateInfo& bufCreateInfo) -> buf {
         VkBuffer buf;
         VmaAllocation allocation;
 
@@ -287,14 +313,12 @@ namespace yic {
         return {buf, allocation};
     }
 
-    auto vkAllocator::copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize) -> void {
-        createTempCmdBuf();
+    auto Allocator::copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize, vk::CommandBuffer& cmd) -> void {
         vk::BufferCopy copy{0, 0, deviceSize};
-        mTempCmd.copyBuffer((vk::Buffer)stagingBuf, (vk::Buffer)destBuf, 1, &copy);
-        submitTempCmdBuf();
+        cmd.copyBuffer((vk::Buffer) stagingBuf, (vk::Buffer) destBuf, 1, &copy);
     }
 
-    auto vkAllocator::mapBuf(const yic::vkAllocator::buf& buf, VkDeviceSize devSize, const void *data, bool unmap)-> void* {
+    auto Allocator::mapBuf(const yic::Allocator::buf& buf, VkDeviceSize devSize, const void *data, bool unmap)-> void* {
         void* mappedData = nullptr;
 
         try {
@@ -318,30 +342,31 @@ namespace yic {
         return mappedData;
     }
 
-    auto vkAllocator::copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h) -> void {
-        createTempCmdBuf();
-        transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+    auto Allocator::copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h, vk::CommandBuffer &cmd) -> void {
+        transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined,
+                              vk::ImageLayout::eTransferDstOptimal, cmd);
 
         vk::BufferImageCopy region{
-            0, 0, 0,
-            vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-            {0, 0, 0}, {w, h, 1}
+                0, 0, 0,
+                vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                {0, 0, 0}, {w, h, 1}
         };
 
-        mTempCmd.copyBufferToImage(buf, img, vk::ImageLayout::eTransferDstOptimal, region);
+        cmd.copyBufferToImage(buf, img, vk::ImageLayout::eTransferDstOptimal, region);
 
-        transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
-        submitTempCmdBuf();
+        transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal,
+                              vk::ImageLayout::eShaderReadOnlyOptimal, cmd);
     }
 
 
-    auto vkAllocator::transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout,
-                                            vk::ImageLayout newLayout) -> void {
+    auto Allocator::transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout,
+                                            vk::ImageLayout newLayout, vk::CommandBuffer& cmd) -> void {
+
         vk::ImageMemoryBarrier barrier{{}, {}, oldLayout, newLayout,
                                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, image,
                                        vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
         vk::PipelineStageFlags srcStage, dstStage;
-        if (oldLayout == vk::ImageLayout::eUndefined){
+        if (oldLayout == vk::ImageLayout::eUndefined) {
             barrier.setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
                     .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
 
@@ -355,8 +380,55 @@ namespace yic {
             dstStage = vk::PipelineStageFlagBits::eFragmentShader;
         }
 
-        mTempCmd.pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
+        cmd.pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
+
     }
+
+    auto Allocator::resetBuf(Allocator::stagBuf& buf, vk::CommandBuffer& cmd) -> void {
+        vk::MemoryBarrier copyBarrier{vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead};
+        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, copyBarrier, {}, {});
+        cmd.fillBuffer(buf.stgBuf.buf, 0, VK_WHOLE_SIZE, 0);
+    }
+
+    auto Allocator::acquireStagingBuf(vk::DeviceSize deviceSize) -> stagBuf {
+        auto it = mStagingBufs.lower_bound(deviceSize);
+        while(it != mStagingBufs.end()){
+            stagBuf stgBuf;
+            while (it->second.try_pop(stgBuf)){
+                return stgBuf;
+            }
+            it++;
+        }
+        auto buf = createBuf({
+                                     .deviceSize = deviceSize,
+                                     .usage = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
+                                     .memoryUsage = MemoryUsage::eCpuOnly,
+                                     .allocStrategy = AllocStrategy::eMapped,});
+        mStagBufCounter++;
+        stagBuf stgBuf{buf, deviceSize};
+        return stgBuf;
+    }
+
+    auto Allocator::releaseStagingBuf(yic::Allocator::stagBuf stg) -> void {
+        mStagingBufs[stg.deviceSize].push(stg);
+    }
+
+    auto Allocator::destroyStagBuf() -> void {
+        for(auto& [key, stg] : mStagingBufs){
+            stagBuf stgBuf;
+            while(stg.try_pop(stgBuf)){
+                vmaDestroyBuffer(mVmaAllocator, stgBuf.stgBuf.buf, stgBuf.stgBuf.vmaAllocation);
+                mDestroyCount++;
+            }
+        }
+        if_debug {
+            if (mStagBufCounter != mDestroyCount) {
+                vkError("Stg buf: {0} {1}", mStagBufCounter, mDestroyCount);
+            } else { vkInfo("Stg buf: {0}", mStagBufCounter); }
+        }
+        mStagingBufs.clear();
+    }
+
 
 
 

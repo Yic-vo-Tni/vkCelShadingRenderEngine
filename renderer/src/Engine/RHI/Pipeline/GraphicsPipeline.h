@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_GRAPHICSPIPELINE_H
 
 #include "State.h"
+#include "Engine/RHI/vkCommon.h"
 
 namespace yic {
 
@@ -56,8 +57,25 @@ namespace yic {
             bindingDescriptions.emplace_back(bindDes);
             return *this;
         }
+        Graphics& addBindingDescription(const uint32_t& binding, const uint32_t& stride, const vk::VertexInputRate& inputRate){
+            bindingDescriptions.emplace_back(binding, stride, inputRate);
+            return *this;
+        }
         Graphics& addAttributeDescription(const vk::VertexInputAttributeDescription& attrDes){
             attributeDescriptions.emplace_back(attrDes);
+            return *this;
+        }
+        Graphics& addAttributeDescription(const uint32_t& location, const uint32_t& binding, const vk::Format& format, const uint32_t& offset){
+            attributeDescriptions.emplace_back(location, binding, format, offset);
+            return *this;
+        }
+
+        Graphics& addVertShader(const std::string& path){
+            addShader(path, vk::ShaderStageFlagBits::eVertex);
+            return *this;
+        }
+        Graphics& addFragShader(const std::string& path){
+            addShader(path, vk::ShaderStageFlagBits::eFragment);
             return *this;
         }
 
@@ -101,16 +119,17 @@ namespace yic {
 
             createShaderStage();
             createInfo.setStages(shaderStages);
+
             mPipeline = vkCreate("create graphics pipeline") = [&]{
                 return mDevice.createGraphicsPipeline({}, createInfo).value;
             };
         }
 
-        [[nodiscard]] inline auto& Get() const { return mPipeline;}
+        [[nodiscard]] inline auto& acquire() const { return mPipeline;}
     private:
         auto init(vk::PipelineLayout layout, vk::RenderPass renderPass) -> void;
 
-    private:
+    protected:
         vk::Device mDevice{};
         vk::PipelineLayout mPipelineLayout{};
         vk::Pipeline mPipeline{};
@@ -127,7 +146,7 @@ namespace yic {
         vk::PipelineColorBlendStateCreateInfo colorBlendState;
 
         std::vector<vk::PipelineColorBlendAttachmentState> blendAttachmentStates{};
-    private:
+    protected:
         std::vector<vk::DynamicState> dynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
         std::vector<vk::VertexInputBindingDescription> bindingDescriptions{};

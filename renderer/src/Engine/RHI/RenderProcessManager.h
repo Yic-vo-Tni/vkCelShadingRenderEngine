@@ -5,8 +5,11 @@
 #ifndef VKCELSHADINGRENDERER_RENDERPROCESSMANAGER_H
 #define VKCELSHADINGRENDERER_RENDERPROCESSMANAGER_H
 
-#include "vkRenderProcess.h"
+#include "Engine/RHI/RenderProcess.h"
+#include "Engine/RHI/RenderGroup.h"
+
 #include "Engine/ECS/Camera/Camera.h"
+#include "Engine/ECS/Model/LoadModel.h"
 
 namespace yic {
 
@@ -22,14 +25,16 @@ namespace yic {
 
         static auto clear() -> void{
             get()->mRenderProcess.clear();
+            get()->mRenderGroup.reset();
         }
     private:
         tbb::concurrent_vector<vk::CommandBuffer> cmds;
-        tbb::concurrent_unordered_map<std::string, std::shared_ptr<vkRenderProcess>> mRenderProcess;
+        tbb::concurrent_unordered_map<std::string, std::shared_ptr<RenderProcess>> mRenderProcess;
         // t
-        vkBuf_sptr mCameraBuf;
-        std::shared_ptr<vkDescriptor> mDescriptor;
-        std::shared_ptr<GraphicsPipeline> mPipeline;
+        sc::Model model;
+        std::vector<sc::Model> models;
+
+        std::shared_ptr<RenderGroup> mRenderGroup;
     };
 
 } // yic

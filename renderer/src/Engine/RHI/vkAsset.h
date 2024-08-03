@@ -7,6 +7,8 @@
 #ifndef VKCELSHADINGRENDERER_VKBUF_H
 #define VKCELSHADINGRENDERER_VKBUF_H
 
+#include "Engine/RHI/vkCommon.h"
+
 namespace yic {
 
     struct vkBuffer : public Identifiable{

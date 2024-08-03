@@ -82,7 +82,7 @@ namespace se {
                 if (file.Open(path, wxFile::write)) {
                     file.Write(textCtrl->GetText());
                     file.Close();
-                    wxMessageBox("File saved successfully!", "Info", wxOK | wxICON_INFORMATION);
+//                    wxMessageBox("File saved successfully!", "Info", wxOK | wxICON_INFORMATION);
                 } else {
                     wxMessageBox("Failed to save file!", "Error", wxOK | wxICON_ERROR);
                 }
@@ -129,6 +129,7 @@ namespace se {
         notebook->SetPageToolTip(notebook->GetPageCount() - 1, path);
     }
 }
+
 
 namespace yic{
 

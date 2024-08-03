@@ -7,7 +7,6 @@
 
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
-
 namespace glfw_callback {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *w, int width, int height) {
@@ -45,6 +44,25 @@ namespace glfw_callback {
 
     };
 
+    inline auto dropCallback = [](GLFWwindow *w, int count, const char** paths){
+        bool model{false};
+        bool img{false};
+        std::vector<std::string> modelPaths;
+        std::vector<std::string> imgPaths;
+        for(int i = 0; i < count; i++){
+            std::string path(paths[i]);
+
+            if (path.ends_with(".obj") || path.ends_with(".fbx") || path.ends_with(".pmx") || path.ends_with(".gltf")){
+                model = true;
+                modelPaths.emplace_back(path);
+            }
+        }
+
+        if (model){
+            yic::EventBus::publish(et::modelPath{modelPaths});
+        }
+    };
+
 }
 
 inline auto callback = [](GLFWwindow* w){
@@ -55,6 +73,7 @@ inline auto callback = [](GLFWwindow* w){
     glfwSetWindowSizeCallback(w, glfw_callback::setWindowSizeCallback);
     glfwSetCursorPosCallback(w, glfw_callback::setCursorPosCallback);
     glfwSetScrollCallback(w, glfw_callback::setScrollBack);
+    glfwSetDropCallback(w, glfw_callback::dropCallback);
 };
 
 inline auto cameraCallback = [](GLFWwindow* w){

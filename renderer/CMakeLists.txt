@@ -23,6 +23,37 @@ FetchContent_Declare(
         SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/flecs"
 )
 
+FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp.git
+        GIT_TAG v5.4.2
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/assimp"
+)
+
+FetchContent_Declare(
+        caches
+        GIT_REPOSITORY https://github.com/vpetrigo/caches.git
+        GIT_TAG v0.1.0
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/caches"
+)
+
+FetchContent_Declare(
+        benchmark
+        GIT_REPOSITORY https://github.com/google/benchmark.git
+        GIT_TAG v1.8.5
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/benchmark"
+)
+
+
+#FetchContent_Declare(
+#        opencv
+#        GIT_REPOSITORY https://github.com/opencv/opencv.git
+#        GIT_TAG 4.10.0
+#        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/opencv"
+#)
+
+set(BENCHMARK_ENABLE_TESTING OFF)
+
 FetchContent_GetProperties(sfml)
 if (NOT sfml_POPULATED)
     FetchContent_Populate(sfml)
@@ -37,6 +68,32 @@ if (NOT flecs_POPULATED)
     link_directories(${flecs_BINARY_DIR}/lib)
 endif ()
 
+FetchContent_GetProperties(assimp)
+if (NOT assimp_POPULATED)
+    FetchContent_Populate(assimp)
+    add_subdirectory(${assimp_SOURCE_DIR} ${assimp_BINARY_DIR})
+    link_directories(${assimp_BINARY_DIR}/lib)
+endif ()
+
+FetchContent_GetProperties(caches)
+if (NOT caches_POPULATED)
+    FetchContent_Populate(caches)
+endif ()
+
+FetchContent_GetProperties(benchmark)
+if (NOT benchmark_POPULATED)
+    FetchContent_Populate(benchmark)
+    add_subdirectory(${benchmark_SOURCE_DIR} ${benchmark_BINARY_DIR})
+    link_directories(${benchmark_BINARY_DIR}/lib)
+endif ()
+
+#FetchContent_GetProperties(opencv)
+#if (NOT opencv_POPULATED)
+#    FetchContent_Populate(opencv)
+#    add_subdirectory(${opencv_SOURCE_DIR} ${opencv_BINARY_DIR})
+#    link_directories(${opencv_BINARY_DIR}/lib)
+#endif ()
+
 add_library(Renderer STATIC ${SRCS})
 target_precompile_headers(Renderer PUBLIC ${pch_files})
 target_include_directories(Renderer PUBLIC
@@ -47,32 +104,36 @@ target_include_directories(Renderer PUBLIC
         ../subprojects/ImGui
         third/sfml/include
         third/wxWidget
+#        third/opencv/include
+#        third/opencv/modules/core/include
 )
 target_link_libraries(Renderer PUBLIC
         "Vulkan::Vulkan"
         ${glfw_mingw}
         ws2_32
         "${BOOST_LIBRARYDIR}/libboost_filesystem-mgw13-mt-d-x64-1_85.a"
+        "${BOOST_LIBRARYDIR}/libboost_locale-mgw13-mt-d-x64-1_85.a"
         "imgui"
         ${tbb12}
         sfml-system
         sfml-audio
         flecs::flecs_static
         ${wx_lib}
+        assimp::assimp
+#        benchmark::benchmark
 )
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-system-d-2.dll DESTINATION ${Target_dir})
-    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-audio-d-2.dll DESTINATION ${Target_dir})
-endif ()
+file(GLOB_RECURSE DLL_FILES
+        "${sfml_BINARY_DIR}/*.dll"
+        "${assimp_BINARY_DIR}/*.dll"
+#        "${opencv_BINARY_DIR}/*.dll"
+)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-system-2.dll DESTINATION ${Target_dir})
-    file(INSTALL ${sfml_BINARY_DIR}/lib/sfml-audio-2.dll DESTINATION ${Target_dir})
-endif ()
-
-#add_custom_command(TARGET mylib POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#        $<TARGET_FILE:mylib> ${CMAKE_BINARY_DIR}/bin/mylib.dll)
+foreach (dll_file IN LISTS DLL_FILES)
+    add_custom_command(TARGET Renderer POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${dll_file} ${CMAKE_BINARY_DIR}
+    )
+endforeach ()
 
 

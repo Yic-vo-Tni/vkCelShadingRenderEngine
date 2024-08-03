@@ -9,11 +9,11 @@
 #include "Engine/Core/vkWindow.h"
 #include "Engine/RHI/vkSwapchain.h"
 #include "Engine/RHI/vkSemaphore.h"
-#include "Engine/RHI/vkFrameRender.h"
-#include "Engine/RHI/vkDescriptor.h"
+#include "Engine/RHI/FrameRender.h"
+#include "Engine/RHI/Descriptor.h"
 #include "Engine/RHI/RenderProcessManager.h"
 
-#include "SFML/System.hpp"
+
 
 namespace yic {
 
@@ -26,11 +26,10 @@ namespace yic {
     private:
         sf::Time mStart;
         sf::Time mFrameTime;
+        sf::Clock mClock;
         auto beginFrame() -> void;
         auto endFrame() -> void;
     private:
-        sf::Clock mClock;
-        sf::Time mTimePerFrame;
 
         std::unique_ptr<vkSwapchain> mSwapchain{};
     };

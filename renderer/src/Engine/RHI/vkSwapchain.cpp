@@ -22,7 +22,7 @@ namespace yic {
             mRenderPass(createRenderPass()),
             mFramebuffers(createFrameBuffers()),
             mFences(createFences()){
-        mCommand = std::make_unique<vkCommand>(id, queueFamilyIndex, mImageCount);
+        mRenderSession = std::make_unique<RenderSession>(id, queueFamilyIndex, mImageCount);
 
         EventBus::update(et::vkRenderContext{
                 .swapchain = mSwapchain,
@@ -158,16 +158,16 @@ namespace yic {
     }
 
     auto vkSwapchain::submitFrame(const std::vector<vk::CommandBuffer>& cmds, const std::function<void()>& fun) -> void {
-        auto& cmd = mCommand->beginCommandBuf(mExtent);
-        mCommand->beginRenderPass(vkCommand::RenderPassInfo{
+        auto& cmd = mRenderSession->beginCommandBuf(mExtent);
+        mRenderSession->beginRenderPass(RenderSession::RenderPassInfo{
                 mRenderPass, mFramebuffers, mExtent,
-                vkCommand::ClearValue::Color()
+                RenderSession::ClearValue::Color()
         });
 
         mImGui->render(cmd);
 
-        mCommand->endRenderPass();
-        mCommand->endCommandBuf();
+        mRenderSession->endRenderPass();
+        mRenderSession->endCommandBuf();
 
         mDevice.resetFences(mFences[mImageIndex]);
 

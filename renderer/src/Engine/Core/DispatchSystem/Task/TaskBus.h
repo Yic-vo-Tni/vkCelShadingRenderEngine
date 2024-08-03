@@ -70,12 +70,12 @@ namespace yic {
                 }
             }
 
-            auto group = std::make_unique<tbb::task_group>();
+            auto group = std::make_unique<oneapi::tbb::task_group>();
             for(auto& t : taskToExecute){
                 if (parallel){
                     if (t.second){
                         group->wait();
-                        group = std::make_unique<tbb::task_group>();
+                        group = std::make_unique<oneapi::tbb::task_group>();
                     } else{
                         group->run(t.first);
                     }
@@ -90,8 +90,8 @@ namespace yic {
 
 
     private:
-        tbb::task_group mGroup{};
-        tbb::concurrent_unordered_map<std::type_index, tbb::concurrent_unordered_map<std::string, tbb::concurrent_map<int, std::vector<task>>>> mTasks;
+        oneapi::tbb::task_group mGroup{};
+        oneapi::tbb::concurrent_unordered_map<std::type_index, oneapi::tbb::concurrent_unordered_map<std::string, oneapi::tbb::concurrent_map<int, std::vector<task>>>> mTasks;
 
     };
 

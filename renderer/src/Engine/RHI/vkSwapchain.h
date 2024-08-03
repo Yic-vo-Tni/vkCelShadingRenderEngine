@@ -8,7 +8,7 @@
 #include "Engine/Utils/Log.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
-#include "Engine/RHI/vkCommand.h"
+#include "Engine/RHI/RenderSession.h"
 #include "Editor/Gui/vkImGui.h"
 
 namespace yic {
@@ -55,7 +55,7 @@ namespace yic {
         vk::SurfaceFormatKHR mSurfaceFormat;
         vk::Extent2D mExtent{};
         vk::SwapchainKHR mSwapchain{};
-        std::unique_ptr<vkCommand> mCommand;
+        std::unique_ptr<RenderSession> mRenderSession;
         std::unique_ptr<vkImGui> mImGui;
         uint32_t mGraphicsQueueFamilyIndex{UINT32_MAX};
         uint32_t mImageCount{UINT32_MAX};

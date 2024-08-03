@@ -14,8 +14,8 @@ namespace yic {
     class EventBus {
         struct EventDate{
             std::any states;
-            mutable tbb::spin_rw_mutex mutex_spin_rw;
-            mutable tbb::queuing_rw_mutex mutex_queuing;
+            mutable oneapi::tbb::spin_rw_mutex mutex_spin_rw;
+            mutable oneapi::tbb::queuing_rw_mutex mutex_queuing;
             std::atomic<bool> deferred;
             std::vector<std::function<void(const std::any&)>> handlers;
             std::atomic<bool> firstExecute{true};
@@ -65,7 +65,7 @@ namespace yic {
 
             auto &eventDate = inst->mEventDates[type][id];
             {
-                tbb::spin_rw_mutex::scoped_lock lock(eventDate.mutex_spin_rw, true);
+                oneapi::tbb::spin_rw_mutex::scoped_lock lock(eventDate.mutex_spin_rw, true);
                 auto &storedEvent = eventDate.states;
 
                 if (!storedEvent.has_value()) {
@@ -138,11 +138,20 @@ namespace yic {
 
         };
 
-        struct GetRef_scoped{
+//        struct GetRef_scoped{
 //            static auto& test(default_parm_id){
 //                return getStateRef_f<et::test>(id);
 //            }
-        };
+
+//        void x(){
+//            auto& x = getStateRef_def<et::test>();
+//            auto& y = getStateRef_f<et::test>();
+//        }
+
+        template<typename T>
+        static T& getStateRef_def(const std::string& id = {}){
+            return getStateRef_def_impl<T>(id).get();
+        }
 
 #undef default_parm_id
 #undef parm_id
@@ -230,7 +239,7 @@ namespace yic {
                 auto idIt = idMap.find(id);
                 if (idIt != idMap.end()){
                     const auto& eventDate = idIt->second;
-                    tbb::spin_rw_mutex::scoped_lock lock(eventDate.mutex_spin_rw, false);
+                    oneapi::tbb::spin_rw_mutex::scoped_lock lock(eventDate.mutex_spin_rw, false);
                     return std::any_cast<T>(eventDate.states);
                 }
             }
@@ -297,9 +306,25 @@ namespace yic {
             }
         }
 
+        template<typename T>
+        static LockedState<T> getStateRef_def_impl(const std::string& id = {}) {
+            auto inst = get();
+            auto typeIt = inst->mEventDates.find(std::type_index(typeid(T)));
+            if (typeIt != inst->mEventDates.end()) {
+                auto& idMap = typeIt->second;
+                auto idIt = idMap.find(id);
+                if (idIt != idMap.end()) {
+                    auto& eventDate = idIt->second;
+                    return LockedState<T>{std::any_cast<T&>(eventDate.states), eventDate.mutex_queuing};
+                }
+            }
+            update(T{}, id);
+            return getStateRef_def_impl<T>(id);
+        }
+
     private:
-        tbb::task_group mGroup;
-        tbb::concurrent_unordered_map<std::type_index, tbb::concurrent_unordered_map<std::string, EventDate>> mEventDates;
+        oneapi::tbb::task_group mGroup;
+        oneapi::tbb::concurrent_unordered_map<std::type_index, oneapi::tbb::concurrent_unordered_map<std::string, EventDate>> mEventDates;
     };
 
 } // yic

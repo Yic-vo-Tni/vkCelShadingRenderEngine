@@ -33,14 +33,15 @@ namespace yic {
             });
         }
 
-        mTimePerFrame = sf::seconds(1.f / 120.f);
     }
 
     vkRhi::~vkRhi() {
         EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
         EventBus::Get::vkSetupContext().device_ref().waitIdle();
 
+        Allocator::clear();
         RenderProcessManager::clear();
+        ImGuiDescriptorManager::clear();
         EventBus::destroy<et::vkResource>();
     }
 
@@ -59,6 +60,7 @@ namespace yic {
         return true;
     }
 
+
     auto vkRhi::beginFrame() -> void {
         mStart = mClock.getElapsedTime();
     }
@@ -68,10 +70,8 @@ namespace yic {
         EventBus::update(et::frameTime{
                 .frameTime = mFrameTime.asSeconds()
         });
-        if (mFrameTime < mTimePerFrame)
-            sf::sleep(mTimePerFrame - mFrameTime);
-
     }
+
 
 
 } // yic

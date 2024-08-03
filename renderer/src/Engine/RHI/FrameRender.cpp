@@ -2,14 +2,14 @@
 // Created by lenovo on 6/10/2024.
 //
 
-#include "vkFrameRender.h"
+#include "FrameRender.h"
 
 namespace yic {
 
-    vk::RenderPass vkFrameRender::eColorRenderPass;
-    vk::RenderPass vkFrameRender::eColorDepthStencilRenderPass;
+    vk::RenderPass FrameRender::eColorRenderPass;
+    vk::RenderPass FrameRender::eColorDepthStencilRenderPass;
 
-    vkFrameRender::vkFrameRender() {
+    FrameRender::FrameRender() {
         ct = EventBus::Get::vkSetupContext();
 
         std::vector<vk::AttachmentReference> attachColorRef{
@@ -55,14 +55,14 @@ namespace yic {
 
     }
 
-    vkFrameRender::~vkFrameRender() {
+    FrameRender::~FrameRender() {
         ct.device->destroy(eColorRenderPass);
         ct.device->destroy(eColorDepthStencilRenderPass);
     }
 
     template<typename T>
     requires(tp::Same_orVector<T, std::shared_ptr<vkImage>>)
-    auto vkFrameRender::createFramebuffers(vk::RenderPass renderPass, const T &imgSptrs) -> std::vector<vk::Framebuffer> {
+    auto FrameRender::createFramebuffers(vk::RenderPass renderPass, const T &imgSptrs) -> std::vector<vk::Framebuffer> {
         std::vector<vk::Framebuffer> framebuffers;
 
         using type = std::decay_t<T>;
@@ -102,11 +102,11 @@ namespace yic {
 
         return framebuffers;
     }
-    template auto vkFrameRender::createFramebuffers<std::shared_ptr<vkImage>>(vk::RenderPass renderPass, const std::shared_ptr<vkImage>& imgSptrs) -> std::vector<vk::Framebuffer>;
-    template auto vkFrameRender::createFramebuffers<std::vector<std::shared_ptr<vkImage>>>(vk::RenderPass renderPass, const std::vector<std::shared_ptr<vkImage>>& imgSptrs) -> std::vector<vk::Framebuffer>;
+    template auto FrameRender::createFramebuffers<std::shared_ptr<vkImage>>(vk::RenderPass renderPass, const std::shared_ptr<vkImage>& imgSptrs) -> std::vector<vk::Framebuffer>;
+    template auto FrameRender::createFramebuffers<std::vector<std::shared_ptr<vkImage>>>(vk::RenderPass renderPass, const std::vector<std::shared_ptr<vkImage>>& imgSptrs) -> std::vector<vk::Framebuffer>;
 
 
-    auto vkFrameRender::DepthFormat() -> vk::Format {
+    auto FrameRender::DepthFormat() -> vk::Format {
         auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
 
         for(const auto& f : { vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint, vk::Format::eD16UnormS8Uint}){

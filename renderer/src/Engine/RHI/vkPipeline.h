@@ -21,6 +21,7 @@ namespace yic {
 
     using GraphicsPipeline = vkPipeline<Graphics>;
 
+
 } // yic
 
 #endif //VKCELSHADINGRENDERER_VKPIPELINE_H

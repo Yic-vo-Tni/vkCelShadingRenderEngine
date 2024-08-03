@@ -41,7 +41,7 @@ namespace yic{
 
 
     private:
-        tbb::task_group mGroup{};
+        oneapi::tbb::task_group mGroup{};
         std::unordered_map<std::string, task> mShaderTasks;
         std::vector<std::string> mShaderUpdatePaths;
         std::mutex mShaderMutex;

@@ -6,13 +6,13 @@
 #define VKCELSHADINGRENDERER_VKEVENTTYPES_H
 
 #include "Engine/RHI/vkAsset.h"
-#include "Engine/RHI/vkDescriptor.h"
+#include "Engine/RHI/Descriptor.h"
 
 namespace tbb{
 
     template<typename T>
-    inline tbb::concurrent_unordered_map<std::string, T> make_unordered_map(std::string id, T t) {
-        tbb::concurrent_unordered_map<std::string, T> temp;
+    inline oneapi::tbb::concurrent_unordered_map<std::string, T> make_unordered_map(std::string id, T t) {
+        oneapi::tbb::concurrent_unordered_map<std::string, T> temp;
         temp[id] = t;
         return  temp;
     }
@@ -102,7 +102,7 @@ namespace et {
         HANA_OPT(vkResource,
                  (vot::concurrent_shared_ptr_unordered_map<yic::vkBuffer>, buf),
                  (vot::concurrent_shared_ptr_unordered_map<yic::vkImage>, img),
-                 (vot::concurrent_shared_ptr_unordered_map<yic::vkDescriptor>, desc)
+                 (vot::concurrent_shared_ptr_unordered_map<yic::Descriptor>, desc)
         );
 
         DEFINE_ID_CONSTS_EX(
@@ -128,6 +128,11 @@ namespace et {
              (opt < int > , x));
 
         RETURN_REF(x);
+    };
+
+    struct ttt{
+        HANA_OPT(ttt,
+                 (std::string, x));
     };
 
 

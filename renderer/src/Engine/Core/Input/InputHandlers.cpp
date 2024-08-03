@@ -61,7 +61,7 @@ namespace yic {
     auto InputHandlers::globalCamera() -> void {
         if (!EventBus::Get::val<et::frameTime>().frameTime_exists())
             return;
-        auto cameraSpeed = EventBus::Get::val<et::frameTime>().frameTime_v() * sc::globalCamera.getDynamicSpeed();
+        auto cameraSpeed = EventBus::Get::val<et::frameTime>().frameTime_v() * sc::globalCamera.getDynamicSpeed() * 50;
 
         auto glfwKeyPress = [&](int key){
             return (glfwGetKey(mWindow, key) == GLFW_PRESS);
@@ -73,8 +73,9 @@ namespace yic {
             return (glfwGetMouseButton(mWindow, button) == GLFW_RELEASE);
         };
 
-        if (glfwKeyPress(GLFW_KEY_W))
+        if (glfwKeyPress(GLFW_KEY_W)){
             sc::globalCamera.getPosition() += cameraSpeed * sc::globalCamera.getCameraFront();
+        }
         if (glfwKeyPress(GLFW_KEY_S))
             sc::globalCamera.getPosition() -= cameraSpeed * sc::globalCamera.getCameraFront();
         if (glfwKeyPress(GLFW_KEY_A))

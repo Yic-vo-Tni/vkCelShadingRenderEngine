@@ -23,6 +23,7 @@ public:
         static T singleton{std::forward<Args>(args)...};
         return &singleton;
     }
+
 };
 
 

@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_FILEOPERATION_H
 
 namespace fo{
+    namespace fs = std::filesystem;
 
     inline std::string loadFile(const std::string& filename, bool binary = true)
     {
@@ -31,6 +32,25 @@ namespace fo{
 
         return device.getBufferAddress(vk::BufferDeviceAddressInfo{buffer});
     }
+
+    inline fs::path findFileInDirectory(const fs::path& directory, const fs::path& filename){
+        if(!fs::exists(directory) || !fs::is_directory(directory)){
+            vkError("the directory is valid");
+        }
+
+        for(const auto& subDir : fs::recursive_directory_iterator(directory)){
+            if (subDir.is_regular_file()){
+                if(subDir.path().filename() == filename){
+                    return subDir.path();
+                }
+            }
+        }
+
+        vkError("failed to find the file in the directory");
+        return {};
+    }
+
+
 
 }
 

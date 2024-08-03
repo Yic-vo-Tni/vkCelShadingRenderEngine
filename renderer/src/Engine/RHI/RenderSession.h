@@ -1,16 +1,16 @@
 //
-// Created by lenovo on 6/10/2024.
+// Created by lenovo on 7/31/2024.
 //
 
-#ifndef VKCELSHADINGRENDERER_VKCOMMAND_H
-#define VKCELSHADINGRENDERER_VKCOMMAND_H
+#ifndef VKCELSHADINGRENDERER_RENDERSESSION_H
+#define VKCELSHADINGRENDERER_RENDERSESSION_H
 
 #include "Engine/Utils/Log.h"
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 
 namespace yic {
 
-    class vkCommand {
+    class RenderSession {
     public:
         struct ClearValue {
             static std::vector<vk::ClearValue> Color() {
@@ -33,7 +33,7 @@ namespace yic {
             vk::SubpassContents subpassContents{vk::SubpassContents::eInline};
 
             RenderPassInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers,
-                             vk::Extent2D extent, const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
+                           vk::Extent2D extent, const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
                     : renderPass(RenderPass),
                       framebuffers(framebuffers),
                       extent(extent),
@@ -49,8 +49,8 @@ namespace yic {
             };
         };
     public:
-        vkCommand(std::string  id, const uint32_t& qIndex, const uint32_t& CommandBufferCount);
-        ~vkCommand();
+        RenderSession(std::string  id, const uint32_t& qIndex, const uint32_t& CommandBufferCount);
+        ~RenderSession();
 
         auto beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer&;
         auto endCommandBuf() -> void;
@@ -72,6 +72,7 @@ namespace yic {
         std::vector<vk::CommandBuffer> mCommandBuffers{};
     };
 
+
 } // yic
 
-#endif //VKCELSHADINGRENDERER_VKCOMMAND_H
+#endif //VKCELSHADINGRENDERER_RENDERSESSION_H

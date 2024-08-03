@@ -16,14 +16,19 @@ namespace yic {
                 vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());
             }, et::vkRenderContext::id::mainRender);
         };
+        mTimePerFrame = sf::seconds(1.f / 120.f);
     }
 
     bool vkWindow::run() {
 
         try {
             while (!glfwWindowShouldClose(GetWindow())) {
+                get()->beginFrame();
+
                 InputHandlers::withDraw();
                 glfwPollEvents();
+
+                get()->endFrame();
             }
         } catch (const std::exception &e) {
             std::cerr << "Exception caught in run loop: " << e.what() << "\n";
@@ -52,7 +57,16 @@ namespace yic {
         }};
     }
 
+    auto vkWindow::beginFrame() -> void {
+        mStart = mClock.getElapsedTime();
+    }
 
+    auto vkWindow::endFrame() -> void {
+        mFrameTime = mClock.getElapsedTime() - mStart;
+
+        if (mFrameTime < mTimePerFrame)
+            sf::sleep(mTimePerFrame - mFrameTime);
+    }
 
 
 } // yic

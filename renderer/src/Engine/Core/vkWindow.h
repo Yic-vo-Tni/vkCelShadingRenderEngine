@@ -8,6 +8,7 @@
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/Core/Callback/GlfwCallback.h"
 #include "Engine/Core/Input/InputHandlers.h"
+#include "SFML/System.hpp"
 
 namespace yic {
 
@@ -37,7 +38,11 @@ namespace yic {
         std::string mName{"Yicvot"};
 
         std::shared_ptr<GLFWwindow> mWindow;
-//        HWND mHwndOverlayWindow{};
+    private:
+        auto beginFrame() -> void;
+        auto endFrame() -> void;
+        sf::Clock mClock;
+        sf::Time mStart, mFrameTime, mTimePerFrame;
     };
 
 } // yic

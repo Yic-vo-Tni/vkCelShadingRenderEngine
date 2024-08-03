@@ -11,6 +11,94 @@ enum class QueueType {
     eGraphics, eTransfer,
 };
 
+struct PipelineDesSetLayout{
+    vk::PipelineLayout pipelineLayout{};
+    std::vector<std::vector<vk::DescriptorSetLayoutBinding>> bindings{};
+    std::vector<vk::DescriptorSetLayout> desSetLayouts{};
+    std::vector<vk::PushConstantRange> pushConstantRange{};
+    std::vector<vk::DescriptorPoolSize> poolSize{};
+    uint32_t maxSets{};
+
+    explicit PipelineDesSetLayout(vk::Device device) : mDevice(device) {}
+    ~PipelineDesSetLayout(){ mDevice.destroy(pipelineLayout);
+        for(auto& layout : desSetLayouts){
+            mDevice.destroy(layout);
+        }
+    }
+
+    void addDesSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &bds) {
+        for(const auto& bind : bds){
+            poolSize.emplace_back(bind.descriptorType, bind.descriptorCount);
+        }
+
+        maxSets++;
+
+        bindings.push_back(bds);
+        vk::DescriptorSetLayoutCreateInfo createInfo{{}, bds};
+
+        desSetLayouts.emplace_back(
+                vkCreate("create descriptor set layout") = [&] {
+                    return mDevice.createDescriptorSetLayout(createInfo);
+                });
+    }
+
+     void addDesSetLayout(const uint32_t &set, const uint32_t &binding,
+                                                const vk::DescriptorType &descriptorType,
+                                                const uint32_t &descriptorCount, const vk::ShaderStageFlags &flags) {
+        poolSize.emplace_back(descriptorType, descriptorCount);
+
+        if ((set + 1) > bindings.size())
+            bindings.resize(set + 1);
+
+        bindings[set].emplace_back(binding, descriptorType, descriptorCount, flags);
+
+         maxSets = set;
+    }
+
+    PipelineDesSetLayout& addPushConstantRange(const vk::ShaderStageFlags& flags, uint32_t offset, uint32_t size){
+        pushConstantRange.emplace_back(flags, offset, size);
+        return *this;
+    }
+
+    PipelineDesSetLayout& createDesSetLayout(){
+        if (desSetLayouts.empty() && !bindings.empty()) {
+            for (auto &bds: bindings) {
+                vk::DescriptorSetLayoutCreateInfo createInfo{{}, bds};
+
+                desSetLayouts.emplace_back(
+                        vkCreate("create descriptor set layout") = [&] {
+                            return mDevice.createDescriptorSetLayout(createInfo);
+                        });
+            }
+        }
+
+        return *this;
+    }
+
+    [[nodiscard]] inline auto getPipelineLayout() {
+        if (desSetLayouts.empty() && !bindings.empty()) {
+            for (auto &bds: bindings) {
+                vk::DescriptorSetLayoutCreateInfo createInfo{{}, bds};
+
+                desSetLayouts.emplace_back(
+                        vkCreate("create descriptor set layout") = [&] {
+                            return mDevice.createDescriptorSetLayout(createInfo);
+                        });
+            }
+        }
+
+        vk::PipelineLayoutCreateInfo createInfo{
+                {}, desSetLayouts, pushConstantRange
+        };
+
+        return pipelineLayout ? pipelineLayout : pipelineLayout = vkCreate("create pipeline layout") = [&] {
+            return mDevice.createPipelineLayout(createInfo);
+        };
+    }
+private:
+    vk::Device mDevice;
+};
+
 namespace fn{
 
     inline auto addRequiredExtensions(){

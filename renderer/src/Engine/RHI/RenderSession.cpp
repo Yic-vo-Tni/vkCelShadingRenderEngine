@@ -1,14 +1,12 @@
 //
-// Created by lenovo on 6/10/2024.
+// Created by lenovo on 7/31/2024.
 //
 
-#include "vkCommand.h"
-
-#include <utility>
+#include "RenderSession.h"
 
 namespace yic {
 
-    vkCommand::vkCommand(std::string id, const uint32_t &qIndex, const uint32_t& CommandBufferCount)
+    RenderSession::RenderSession(std::string id, const uint32_t &qIndex, const uint32_t& CommandBufferCount)
             : mId(std::move(id)),
               mQueueIndex(qIndex),
               mDevice(EventBus::Get::vkSetupContext().device_ref()),
@@ -17,28 +15,28 @@ namespace yic {
 
     }
 
-    vkCommand::~vkCommand() {
+    RenderSession::~RenderSession() {
         mDevice.destroy(mCommandPool);
     }
 
-    auto vkCommand::createCommandPool() -> vk::CommandPool {
+    auto RenderSession::createCommandPool() -> vk::CommandPool {
         Rvk_y("create cmd pool") = [&] {
             return mDevice.createCommandPool(vk::CommandPoolCreateInfo()
-                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                            .setQueueFamilyIndex(mQueueIndex));
+                                                     .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                                                     .setQueueFamilyIndex(mQueueIndex));
         };
     }
 
-    auto vkCommand::createCommandBuffers(uint32_t cmdCount) -> std::vector<vk::CommandBuffer> {
+    auto RenderSession::createCommandBuffers(uint32_t cmdCount) -> std::vector<vk::CommandBuffer> {
         Rvk_y("create cmd") = [&]{
             return mDevice.allocateCommandBuffers(
                     vk::CommandBufferAllocateInfo().setCommandPool(mCommandPool)
-                                                            .setCommandBufferCount(cmdCount)
-                                                            .setLevel(vk::CommandBufferLevel::ePrimary));
+                            .setCommandBufferCount(cmdCount)
+                            .setLevel(vk::CommandBufferLevel::ePrimary));
         };
     }
 
-    auto vkCommand::beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer & {
+    auto RenderSession::beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer & {
         vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
 
         auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
@@ -62,11 +60,11 @@ namespace yic {
         return mActiveCommandBuffer;
     }
 
-    auto vkCommand::endCommandBuf() -> void {
+    auto RenderSession::endCommandBuf() -> void {
         mActiveCommandBuffer.end();
     }
 
-    auto vkCommand::beginRenderPass(RenderPassInfo passInfo) -> void {
+    auto RenderSession::beginRenderPass(RenderPassInfo passInfo) -> void {
         auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
@@ -80,7 +78,7 @@ namespace yic {
         mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, passInfo.subpassContents);
     }
 
-    auto vkCommand::endRenderPass() -> void {
+    auto RenderSession::endRenderPass() -> void {
         mActiveCommandBuffer.endRenderPass();
     }
 

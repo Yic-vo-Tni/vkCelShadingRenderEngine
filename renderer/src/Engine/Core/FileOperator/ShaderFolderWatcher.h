@@ -19,7 +19,7 @@ namespace yic{
         explicit ShaderFolderWatcher(const std::string& path) : mPath([&]{ if (!path.empty()) { return path;}
             throw std::runtime_error("You must init and give a path to shader_directory");
         }()){
-            //compileShaders();
+            compileShaders();
 
             for(const auto& file : fs::recursive_directory_iterator(path)){
                 if (fs::is_regular_file(file.path())){

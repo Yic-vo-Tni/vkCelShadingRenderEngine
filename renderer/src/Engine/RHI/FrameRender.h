@@ -2,8 +2,8 @@
 // Created by lenovo on 6/10/2024.
 //
 
-#ifndef VKCELSHADINGRENDERER_VKFRAMERENDER_H
-#define VKCELSHADINGRENDERER_VKFRAMERENDER_H
+#ifndef VKCELSHADINGRENDERER_FRAMERENDER_H
+#define VKCELSHADINGRENDERER_FRAMERENDER_H
 
 #include "Engine/Utils/Log.h"
 #include "Engine/Utils/TypeConcepts.h"
@@ -13,12 +13,12 @@
 
 namespace yic {
 
-    class vkFrameRender {
+    class FrameRender {
     public:
-        vkGet auto get = [](){ return Singleton<vkFrameRender>::get(); };
+        vkGet auto get = [](){ return Singleton<FrameRender>::get(); };
 
-        vkFrameRender();
-        ~vkFrameRender();
+        FrameRender();
+        ~FrameRender();
 
         template<typename T> requires(tp::Same_orVector<T, std::shared_ptr<vkImage>>)
         static auto createFramebuffers(vk::RenderPass renderPass, const T& imgSptrs) -> std::vector<vk::Framebuffer>;
@@ -73,4 +73,4 @@ namespace yic {
 
 } // yic
 
-#endif //VKCELSHADINGRENDERER_VKFRAMERENDER_H
+#endif //VKCELSHADINGRENDERER_FRAMERENDER_H

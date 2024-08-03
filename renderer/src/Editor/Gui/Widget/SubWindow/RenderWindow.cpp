@@ -13,8 +13,8 @@ namespace ui {
         auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         ImVec2 available = ImGui::GetContentRegionAvail();
+        auto windowPos = ImGui::GetCursorScreenPos();
 
-        ImGui::Text("Available width: %.0f, height: %.0f", available.x, available.y);
         if (mAvailable.x != available.x || mAvailable.y != available.y) {
             EventBus::publish(et::uiWidgetContext{
                     .viewportSize = available
@@ -24,6 +24,16 @@ namespace ui {
         }
 
         ImGuiDescriptorManager::drawImage(enum_name(RenderProcessPhases::ePrimary), ImVec2(available.x, available.y), index);
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        char fps_text[32];
+        sprintf(fps_text, "FPS: %.1f", mFps);
+        drawList->AddText(ImVec2(windowPos.x + 10.f, windowPos.y + 10.f), IM_COL32_WHITE, fps_text);
+
+        float textHeight = ImGui::GetTextLineHeightWithSpacing();
+        char size_text[64];
+        sprintf(size_text, "Available width: %.0f, height: %.0f", available.x, available.y);
+        drawList->AddText(ImVec2(windowPos.x + 10.f, windowPos.y + textHeight), IM_COL32_WHITE, size_text);
     }
 
 
@@ -38,7 +48,6 @@ namespace ui {
             mFps = 1.f / deltaTime.count();
             mFpsTimer = 0.f;
         }
-        ImGui::Text("FPS: %.1f", mFps);
     }
 
 

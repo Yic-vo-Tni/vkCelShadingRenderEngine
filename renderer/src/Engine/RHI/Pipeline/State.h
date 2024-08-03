@@ -11,13 +11,17 @@
 #include "Engine/Core/DispatchSystem/Task/ShaderHotReload/ShaderHotReloader.h"
 
 namespace yic{
+
+
     template<typename I>
     struct State{
-        void init(){
-            static_cast<I*>(this)->initSpecific();
-        }
-
+//        void init(){
+//            static_cast<I*>(this)->initSpecific();
+//        }
     };
+
+
+
 }
 
 

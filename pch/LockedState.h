@@ -11,13 +11,13 @@ template<typename T>
 class LockedState {
 private:
     T &state;
-    //tbb::spin_rw_mutex::scoped_lock lock;
-    tbb::queuing_rw_mutex::scoped_lock lock;
+    //oneapi::tbb::spin_rw_mutex::scoped_lock lock;
+    oneapi::tbb::queuing_rw_mutex::scoped_lock lock;
 
 public:
-//    LockedState(T &state, tbb::spin_rw_mutex &mutex)
+//    LockedState(T &state, oneapi::tbb::spin_rw_mutex &mutex)
 //            : state(state), lock(mutex, true) {}
-    LockedState(T &state, tbb::queuing_rw_mutex &mutex)
+    LockedState(T &state, oneapi::tbb::queuing_rw_mutex &mutex)
             : state(state), lock(mutex, true) {}
 
     ~LockedState() {

@@ -78,6 +78,7 @@
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/member.hpp"
 #include "boost/multi_index/ordered_index.hpp"
+#include "boost/locale.hpp"
 
 #include "oneapi/tbb/task_group.h"
 #include "oneapi/tbb/parallel_invoke.h"
@@ -86,6 +87,10 @@
 #include "oneapi/tbb/spin_rw_mutex.h"
 #include "oneapi/tbb/queuing_rw_mutex.h"
 #include "oneapi/tbb/parallel_for_each.h"
+#include "oneapi/tbb/concurrent_queue.h"
+#include "oneapi/tbb/global_control.h"
+#include "oneapi/tbb/mutex.h"
+#include "oneapi/tbb/combinable.h"
 
 #include "magic_enum/include/magic_enum/magic_enum.hpp"
 
@@ -96,6 +101,15 @@
 #include "wx/file.h"
 #include "wx/button.h"
 #include "wx/aui/auibook.h"
+
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
+
+#include "caches/include/cache.hpp"
+#include "caches/include/lru_cache_policy.hpp"
+
+//#include "benchmark/benchmark.h"
 
 #ifdef NDEBUG
 const bool enableDebug = false;
