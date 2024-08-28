@@ -66,6 +66,7 @@
 #include "any"
 #include "filesystem"
 #include "semaphore"
+#include "immintrin.h"
 
 #include "include/spdlog/spdlog.h"
 #include "include/spdlog/sinks/stdout_color_sinks.h"
@@ -108,6 +109,15 @@
 
 #include "caches/include/cache.hpp"
 #include "caches/include/lru_cache_policy.hpp"
+
+#include "nfd/src/include/nfd.h"
+
+#include "Saba/Model/MMD/PMXModel.h"
+#include "Saba/Model/MMD/VMDFile.h"
+#include "Saba/Model/MMD/VMDAnimation.h"
+#include "Saba/Model/MMD/VMDCameraAnimation.h"
+
+#include "mimalloc.h"
 
 //#include "benchmark/benchmark.h"
 

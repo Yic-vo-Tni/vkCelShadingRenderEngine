@@ -14,12 +14,12 @@ namespace yic {
     public:
         struct ClearValue {
             static std::vector<vk::ClearValue> Color() {
-                return {vk::ClearColorValue{std::array<float, 4>{0.f, 0.f, 0.f, 0.f}}};
+                return {vk::ClearColorValue{std::array<float, 4>{0.44f, 0.37f, 0.61f, 1.0f}}};
             }
 
             static std::vector<vk::ClearValue> ColorDepth() {
                 return {
-                        vk::ClearColorValue{std::array<float, 4>{0.f, 0.f, 0.f, 0.f}},
+                        vk::ClearColorValue{std::array<float, 4>{0.19f, 0.2f, 0.25f, 1.0f}},
                         vk::ClearDepthStencilValue{1.f, 0}
                 };
             }
@@ -44,6 +44,14 @@ namespace yic {
                            const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
                     : renderPass(RenderPass),
                       framebuffers(framebuffers),
+                      clearValues(clearValues) {
+
+            };
+            RenderPassInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers, vk::SubpassContents subpassContents,
+                           const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
+                    : renderPass(RenderPass),
+                      framebuffers(framebuffers),
+                      subpassContents(subpassContents),
                       clearValues(clearValues) {
 
             };

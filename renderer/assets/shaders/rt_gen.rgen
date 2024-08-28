@@ -1,0 +1,50 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "raycommon.glsl"
+#include "host_device.glsl"
+
+layout(location = 0) rayPayloadEXT hitPayload prd;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;  // 传递数据
+//layout(set = 0, binding = 1, rgba32f) uniform image2D image;  //  存储光线追踪结果图像
+layout(set = 0, binding = 1, rgba8) uniform image2D image;  //  存储光线追踪结果图像
+layout(set = 0, binding = 2) uniform _GlobalUniforms { GlobalUniforms uni; };  // 全局统一变量
+layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; }; // 传递管线追踪参数
+
+void main(){
+    const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5); // gl_LaunchIDEXT: 当前线程对应的像素坐标。  获取当前像素中心坐标
+    const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy); // 像素坐标处以渲染目标尺寸，得到归一化设备坐标NDC
+    vec2 d = inUV * 2.f - 1.f; // 映射到[-1, 1]之间，投影空间
+
+    vec4 origin = uni.viewInverse * vec4(0, 0, 0, 1); // 相机位置转换为世界空间
+    vec4 target = uni.projInverse * vec4(d.x, d.y, 1, 1); // 将NDC坐标转换到视图空间
+    vec4 direction = uni.viewInverse * vec4(normalize(target.xyz), 0); // 确保方向向量长度为1
+
+    uint rayFlags = gl_RayFlagsOpaqueEXT; // 光线击中不透明对象停止
+    float tMin = 0.001;  // 光线最小距离
+    float tMax = 10000.0;  // 光线有效最大距离
+
+    traceRayEXT(topLevelAS, // 包含场景中所有可追踪对象的引用
+                rayFlags,  // 光线行为
+                0xFF,  // 过滤掩码，用于决定哪些对象被这条光线忽略或包括，0xff表示光线不过滤任何对象
+                0,  // sbt偏移量，用于选择哪个shader处理光线击中时间
+                0,  // sbt中每个记录的补偿，用于计算访问下一个shader记录位置
+                0,  // 光线未击中对象时使用的 miss shader索引
+                origin.xyz,  // 光线起点坐标
+                tMin,  // 起始点
+                direction.xyz,  // 光线方向
+                tMax,  // 光线长度
+                0  // 存储光线操作结构变量， hitPayload在shader中定义为 location 0
+    );
+
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.hitValue, 1.f));
+    // imagestore : 用于将数据写入到图像
+    // 图像中要写入的像素的坐标，使用当前线程对应的像素坐标
+    // 写入值，存储了光线击中结果（颜色、强度等），alpha通道设为1表示完全不透明。
+}
+
+

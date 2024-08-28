@@ -1,0 +1,13 @@
+#version 460
+layout(location = 0) in vec2 outUV;
+layout(location = 0) out vec4 fragColor;
+
+layout(set = 0, binding = 0) uniform sampler2D noisyTxt;
+
+void main()
+{
+    vec2  uv    = outUV;
+//    float gamma = 1.f / 2.2f;
+//    fragColor   = pow(texture(noisyTxt, uv).rgba, vec4(gamma));
+    fragColor = texture(noisyTxt, uv).rgba;
+}

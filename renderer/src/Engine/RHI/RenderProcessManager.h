@@ -6,10 +6,10 @@
 #define VKCELSHADINGRENDERER_RENDERPROCESSMANAGER_H
 
 #include "Engine/RHI/RenderProcess.h"
-#include "Engine/RHI/RenderGroup.h"
 
-#include "Engine/ECS/Camera/Camera.h"
-#include "Engine/ECS/Model/LoadModel.h"
+#include "Engine/RHI/RenderGroup.h"
+#include "Engine/ECS/ECSManager.h"
+
 
 namespace yic {
 
@@ -20,21 +20,19 @@ namespace yic {
         RenderProcessManager();
         ~RenderProcessManager();
 
-        static auto prepare() -> void;
-        static auto RenderProcedure() -> std::vector<vk::CommandBuffer>;
+        DEFINE_STATIC_ACCESSOR(prepare);
+        DEFINE_STATIC_ACCESSOR(clear);
+        DEFINE_STATIC_ACCESSOR(RenderProcedure);
 
-        static auto clear() -> void{
-            get()->mRenderProcess.clear();
-            get()->mRenderGroup.reset();
-        }
     private:
+        auto RenderProcedure_impl() -> std::vector<vk::CommandBuffer>;
+        auto prepare_impl() -> void;
+        auto drawBuild() -> void;
+        auto clear_impl() -> void;
+    private:
+        std::unique_ptr<sc::ECSManager> mEcsManager;
         tbb::concurrent_vector<vk::CommandBuffer> cmds;
-        tbb::concurrent_unordered_map<std::string, std::shared_ptr<RenderProcess>> mRenderProcess;
-        // t
-        sc::Model model;
-        std::vector<sc::Model> models;
-
-        std::shared_ptr<RenderGroup> mRenderGroup;
+        tbb::concurrent_unordered_map<std::string, std::unique_ptr<RenderProcess>> mRenderProcess;
     };
 
 } // yic

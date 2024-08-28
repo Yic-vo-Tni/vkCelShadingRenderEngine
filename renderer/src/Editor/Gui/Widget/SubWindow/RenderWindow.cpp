@@ -18,7 +18,7 @@ namespace ui {
         if (mAvailable.x != available.x || mAvailable.y != available.y) {
             EventBus::publish(et::uiWidgetContext{
                     .viewportSize = available
-            }, enum_name(RenderProcessPhases::ePrimary));
+            }, enum_name(RenderProcessPhases::ePrimary), "ModelManager");
 
             mAvailable = available;
         }

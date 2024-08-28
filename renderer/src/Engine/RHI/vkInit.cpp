@@ -104,6 +104,7 @@ namespace yic{
                 queueCreateInfos.push_back({{}, family.familyIndex.value(), mCreateInfo->mPriorities});
         }
 
+        mCreateInfo->features2.features.setShaderInt64(vk::True);
         Rvk_y("create device") = [&](){
             return mPhysicalDevice.createDevice(vk::DeviceCreateInfo()
                                                         .setQueueCreateInfos(queueCreateInfos)

@@ -57,6 +57,15 @@ namespace yic {
             }
         }
 
+        template<typename Event, tp::is_string ...Args>
+        static void publishAsync(const Event& event, Args...args){
+            if constexpr (sizeof ...(Args) == 0){
+                publishAsync_impl(event);
+            } else {
+                (publishAsync_impl(event, args), ...);
+            }
+        }
+
 
         template<typename Event>
         static void update(const Event& event, const std::string& id = {}){
@@ -97,13 +106,17 @@ namespace yic {
 #define default_parm_id const std::string& id = {}
 #define parm_id const std::string& id
 
+        template<typename T>
+        static auto val(default_parm_id){
+            return getState<T>(id);
+        }
+
+        template<typename T>
+        static auto& ref(const std::string& id = {}){
+            return getStateRef_def_impl<T>(id).get();
+        }
+
         struct Get {
-            template<typename T>
-            static auto val(default_parm_id){
-                return getState<T>(id);
-            }
-
-
             static auto vkSetupContext(default_parm_id) {
                 return getState<et::vkSetupContext>(id);
             }
@@ -148,13 +161,44 @@ namespace yic {
 //            auto& y = getStateRef_f<et::test>();
 //        }
 
-        template<typename T>
-        static T& getStateRef_def(const std::string& id = {}){
-            return getStateRef_def_impl<T>(id).get();
-        }
+//        template<typename T>
+//        static T& getStateRef_def(const std::string& id = {}){
+//            return getStateRef_def_impl<T>(id).get();
+//        }
 
 #undef default_parm_id
 #undef parm_id
+
+    template<typename T, typename ...Args>
+    static auto valAuto(T& t, Args&&...args){
+        using f = std::decay_t<T>;
+
+        if constexpr (std::is_same_v<f, vk::Instance>){
+            t = val<et::vkSetupContext>().instance_ref();
+        } else if constexpr (std::is_same_v<f, vk::Device>){
+            t = val<et::vkSetupContext>().device_ref();
+        } else if constexpr (std::is_same_v<f, vk::PhysicalDevice>){
+            t = val<et::vkSetupContext>().physicalDevice_ref();
+        } else if constexpr (std::is_same_v<f, vk::DispatchLoaderDynamic>) {
+            t = val<et::vkSetupContext>().dynamicDispatcher_ref();
+        }
+//        } else if constexpr (){
+//
+//        } else if constexpr (){
+//
+//        } else if constexpr (){
+//
+//        } else if constexpr (){
+//
+//        } else if constexpr (){
+//
+//        }
+
+        if constexpr (sizeof ...(args) > 0){
+            valAuto(std::forward<Args>(args)...);
+        }
+
+    }
 
 
     private:
@@ -229,6 +273,23 @@ namespace yic {
             }
         }
 
+        template<typename Event>
+        static void publishAsync_impl(const Event& event, const std::string& id = {}){
+            auto inst = get();
+            auto type = std::type_index(typeid(Event));
+
+            update(event, id);
+
+            auto& handlers = inst->mEventDates[type][id].handlers;
+            auto& deferred = inst->mEventDates[type][id].deferred;
+            deferred.store(true);
+            for (auto& handler : handlers) {
+                inst->mFileDialogGroup.run([handler, eventCaptured = std::any(event)](){
+                    handler(eventCaptured);
+                });
+            }
+        }
+
         template<typename T>
         static T getState(const std::string& id = {}) {
             auto inst = get();
@@ -282,9 +343,10 @@ namespace yic {
             auto inst = get();
             auto type = std::type_index(typeid(Event));
 
-            if (inst->mEventDates[type][id].deferred.load()){
-                auto& event = std::any_cast<const Event&>(inst->mEventDates[type][id].states);
+            if (inst->mEventDates[type][id].deferred.load()) {
+                auto &event = std::any_cast<const Event &>(inst->mEventDates[type][id].states);
                 handler(event);
+
                 inst->mEventDates[type][id].deferred.store(false);
             }
         }
@@ -324,6 +386,7 @@ namespace yic {
 
     private:
         oneapi::tbb::task_group mGroup;
+        oneapi::tbb::task_group mFileDialogGroup;
         oneapi::tbb::concurrent_unordered_map<std::type_index, oneapi::tbb::concurrent_unordered_map<std::string, EventDate>> mEventDates;
     };
 

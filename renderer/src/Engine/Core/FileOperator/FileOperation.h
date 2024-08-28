@@ -5,6 +5,8 @@
 #ifndef VKCELSHADINGRENDERER_FILEOPERATION_H
 #define VKCELSHADINGRENDERER_FILEOPERATION_H
 
+#include <regex>
+
 namespace fo{
     namespace fs = std::filesystem;
 
@@ -50,6 +52,24 @@ namespace fo{
         return {};
     }
 
+    inline std::string getFileNameFromPath(const std::string& path){
+        size_t pos = path.find_last_of("/\\");
+        if(pos != std::string::npos && pos + 1 < path.size()){
+            return path.substr(pos + 1);
+        }
+
+        return path;
+    }
+
+    struct path{
+        static inline std::string spv(const std::string& path){
+            std::regex pattern("(\\.[^\\.]+)$");
+            std::string replace = ".spv";
+            auto spvPath = std::regex_replace(path, pattern, replace);
+            auto p = spv_path + std::string("/") + spvPath;
+            return p;
+        }
+    };
 
 
 }

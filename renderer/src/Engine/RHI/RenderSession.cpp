@@ -67,8 +67,6 @@ namespace yic {
     auto RenderSession::beginRenderPass(RenderPassInfo passInfo) -> void {
         auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
-        std::vector<vk::ClearValue> cv{vk::ClearColorValue{0.f, 0.f, 0.f, 0.f}};
-
         if (!passInfo.extent.has_value()){
             passInfo.extent = mExtent;
         }

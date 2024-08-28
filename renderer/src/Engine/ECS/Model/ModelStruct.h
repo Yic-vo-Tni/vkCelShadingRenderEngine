@@ -13,6 +13,10 @@ namespace yic{
 
 namespace sc{
 
+    struct Resource{
+        ResFormat format;
+    };
+
     struct Vertex{
         glm::vec3 pos;
         glm::vec3 nor;
@@ -24,27 +28,79 @@ namespace sc{
         glm::vec3 min;
     };
 
+    struct MeshBufAddress{
+        uint64_t vertAddr;
+        uint64_t indexAddr;
+    };
+
     struct Mesh{
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
         std::shared_ptr<yic::vkBuffer> vertBuf;
         std::shared_ptr<yic::vkBuffer> indexBuf;
+        MeshBufAddress bufAddr;
+        std::shared_ptr<yic::vkBuffer> addrBuf;
         uint8_t texIndex;
         AABB aabb;
     };
 
-    struct Model{
-        std::string id;
-        std::vector<Mesh> meshes;
-        std::vector<std::shared_ptr<yic::vkImage>> diffTexs;
-//        oneapi::tbb::concurrent_vector<Mesh> meshes;
-//        oneapi::tbb::concurrent_vector<std::shared_ptr<yic::vkImage>> diffTexs;
-        std::shared_ptr<yic::Descriptor> descriptor;
-        AABB aabb;
-    };
 
+
+    struct Model{
+        struct Generic : public Resource{
+            std::string id;
+            std::vector<Mesh> meshes;
+            std::vector<std::shared_ptr<yic::vkImage>> diffTexs;
+            std::shared_ptr<yic::Descriptor> descriptor;
+            std::shared_ptr<yic::Descriptor> rtDescriptor;
+            vk::CommandBuffer cmd;
+            AABB aabb;
+            std::vector<std::string> shaderPaths;
+            std::string path;
+            std::vector<std::shared_ptr<yic::vkAccel>> blass;
+            std::shared_ptr<yic::vkAccel> tlas;
+        };
+
+        struct Pmx : public Resource{
+            std::string id;
+            std::shared_ptr<saba::PMXModel> pmx;
+            std::shared_ptr<saba::VMDAnimation> vmd;
+            std::vector<uint8_t> texIndex;
+            std::shared_ptr<yic::vkBuffer> vertBuf;
+            std::shared_ptr<yic::vkBuffer> indexBuf;
+            std::vector<std::shared_ptr<yic::vkImage>> diffTexs;
+            std::shared_ptr<yic::Descriptor> descriptor;
+            std::vector<std::string> shaderPaths;
+
+            double saveTime, animTime;
+        };
+    };
 
 
 }
 
 #endif //VKCELSHADINGRENDERER_MODELSTRUCT_H
+
+
+//    struct Model : public Resource{
+//        std::string id;
+//        std::vector<Mesh> meshes;
+//        std::vector<std::shared_ptr<yic::vkImage>> diffTexs;
+//        std::shared_ptr<yic::Descriptor> descriptor;
+//        std::vector<vk::CommandBuffer> cmds;
+//        AABB aabb;
+//        std::vector<std::string> shaderPaths;
+//        std::string path;
+//    };
+//
+//    struct Pmx : public Resource{
+//        std::string id;
+//        std::shared_ptr<saba::PMXModel> pmx;
+//        std::shared_ptr<saba::VMDAnimation> vmd;
+//        std::vector<uint8_t> texIndex;
+//        std::shared_ptr<yic::vkBuffer> vertBuf;
+//        std::shared_ptr<yic::vkBuffer> indexBuf;
+//        std::vector<std::shared_ptr<yic::vkImage>> diffTexs;
+//        std::shared_ptr<yic::Descriptor> descriptor;
+//        std::vector<std::string> shaderPaths;
+//    };

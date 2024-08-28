@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.29)
 project(vkCelShadingRenderer)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
 
 set(Target_dir ${CMAKE_BINARY_DIR})
 
@@ -38,8 +39,53 @@ include(FetchContent)
 file(GLOB_RECURSE pch_files pch/*.h)
 file(GLOB wx_dlls external/wxWidget/*.dll)
 
+#FetchContent_Declare(
+#        bullet
+#        GIT_REPOSITORY https://github.com/bulletphysics/bullet3.git
+#        GIT_TAG 3.25
+#        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/subprojects/bullet"
+#)
+#
+#set(BULLET_ENABLE_MULTITHREADING ON)
+#set(BULLET_BULLET2_DEMOS OFF)
+#set(BULLET_CPU_DEMOS OFF)
+#set(BUILD_EXAMPLES OFF CACHE BOOL "Disable building of examples")
+#
+#FetchContent_GetProperties(bullet)
+#if (NOT bullet_POPULATED)
+#    FetchContent_Populate(bullet)
+#    add_subdirectory(${bullet_SOURCE_DIR} ${bullet_BINARY_DIR})
+#    link_directories(${bullet_BINARY_DIR}/lib)
+#endif ()
+##
+#message(STATUS "Bullet source directory: ${bullet_SOURCE_DIR}")
+#message(STATUS "Bullet binary directory: ${bullet_BINARY_DIR}")
+#
+#FetchContent_Declare(
+#        saba
+#        GIT_REPOSITORY https://github.com/benikabocha/saba.git
+#        GIT_TAG master
+#        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/subprojects/saba"
+#)
+
+#set(SABA_BULLET_ROOT "${CMAKE_BINARY_DIR}/lib" CACHE PATH "Bullet Root Directory" FORCE)
+#set(SABA_GLFW_ROOT "external/GLFW" CACHE PATH "GLFW Root Directory" FORCE)
+#
+#message(STATUS "SABA_GLFW_ROOT is set to: ${SABA_GLFW_ROOT}")
+#
+#FetchContent_GetProperties(saba)
+#if (NOT saba_POPULATED)
+#    FetchContent_Populate(saba)
+#    add_subdirectory(${saba_SOURCE_DIR} ${saba_BINARY_DIR})
+#    link_directories(${saba_BINARY_DIR}/lib)
+#endif ()
+#message(STATUS "SABA_GLFW_ROOT is set to: ${SABA_GLFW_ROOT}")
+
+
 add_executable(vkCelShadingRenderer main.cpp)
 target_precompile_headers(vkCelShadingRenderer PUBLIC ${pch_files})
+
+#target_link_options(vkCelShadingRenderer PRIVATE -static-libgcc -static-libstdc++ -Wl,-Bdynamic)
 
 target_include_directories(vkCelShadingRenderer PUBLIC
         external
@@ -48,6 +94,12 @@ target_link_libraries(vkCelShadingRenderer PUBLIC
         "Renderer"
         "Vulkan::Vulkan"
         ${glfw_mingw}
+#        BulletDynamics
+#        BulletCollision
+#        BulletSoftBody
+#        LinearMath
+#        Bullet3Dynamics
+#        Saba
 )
 
 file(INSTALL external/tbb/libtbb12.dll DESTINATION ${CMAKE_BINARY_DIR})

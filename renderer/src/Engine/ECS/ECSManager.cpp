@@ -7,24 +7,28 @@
 namespace sc {
     ECSManager::ECSManager() {
         ecs.set_threads(4);
-    }
 
-    auto ECSManager::test() -> void {
         ecs.component<Camera>();
+        ecs.component<Model::Generic>();
+        ecs.component<Selected>();
 
-        auto camera = ecs.entity("camera")
-                .set<Camera>({});
+        yic::EventBus::update(et::eEcs_ptr{&ecs});
 
-        ecs.system<Camera>()
-                .each([](flecs::entity e, Camera& camera){
-                    camera.computeViewProjMatrix();
-                });
+        mModelManager = std::make_unique<ModelManager>(&ecs);
 
 
     }
 
-    auto ECSManager::run() -> void {
-        ecs.progress();
+    ECSManager::~ECSManager() {
+        ecs.reset();
+    }
+
+    auto ECSManager::Render(vk::CommandBuffer &cmd) -> void {
+        mModelManager->Render(cmd);
+    }
+
+    auto ECSManager::renderStorage(vk::CommandBuffer &cmd) -> void {
+        mModelManager->renderRt(cmd);
     }
 
 

@@ -8,6 +8,9 @@ message("Boost library directory: ${BOOST_LIBRARYDIR}")
 
 file(GLOB_RECURSE SRCS "src/*.h" "src/*.cpp")
 file(GLOB wx_lib "../external/wxWidget/*.a")
+#file(GLOB_RECURSE bt_lib "../external/Bullet/*.a")
+find_library(mimalloc mimalloc-static "../external/mimalloc")
+#find_library(saba Saba PATHS "../external/Saba")
 
 FetchContent_Declare(
         sfml
@@ -38,21 +41,13 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
-        benchmark
-        GIT_REPOSITORY https://github.com/google/benchmark.git
-        GIT_TAG v1.8.5
-        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/benchmark"
+        nfd
+        GIT_REPOSITORY https://github.com/mlabbe/nativefiledialog.git
+        GIT_TAG master
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/nfd"
 )
 
 
-#FetchContent_Declare(
-#        opencv
-#        GIT_REPOSITORY https://github.com/opencv/opencv.git
-#        GIT_TAG 4.10.0
-#        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third/opencv"
-#)
-
-set(BENCHMARK_ENABLE_TESTING OFF)
 
 FetchContent_GetProperties(sfml)
 if (NOT sfml_POPULATED)
@@ -80,21 +75,18 @@ if (NOT caches_POPULATED)
     FetchContent_Populate(caches)
 endif ()
 
-FetchContent_GetProperties(benchmark)
-if (NOT benchmark_POPULATED)
-    FetchContent_Populate(benchmark)
-    add_subdirectory(${benchmark_SOURCE_DIR} ${benchmark_BINARY_DIR})
-    link_directories(${benchmark_BINARY_DIR}/lib)
+FetchContent_GetProperties(nfd)
+if (NOT nfd_POPULATED)
+    FetchContent_Populate(nfd)
+#    add_subdirectory(${nfd_SOURCE_DIR} ${nfd_BINARY_DIR})
+#    link_directories(${nfd_BINARY_DIR}/lib)
 endif ()
 
-#FetchContent_GetProperties(opencv)
-#if (NOT opencv_POPULATED)
-#    FetchContent_Populate(opencv)
-#    add_subdirectory(${opencv_SOURCE_DIR} ${opencv_BINARY_DIR})
-#    link_directories(${opencv_BINARY_DIR}/lib)
-#endif ()
+project(nfd)
+file(GLOB_RECURSE nfd_srcs "third/nfd/src/*.cpp" "third/nfd/src/*.h" "third/nfd/src/nfd_common.c" "third/nfd/src/nfd_win.cpp")
+add_library(nfd STATIC ${nfd_srcs})
 
-add_library(Renderer STATIC ${SRCS})
+add_library(Renderer STATIC ${SRCS} )
 target_precompile_headers(Renderer PUBLIC ${pch_files})
 target_include_directories(Renderer PUBLIC
         ../external
@@ -102,10 +94,11 @@ target_include_directories(Renderer PUBLIC
         third/spdlog
         src
         ../subprojects/ImGui
+        ../subprojects/saba/src
         third/sfml/include
         third/wxWidget
-#        third/opencv/include
-#        third/opencv/modules/core/include
+        third/nfd/src/include
+        third/mimalloc/include
 )
 target_link_libraries(Renderer PUBLIC
         "Vulkan::Vulkan"
@@ -120,20 +113,38 @@ target_link_libraries(Renderer PUBLIC
         flecs::flecs_static
         ${wx_lib}
         assimp::assimp
-#        benchmark::benchmark
+#        ${saba}
+        "Saba"
+        nfd
+        ${mimalloc}
+#        ${bt_lib}
+       # BulletDynamics BulletCollision BulletSoftBody LinearMath
 )
 
 file(GLOB_RECURSE DLL_FILES
         "${sfml_BINARY_DIR}/*.dll"
         "${assimp_BINARY_DIR}/*.dll"
-#        "${opencv_BINARY_DIR}/*.dll"
+        "${CMAKE_BINARY_DIR}/subprojects/*.dll"
 )
 
+    message("dll files found: ${DLL_FILES}")
 foreach (dll_file IN LISTS DLL_FILES)
-    add_custom_command(TARGET Renderer POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${dll_file} ${CMAKE_BINARY_DIR}
-    )
+    message("Installing: ${dll_file}")
+    message("binary dir: ${CMAKE_BINARY_DIR}")
+    file(INSTALL ${dll_file} DESTINATION ${CMAKE_BINARY_DIR})
 endforeach ()
+
+add_custom_target(CopyDLLs ALL)
+add_custom_command(
+        TARGET CopyDLLs POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying DLL files after build..."
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${sfml_BINARY_DIR}/*.dll" "${CMAKE_BINARY_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${assimp_BINARY_DIR}/*.dll" "${CMAKE_BINARY_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/subprojects/*.dll" "${CMAKE_BINARY_DIR}"
+        COMMENT "DLL files are copied to the binary directory."
+)
+
+
+
 
 

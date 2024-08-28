@@ -5,22 +5,28 @@
 #ifndef VKCELSHADINGRENDERER_RENDERGROUP_H
 #define VKCELSHADINGRENDERER_RENDERGROUP_H
 
+#include "Engine/Core/DispatchSystem/Schedulers.h"
+
 #include "Engine/RHI/vkPipeline.h"
 #include "Engine/RHI/Descriptor.h"
+#include "Engine/RHI/Command.h"
 
-#include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/ECS/Model/ModelStruct.h"
-#include "Engine/ECS/Model/LoadModel.h"
+#include "Engine/ECS/Camera/Camera.h"
+#include "Engine/ECS/Model/ModelLoader.h"
 
 namespace yic {
 
+    template<typename T>
+    concept isGraphics = std::is_same_v<T, Graphics>;
+    template<typename T>
+    concept isRT = std::is_same_v<T, RayTracing>;
+
     struct Render{
         Render(const vk::CommandBuffer &cmd, const vk::Pipeline &pipe,
-               const vk::PipelineLayout &pipeLayout,
-               const std::vector<sc::Model>& models) : cmd(cmd),
+               const vk::PipelineLayout &pipeLayout) : cmd(cmd),
                                                        mPipeline(pipe),
-                                                       mPipelineLayout(pipeLayout),
-                                                       mModels(models){
+                                                       mPipelineLayout(pipeLayout){
         }
         Render& bindPipeline(){
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline);
@@ -32,75 +38,168 @@ namespace yic {
             return *this;
         }
 
-        Render &drawModel() {
-            for (auto &model: mModels) {
-                for (const auto &mesh: model.meshes) {
-                    std::vector<vk::DeviceSize> offsets{0};
-                    std::vector<vk::Buffer> buffers{mesh.vertBuf->buffer};
-                    cmd.bindVertexBuffers(0, buffers, offsets);
+        Render &bindModel(const flecs::query<sc::Model::Generic> &query) {
+            query.each([&](flecs::entity e, sc::Model::Generic &m) {
+                for (const auto &mesh: m.meshes) {
+                    cmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
                     cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
-                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout,
-                                           0, model.descriptor->getDescriptorSets()[mesh.texIndex],
-                                           nullptr);
+                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0,
+                                           m.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
                     cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
                 }
-//                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<uint32_t>(0, model.meshes.size()),
-//                                          [&](const oneapi::tbb::blocked_range<uint32_t> &range) {
-//                                              for (auto i = range.begin(); i != range.end(); i++) {
-//                                                  const auto &mesh = model.meshes[i];
-//                                                  std::vector<vk::DeviceSize> offsets{0};
-//                                                  std::vector<vk::Buffer> buffers{mesh.vertBuf->buffer};
-//                                                  cmd.bindVertexBuffers(0, buffers, offsets);
-//                                                  cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
-//                                                  cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-//                                                                         mPipelineLayout,
-//                                                                         0,
-//                                                                         model.descriptor->getDescriptorSets()[mesh.texIndex],
-//                                                                         nullptr);
-//                                                  cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
-//                                              }
-//                                          });
-            }
+
+//                cmd.executeCommands(m.cmd);
+            });
+
             return *this;
         }
+
+        Render &bindModelSecondary(const flecs::query<sc::Model::Generic> &query){
+            query.each([&](flecs::entity e, sc::Model::Generic& m){
+                cmd.executeCommands(m.cmd);
+            });
+
+            return *this;
+        }
+
+//        Render &bindModel(const flecs::query<sc::Model::Pmx> &query) {
+//            query.each([&](flecs::entity e, sc::Model::Pmx &pmx) {
+//                cmd.bindVertexBuffers(0, pmx.vertBuf->buffer, {0});
+//                cmd.bindIndexBuffer(pmx.indexBuf->buffer, 0, vk::IndexType::eUint32);
+//                for (uint32_t i = 0; i < pmx.pmx->GetSubMeshCount(); i++) {
+//                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0,
+//                                           pmx.descriptor->getDescriptorSets()[pmx.texIndex[i]], nullptr);
+//
+//                    cmd.drawIndexed(pmx.pmx->GetSubMeshes()[i].m_vertexCount, 1,
+//                                    pmx.pmx->GetSubMeshes()[i].m_beginIndex, 0, 1);
+//                }
+//            });
+//
+//            return *this;
+//        }
+
     private:
         vk::CommandBuffer cmd;
         vk::Pipeline mPipeline;
         vk::PipelineLayout mPipelineLayout;
-        std::vector<sc::Model> mModels;
     };
 
-    class RenderGroup : public PipelineDesSetLayout, public vkPipeline<Graphics>, public std::enable_shared_from_this<RenderGroup>{
+
+
+    template<typename PipelineType>
+    class RenderGroupBase
+            : public PipelineDesSetLayout, public PipelineType, public std::enable_shared_from_this<RenderGroupBase<PipelineType>> {
     public:
-        explicit RenderGroup(const vk::RenderPass& renderPass);
-        ~RenderGroup() = default;
+        explicit RenderGroupBase(vk::RenderPass rp) requires isGraphics<PipelineType> : PipelineDesSetLayout({EventBus::Get::vkSetupContext().device_ref()}), PipelineType(rp){
 
-        std::shared_ptr<RenderGroup> addDesSetLayout_1(const uint32_t &set, const uint32_t &binding, const vk::DescriptorType &descriptorType,
-                const uint32_t &descriptorCount, const vk::ShaderStageFlags &flags);
-        std::shared_ptr<RenderGroup> addPushConstantRange_2(const vk::ShaderStageFlags &flags, uint32_t offset, uint32_t size) ;
-        std::shared_ptr<RenderGroup> addBindingDescription_3(const uint32_t &binding, const uint32_t &stride, const vk::VertexInputRate &inputRate = vk::VertexInputRate::eVertex) ;
-        std::shared_ptr<RenderGroup> addAttributeDescription_4(const uint32_t &location, const uint32_t &binding, const vk::Format &format, const uint32_t &offset) ;
-        std::shared_ptr<RenderGroup> addShader_5(const std::string& path, vk::ShaderStageFlagBits flags) ;
-        std::shared_ptr<RenderGroup> build();
-
-        std::shared_ptr<RenderGroup> addModel(const std::string& path){
-            mModels.emplace_back(sc::ModelLoader::Load(path, *this));
-            return shared_from_this();
         }
 
-        static std::shared_ptr<RenderGroup> configure(const vk::RenderPass& renderPass){
-            return std::make_shared<RenderGroup>(renderPass);
+        explicit RenderGroupBase() requires isRT<PipelineType>: PipelineDesSetLayout(
+                {EventBus::Get::vkSetupContext().device_ref()}), RayTracing() {
+
         }
 
-        Render render(const vk::CommandBuffer& cmd){
-            return {cmd, mPipeline, getPipelineLayout(), mModels};
+        ~RenderGroupBase() = default;
+
+        std::shared_ptr<RenderGroupBase<PipelineType>> addDesSetLayout_(const uint32_t &set, const uint32_t &binding, const vk::DescriptorType &descriptorType,
+                                                                         const uint32_t &descriptorCount, const vk::ShaderStageFlags &flags){
+            PipelineDesSetLayout::addDesSetLayout(set, binding, descriptorType, descriptorCount, flags);
+            return this->shared_from_this();
         }
 
+        std::shared_ptr<RenderGroupBase<PipelineType>> addPushConstantRange_(const vk::ShaderStageFlags &flags, uint32_t offset, uint32_t size) {
+            PipelineDesSetLayout::addPushConstantRange(flags, offset, size);
+
+            return this->shared_from_this();
+        }
+
+        std::shared_ptr<RenderGroupBase<PipelineType>> addBindingDescription_(const uint32_t &binding, const uint32_t &stride,
+                               const vk::VertexInputRate &inputRate) requires isGraphics<PipelineType> {
+            Graphics::addBindingDescription(binding, stride, inputRate);
+            return this->shared_from_this();
+        }
+
+        std::shared_ptr<RenderGroupBase<PipelineType>> addAttributeDescription_(const uint32_t &location, const uint32_t &binding, const vk::Format &format,
+                                                                            const uint32_t &offset) {
+            Graphics::addAttributeDescription(location, binding, format, offset);
+            return this->shared_from_this();
+        }
+
+        std::shared_ptr<RenderGroupBase<PipelineType>> addShader_(const std::string& path, vk::ShaderStageFlagBits flags) {
+            PipelineType::addShader(path, flags);
+            return this->shared_from_this();
+        }
+
+        static std::shared_ptr<RenderGroupBase<PipelineType>> configure(const vk::RenderPass& renderPass) requires isGraphics<PipelineType>{
+            return std::make_shared<RenderGroupBase<PipelineType>>(renderPass);
+        }
+
+        std::shared_ptr<RenderGroupBase<PipelineType>> build() requires isGraphics<PipelineType> {
+            Graphics::createInfo.setLayout(PipelineDesSetLayout::getPipelineLayout());
+            Graphics::create();
+            return this->shared_from_this();
+        }
+
+        static std::shared_ptr<RenderGroupBase<PipelineType>> configure() requires isRT<PipelineType> {
+            return std::make_shared<RenderGroupBase<RayTracing>>();
+        }
+
+        std::shared_ptr<RenderGroupBase<PipelineType>> build() requires isRT<PipelineType>{
+            RayTracing::rtCreateInfo.setLayout(PipelineDesSetLayout::getPipelineLayout());
+            RayTracing::create();
+            return this->shared_from_this();
+        }
+
+        std::shared_ptr<Render> render(const vk::CommandBuffer& cmd) requires isGraphics<PipelineType>{
+            mRender = std::make_shared<Render>(cmd, Graphics::mPipeline, getPipelineLayout());
+            return mRender;
+        }
+        std::shared_ptr<Render> chain(){
+            return mRender;
+        }
 
     private:
-        std::vector<sc::Model> mModels;
+        std::shared_ptr<Render> mRender;
     };
 
+    using RenderGroupGraphics = RenderGroupBase<Graphics>;
+    using RenderGroupRayTracing = RenderGroupBase<RayTracing>;
+
+    using RenderGroupGraphics_sptr = std::shared_ptr<RenderGroupGraphics>;
+    using RenderGroupRayTracing_sptr = std::shared_ptr<RenderGroupRayTracing>;
+
+    class RenderGroupCombine{
+    public:
+        auto configureGraphicsPipeline(const vk::RenderPass& rp = {}) -> RenderGroupGraphics_sptr {
+            if (graphicsSptr == nullptr){
+                if (!rp){ throw std::runtime_error("First configure graphics pipeline must include a valid render pass");}
+                graphicsSptr = RenderGroupGraphics ::configure(rp);
+            }
+            return graphicsSptr;
+        }
+
+        auto configureRayTracingPipeline() -> RenderGroupRayTracing_sptr {
+            if (rayTracingSptr == nullptr){
+                rayTracingSptr = RenderGroupRayTracing ::configure();
+            }
+            return rayTracingSptr;
+        }
+
+        auto graphics() {
+            return graphicsSptr;
+        }
+        auto rayTracing() {
+            return rayTracingSptr;
+        }
+
+        auto clear() -> void{
+            graphicsSptr.reset();
+            rayTracingSptr.reset();
+        }
+    private:
+        RenderGroupGraphics_sptr graphicsSptr;
+        RenderGroupRayTracing_sptr rayTracingSptr;
+    };
 
 
 

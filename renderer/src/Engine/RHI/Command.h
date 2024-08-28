@@ -68,16 +68,7 @@ namespace yic {
     public:
         CommandPoolManager(vk::Device device, uint32_t queueFamilyIndex) : mDevice(device), mQueueFamilyIndex(queueFamilyIndex) {
             for (int i = 0; i < 4; i++) {
-                vk::CommandPoolCreateInfo poolInfo = {};
-                poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-                poolInfo.setQueueFamilyIndex(queueFamilyIndex);
-                auto pool = mDevice.createCommandPool(poolInfo);
-                mCommandPools.emplace_back(pool);
-
-                vk::CommandBufferAllocateInfo allocInfo{
-                        pool, vk::CommandBufferLevel::ePrimary, 1
-                };
-                mAvailableCommandBufs.push(mDevice.allocateCommandBuffers(allocInfo).front());
+                createCommandBuf();
                 mCurrentPoolCount += 1;
             }
         }
@@ -91,39 +82,47 @@ namespace yic {
         auto acquire() -> vk::CommandBuffer{
             vk::CommandBuffer cmd;
 
-            if (mAvailableCommandBufs.try_pop(cmd)){
-                return cmd;
-            }
+                if (mAvailablePrimaryCommandBufs.try_pop(cmd)) {
+                    return cmd;
+                }
 
-            if (mCurrentPoolCount < mMaxPoolCount){
-                mCurrentPoolCount += 1;
-                vk::CommandPoolCreateInfo poolInfo = {};
-                poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-                poolInfo.setQueueFamilyIndex(mQueueFamilyIndex);
-                auto pool = mDevice.createCommandPool(poolInfo);
-                mCommandPools.emplace_back(pool);
-                vk::CommandBufferAllocateInfo allocInfo{
-                        pool, vk::CommandBufferLevel::ePrimary, 1
-                };
-                cmd = mDevice.allocateCommandBuffers(allocInfo).front();
-                return cmd;
-            }
+                if (mCurrentPoolCount < mMaxPoolCount) {
+                    mCurrentPoolCount += 1;
 
-            std::unique_lock<std::mutex> lock(mLock);
-            mCommandBufAvailable.wait(lock, [this]{ return !mAvailableCommandBufs.empty();});
-            mAvailableCommandBufs.try_pop(cmd);
+                    createCommandBuf();
+                    mAvailablePrimaryCommandBufs.try_pop(cmd);
+                    return cmd;
+                }
+
+                std::unique_lock<std::mutex> lock(mLock);
+                mCommandBufAvailable.wait(lock, [this] { return !mAvailablePrimaryCommandBufs.empty(); });
 
             return cmd;
-        };
+        }
 
-        auto release(vk::CommandBuffer cmd) -> void{
-            cmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-            mAvailableCommandBufs.push(cmd);
+        auto release(const vk::CommandBuffer& cmd) -> void{
+                mAvailablePrimaryCommandBufs.push(cmd);
             {
                 std::lock_guard<std::mutex> lock(mLock);
                 mCommandBufAvailable.notify_one();
             }
         }
+
+    private:
+        auto createCommandBuf() -> void{
+            vk::CommandPoolCreateInfo poolInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, mQueueFamilyIndex};
+            auto pool = mDevice.createCommandPool(poolInfo);
+            mCommandPools.emplace_back(pool);
+
+            vk::CommandBufferAllocateInfo allocInfo{
+                    pool, vk::CommandBufferLevel::ePrimary, 1
+            };
+            auto primary = mDevice.allocateCommandBuffers(allocInfo).front();
+
+            mAvailablePrimaryCommandBufs.push(primary);
+        };
+
+
 
     private:
         static constexpr uint32_t mMaxPoolCount{12};
@@ -133,17 +132,88 @@ namespace yic {
         std::mutex mLock;
         std::condition_variable mCommandBufAvailable;
         std::vector<vk::CommandPool> mCommandPools;
-        oneapi::tbb::concurrent_queue<vk::CommandBuffer> mAvailableCommandBufs;
+        oneapi::tbb::concurrent_queue<vk::CommandBuffer> mAvailablePrimaryCommandBufs;
+    };
+
+    class CommandPoolInheritanceManager{
+        struct Entry{
+            bool use;
+            vk::CommandPool commandPool;
+            std::queue<vk::CommandBuffer> commandBuffer;
+        };
+    public:
+        CommandPoolInheritanceManager(vk::Device device, uint32_t queueFamilyIndex) : mDevice(device), mQueueFamilyIndex(queueFamilyIndex) {
+            for (int i = 0; i < 6; i++) {
+                createCommandPool();
+            }
+        }
+
+        ~CommandPoolInheritanceManager(){
+            for(auto& e : mEntries){
+                mDevice.destroy(e.commandPool);
+            }
+        }
+
+        auto acquire() -> Entry*{
+            auto it = std::ranges::find_if(mEntries, [](const Entry& e){
+                return !e.use;
+            });
+            if (it != mEntries.end()){
+                if (it->commandBuffer.empty()){
+                    it->commandBuffer.push(createCommandBuf(it->commandPool));
+                }
+            }
+            it->use = true;
+
+            return &(*it);
+        }
+
+        auto release(Entry* entry) -> void{
+            entry->use = false;
+        }
+
+    private:
+        auto createCommandPool() -> void{
+            vk::CommandPoolCreateInfo poolInfo{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, mQueueFamilyIndex};
+            auto pool = mDevice.createCommandPool(poolInfo);
+            mEntries.emplace_back(Entry{false, pool});
+        }
+        auto createCommandBuf(const vk::CommandPool& pool) -> vk::CommandBuffer{
+            vk::CommandBufferAllocateInfo allocInfo{
+                    pool, vk::CommandBufferLevel::eSecondary, 1
+            };
+
+            auto second = mDevice.allocateCommandBuffers(allocInfo).front();
+            return second;
+        };
+
+    private:
+        vk::Device mDevice;
+        uint32_t mQueueFamilyIndex;
+        std::vector<Entry> mEntries;
     };
 
     class CommandBufferCoordinator{
     public:
-        CommandBufferCoordinator(vk::Device device, uint32_t queueFamilyIndex, vk::Queue queue);
+        vkGet auto get = []{ return Singleton<CommandBufferCoordinator>::get();};
+
+        CommandBufferCoordinator();
         ~CommandBufferCoordinator();
 
-        auto cmdAcquire() -> vk::CommandBuffer;
-        auto cmdRelease(vk::CommandBuffer& cmd) -> void;
-        auto cmdDraw(const std::function<void(vk::CommandBuffer&)>& fn) -> void;
+        static auto init(vk::Device device, uint32_t queueFamilyIndex, vk::Queue queue) -> void;
+        static auto clear() -> void;
+
+        DEFINE_STATIC_ACCESSOR(cmdAcquirePrimary);
+        DEFINE_STATIC_ACCESSOR_PARAM(cmdReleasePrimary, (vk::CommandBuffer& cmd), (cmd));
+        DEFINE_STATIC_ACCESSOR_PARAM(cmdDrawPrimary, (const std::function<void(vk::CommandBuffer&)>& fn), (fn));
+        DEFINE_STATIC_ACCESSOR_PARAM(cmdDrawSecond, (vk::RenderPass rp, vk::Extent2D extent, const std::function<void(vk::CommandBuffer&)>& fn), (rp, extent, fn));
+
+    private:
+        auto cmdAcquirePrimary_impl() -> vk::CommandBuffer;
+        auto cmdReleasePrimary_impl(vk::CommandBuffer& entry) -> void;
+        auto cmdDrawPrimary_impl(const std::function<void(vk::CommandBuffer&)>& fn) -> void;
+
+        auto cmdDrawSecond_impl(vk::RenderPass rp, vk::Extent2D extent, const std::function<void(vk::CommandBuffer&)>& fn) -> vk::CommandBuffer;
 
     private:
         vk::Device mDevice;
@@ -151,7 +221,9 @@ namespace yic {
         oneapi::tbb::spin_mutex mMutex;
         std::unique_ptr<CommandPoolManager> mCommandPoolManager;
         std::unique_ptr<FenceManager> mFenceManager;
-        oneapi::tbb::concurrent_queue<vk::CommandBuffer> mAvailableCommandBuffers;
+
+        std::unique_ptr<CommandPoolInheritanceManager> mInheritanceManager;
+        oneapi::tbb::concurrent_unordered_map<std::string, vk::Extent2D> mExtents;
     };
 
 } // yic

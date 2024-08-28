@@ -8,6 +8,7 @@
 #include "Widget.h"
 
 #include "SubWindow/RenderWindow.h"
+#include "SubWindow/PanelWindow.h"
 
 namespace ui {
 
@@ -15,9 +16,8 @@ namespace ui {
 
     public:
         explicit WidgetManager() {
-
             mWidgets.emplace_back(std::make_shared<RenderWindow>());
-
+            mWidgets.emplace_back(std::make_shared<PanelWindow>());
         };
 
         ~WidgetManager() = default;
@@ -29,7 +29,6 @@ namespace ui {
 
     private:
         auto vkViewWindow() -> void;
-        auto vkControlPanelWindow() -> void;
         auto vkConsoleWindow() -> void;
         auto shaderFileWindow() -> void;
 

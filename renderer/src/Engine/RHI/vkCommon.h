@@ -209,6 +209,7 @@ namespace yic{
             eColor = 1 << 0,
             eDepth = 1 << 1,
             eDepthStencil = 1 << 2,
+            eStorage = 1 << 3,
         };
         ImageFlags imageFlags = eColor;
         vk::ImageType imageType = vk::ImageType::e2D;

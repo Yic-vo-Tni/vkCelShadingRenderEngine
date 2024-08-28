@@ -25,6 +25,9 @@ namespace yic {
             vkInfo("TSX is supported");
         } else { vkWarn("TSX is not supported"); }
 
+        auto numThreads = std::thread::hardware_concurrency();
+        vkInfo("Max threads counts: {0}", numThreads);
+
 
         mFrameLoopThread = std::make_unique<std::thread>([this]{
             mRhi = std::make_unique<vkRhi>();

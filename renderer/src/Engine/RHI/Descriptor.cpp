@@ -54,7 +54,7 @@ namespace yic {
     }
 
     Descriptor &Descriptor::updateDesSet(
-            const std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> &infos, const size_t& setIndex) {
+            const std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo, vk::WriteDescriptorSetAccelerationStructureKHR>> &infos, const size_t& setIndex) {
         pushbackDesSets();
 
         mWriteDesSets.resize(mIndex + 1);
@@ -66,6 +66,8 @@ namespace yic {
                     mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, bind.descriptorType, {}, arg});
                 } else if constexpr (std::is_same_v<T, vk::DescriptorImageInfo>){
                     mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, bind.descriptorType, arg});
+                } else if constexpr (std::is_same_v<T, vk::WriteDescriptorSetAccelerationStructureKHR>){
+                    mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, 1, bind.descriptorType, {}, {}, {}, &arg});
                 }
 
             }, infos[i]);
@@ -80,12 +82,20 @@ namespace yic {
     }
 
     Descriptor &Descriptor::updateDesSet(uint32_t Reset_MaxSets,
-                                             const std::vector<std::variant<ImgInfo, BufInfo>> &infos,
+                                             const std::vector<std::variant<ImgInfo, BufInfo, AccelInfo>> &infos,
                                              const size_t &setIndex) {
-        createDesPool(Reset_MaxSets);
+        if (!mDesPool){
+            createDesPool(Reset_MaxSets);
+        } else{
+            mDevice.resetDescriptorPool(mDesPool);
+        }
+
+        mDesSet.clear();
+        mWriteDesSets.clear();
+        mIndex = 0;
 
         for (int i = 0; i < Reset_MaxSets; i++) {
-            std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo>> v;
+            std::vector<std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo, vk::WriteDescriptorSetAccelerationStructureKHR>> v;
             for (auto &info: infos) {
                 std::visit([&](auto &&arg) {
                     using T = std::decay_t<decltype(arg)>;
@@ -100,11 +110,11 @@ namespace yic {
                         vk::ImageView imageView = (i < arg.imageViews.size()) ? arg.imageViews[i] : arg.imageViews.back();
 
                         v.emplace_back(vk::DescriptorImageInfo{arg.sampler, imageView, arg.imageLayout});
+                    } else if constexpr (std::is_same_v<T, AccelInfo>){
+                        v.emplace_back(vk::WriteDescriptorSetAccelerationStructureKHR{arg.accel});
                     }
                 }, info);
             }
-
-            auto x = v;
 
             updateDesSet(v, setIndex);
         }
@@ -174,7 +184,7 @@ namespace yic {
                 ImGui::Image((ImTextureID)desc, imageSize);
             }
         } else{
-            ImGui::Image((ImTextureID)descs[index], imageSize);
+            ImGui::Image((ImTextureID)descs[index] ? (ImTextureID)descs[index] : (ImTextureID)descs.back(), imageSize);
         }
 
     }

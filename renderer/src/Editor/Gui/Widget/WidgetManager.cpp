@@ -17,7 +17,6 @@ namespace ui {
         }
 
         vkViewWindow();
-        vkControlPanelWindow();
         vkConsoleWindow();
     }
 
@@ -28,22 +27,6 @@ namespace ui {
         ImGui::End();
     }
 
-    auto WidgetManager::vkControlPanelWindow() -> void {
-        ImGui::Begin("Panel");
-
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-
-        if (ImGui::Selectable(" f_test.frag", false, ImGuiSelectableFlags_DontClosePopups)) {
-            ShaderEditor::openShaderFile(R"(F:\Yicvot\vkCelShadingRenderer\renderer\assets\shaders\f_test.frag)");
-        }
-        if (ImGui::Selectable(" v_test.vert", false, ImGuiSelectableFlags_DontClosePopups)) {
-            ShaderEditor::openShaderFile(R"(F:\Yicvot\vkCelShadingRenderer\renderer\assets\shaders\v_test.vert)");
-        }
-
-        ImGui::PopStyleColor(1);
-
-        ImGui::End();
-    }
 
     auto WidgetManager::vkConsoleWindow() -> void {
         ImGui::Begin("Console");

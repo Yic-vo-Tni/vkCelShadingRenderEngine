@@ -45,21 +45,25 @@ namespace glfw_callback {
     };
 
     inline auto dropCallback = [](GLFWwindow *w, int count, const char** paths){
-        bool model{false};
-        bool img{false};
-        std::vector<std::string> modelPaths;
-        std::vector<std::string> imgPaths;
+        std::unordered_map<ResFormat, std::vector<std::string>> resPaths;
+
         for(int i = 0; i < count; i++){
             std::string path(paths[i]);
 
-            if (path.ends_with(".obj") || path.ends_with(".fbx") || path.ends_with(".pmx") || path.ends_with(".gltf")){
-                model = true;
-                modelPaths.emplace_back(path);
-            }
+            auto add = [&](const std::string& suffix, ResFormat format){
+                if (path.ends_with(suffix)){
+                    resPaths[format].emplace_back(path);
+                }
+            };
+
+            add(".obj", ResFormat::eObj);
+            add(".fbx", ResFormat::eFbx);
+            add(".gltf", ResFormat::eGltf);
+            add(".pmx", ResFormat::ePmx);
         }
 
-        if (model){
-            yic::EventBus::publish(et::modelPath{modelPaths});
+        if (!resPaths.empty()){
+            yic::EventBus::publishAsync(et::eResPaths{resPaths});
         }
     };
 

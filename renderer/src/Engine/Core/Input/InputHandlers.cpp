@@ -59,9 +59,9 @@ namespace yic {
     }
 
     auto InputHandlers::globalCamera() -> void {
-        if (!EventBus::Get::val<et::frameTime>().frameTime_exists())
+        if (!EventBus::val<et::frameTime>().frameTime_exists())
             return;
-        auto cameraSpeed = EventBus::Get::val<et::frameTime>().frameTime_v() * sc::globalCamera.getDynamicSpeed() * 50;
+        auto cameraSpeed = EventBus::val<et::frameTime>().frameTime_v() * sc::globalCamera.getDynamicSpeed() * 50;
 
         auto glfwKeyPress = [&](int key){
             return (glfwGetKey(mWindow, key) == GLFW_PRESS);

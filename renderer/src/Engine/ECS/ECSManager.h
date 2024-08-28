@@ -6,18 +6,31 @@
 #define VKCELSHADINGRENDERER_ECSMANAGER_H
 
 #include "Camera/Camera.h"
+#include "Model/ModelManager.h"
+
+
+
 
 namespace sc {
 
     class ECSManager {
     public:
-        vkGet auto get = []{ return Singleton<ECSManager>::get(); };
         ECSManager();
+        ~ECSManager();
 
-        auto test() -> void;
-        auto run() -> void;
+        auto clear() -> void{
+            mModelManager.reset();
+            ecs.reset();
+        }
+
+        auto Render(vk::CommandBuffer& cmd) -> void;
+        auto renderStorage(vk::CommandBuffer& cmd) -> void;
     private:
         flecs::world ecs;
+
+        std::unique_ptr<ModelManager> mModelManager;
+
+
     };
 
 } // sc

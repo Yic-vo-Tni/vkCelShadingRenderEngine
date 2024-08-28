@@ -65,7 +65,7 @@ namespace yic {
 
         template<typename T>
         void updateBuf(const std::vector<T> &src, bool unmap = false) {
-            ensureMapped();
+           // ensureMapped();
             if (!src.empty())
                 mUpdateStagingFunc(src.data());
             if (unmap)
@@ -181,6 +181,24 @@ namespace yic {
         vk::Device mDevice{};
     };
 
+    struct vkAccel {
+        vk::Buffer buffer{};
+        VmaAllocation vmaAllocation{};
+        VmaAllocator &mAllocator;
+        vk::AccelerationStructureKHR accel;
+
+        vkAccel(vk::Buffer buf, VmaAllocation alloc, VmaAllocator &allocatorRef, vk::AccelerationStructureKHR accel, vk::Device dev, vk::DispatchLoaderDynamic dyDis) :
+            buffer(buf), vmaAllocation(alloc), mAllocator(allocatorRef), accel(accel), device(dev), dyDispatch(dyDis){
+        }
+        ~vkAccel() {
+            vmaDestroyBuffer(mAllocator, buffer, vmaAllocation);
+            device.destroy(accel, nullptr, dyDispatch);
+        }
+
+    private:
+        vk::Device device{};
+        vk::DispatchLoaderDynamic dyDispatch;
+    };
 
 
 

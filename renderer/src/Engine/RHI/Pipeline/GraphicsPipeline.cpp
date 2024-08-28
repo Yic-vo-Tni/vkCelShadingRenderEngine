@@ -13,6 +13,11 @@ namespace yic {
         mPipelineLayout = device.createPipelineLayout(vk::PipelineLayoutCreateInfo());
         init(mPipelineLayout, renderPass);
     }
+    Graphics::Graphics(vk::RenderPass renderPass) : mDevice(EventBus::Get::vkSetupContext().device_ref()) {
+        mPipelineLayout = mDevice.createPipelineLayout(vk::PipelineLayoutCreateInfo());
+        mRenderPass = renderPass;
+        init(mPipelineLayout, renderPass);
+    }
 
     void Graphics::updateState() {
         if (blendAttachmentStates.empty()){

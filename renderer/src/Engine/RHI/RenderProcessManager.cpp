@@ -7,37 +7,37 @@
 namespace yic {
 
     RenderProcessManager::RenderProcessManager() {
-        mRenderProcess[enum_name(RenderProcessPhases::ePrimary)] = std::make_shared<RenderProcess>(enum_name(RenderProcessPhases::ePrimary));
-
-        mRenderGroup = RenderGroup::configure(FrameRender::eColorDepthStencilRenderPass)
-                ->addDesSetLayout_1(0, 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
-                ->addPushConstantRange_2(vk::ShaderStageFlagBits::eVertex, 0, sizeof (glm::mat4))
-                ->addBindingDescription_3(0, sizeof(sc::Vertex), vk::VertexInputRate::eVertex)
-                ->addAttributeDescription_4(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(sc::Vertex, pos))
-                ->addAttributeDescription_4(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(sc::Vertex, nor))
-                ->addAttributeDescription_4(2, 0, vk::Format::eR32G32Sfloat, offsetof(sc::Vertex, uv))
-                ->addShader_5("v_test.spv", vk::ShaderStageFlagBits::eVertex)
-                ->addShader_5("f_test.spv", vk::ShaderStageFlagBits::eFragment)
-        //        ->addModel(R"(E:\Material\model\Nilou\Nilou.pmx)")
-                ->build();
-
-        yic::EventBus::subscribeAuto([&](const et::modelPath& modelPaths){
-            for(auto& pt : modelPaths.paths_ref()){
-                mRenderGroup->addModel(pt);
-            }
-        });
+        FrameRender::get();
+        mRenderProcess[enum_name(RenderProcessPhases::ePrimary)] = std::make_unique<RenderProcess>(enum_name(RenderProcessPhases::ePrimary));
+        mEcsManager = std::make_unique<sc::ECSManager>();
     }
 
     RenderProcessManager::~RenderProcessManager() = default;
 
-    auto RenderProcessManager::RenderProcedure() -> std::vector<vk::CommandBuffer> {
-        auto& cmds = get()->cmds;
+    //---------------------------------------------------------------------------------------------//
+    ///                                     (〃'▽'〃)
+    //---------------------------------------------------------------------------------------------//
 
+    auto RenderProcessManager::drawBuild() -> void {
+        auto& priRp = mRenderProcess[enum_name(RenderProcessPhases::ePrimary)];
+        priRp->appendCommandRecord([&](vk::CommandBuffer& cmd){
+            mEcsManager->Render(cmd);
+        });
+        priRp->appendCommandRecordExtra([&](vk::CommandBuffer& cmd){
+            mEcsManager->renderStorage(cmd);
+        });
+    }
+
+    //---------------------------------------------------------------------------------------------//
+    ///                                    ∠( °ω°)／
+    //---------------------------------------------------------------------------------------------//
+
+    auto RenderProcessManager::RenderProcedure_impl() -> std::vector<vk::CommandBuffer> {
         cmds.clear();
 
         for(auto& key : {RenderProcessPhases::ePrimary}){
-            auto it = get()->mRenderProcess.find(enum_name(key));
-            if (it != get()->mRenderProcess.end()){
+            auto it = mRenderProcess.find(enum_name(key));
+            if (it != mRenderProcess.end()){
                 if (it->second->process().has_value())
                     cmds.emplace_back(it->second->process().value());
             }
@@ -46,23 +46,23 @@ namespace yic {
         return {cmds.begin(), cmds.end()};
     }
 
-    auto RenderProcessManager::prepare() -> void {
+    auto RenderProcessManager::prepare_impl() -> void {
         sc::globalCamera.computeViewProjMatrix();
 
-        tbb::parallel_for_each(get()->mRenderProcess.begin(), get()->mRenderProcess.end(), [](auto& it){
-            if (it.second){
-                it.second->prepare();
-            }
-        });
+//        tbb::parallel_for_each(mRenderProcess.begin(), mRenderProcess.end(), [](auto& it){
+//            if (it.second){ it.second->prepare(); }
+//        });
+        for(const auto& it : mRenderProcess){
+            it.second->prepare();
+        }
 
-        get()->mRenderProcess[enum_name(RenderProcessPhases::ePrimary)]->appendCommandRecord([&](vk::CommandBuffer &cmd) {
-            get()->mRenderGroup->render(cmd)
-                    .bindPipeline()
-                    .pushConstants(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4),
-                                   sc::globalCamera.getVpMatrix())
-                    .drawModel();
-        });
-
+        drawBuild();
     }
+
+    auto RenderProcessManager::clear_impl() -> void {
+        mRenderProcess.clear();
+        mEcsManager->clear();
+    }
+
 
 } // yic

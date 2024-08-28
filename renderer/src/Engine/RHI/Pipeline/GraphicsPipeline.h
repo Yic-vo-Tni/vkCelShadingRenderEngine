@@ -5,6 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_GRAPHICSPIPELINE_H
 #define VKCELSHADINGRENDERER_GRAPHICSPIPELINE_H
 
+
 #include "State.h"
 #include "Engine/RHI/vkCommon.h"
 
@@ -19,6 +20,7 @@ namespace yic {
     public:
         Graphics(vk::Device device, vk::PipelineLayout layout, vk::RenderPass renderPass);
         Graphics(vk::Device device, vk::RenderPass renderPass);
+        explicit Graphics(vk::RenderPass renderPass);
         ~Graphics(){
             if (mPipelineLayout){
                 mDevice.destroy(mPipelineLayout);
@@ -80,7 +82,12 @@ namespace yic {
         }
 
         Graphics& addShader(std::string path, vk::ShaderStageFlagBits flags){
-            path = spv_path + std::string("/") + path;
+            mShaderPaths.emplace_back(path);
+
+            std::regex pattern("(\\.[^\\.]+)$");
+            std::string replace = ".spv";
+            auto spvPath = std::regex_replace(path, pattern, replace);
+            path = spv_path + std::string("/") + spvPath;
             auto t = [this, path, flags]{
                 std::vector<char> v;
                 std::ranges::copy(fo::loadFile(path), std::back_inserter(v));
@@ -126,6 +133,7 @@ namespace yic {
         }
 
         [[nodiscard]] inline auto& acquire() const { return mPipeline;}
+        [[nodiscard]] inline auto getShaderPaths() const { return mShaderPaths;}
     private:
         auto init(vk::PipelineLayout layout, vk::RenderPass renderPass) -> void;
 
@@ -134,6 +142,8 @@ namespace yic {
         vk::PipelineLayout mPipelineLayout{};
         vk::Pipeline mPipeline{};
     public:
+        vk::RenderPass mRenderPass{};
+
         vk::GraphicsPipelineCreateInfo createInfo{};
         
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;
@@ -157,6 +167,8 @@ namespace yic {
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
         std::unordered_map<std::string, ShaderModule> shaderModules{};
+
+        std::vector<std::string> mShaderPaths;
     };
 
 } // yic

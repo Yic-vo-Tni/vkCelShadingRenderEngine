@@ -13,10 +13,16 @@
 #include "Engine/RHI/vkPipeline.h"
 #include "Engine/RHI/Allocator.h"
 #include "Engine/RHI/FrameRender.h"
+#include "Engine/RHI/Descriptor.h"
+
+#include "Engine/RHI/RenderGroup.h"
 
 namespace yic {
 
     class RenderProcess {
+        enum offImageType{
+            eStandard, eRayTraced, eComposite, eCount
+        };
         using fn_cmdRecord = std::function<void(vk::CommandBuffer& cmd)>;
     public:
         explicit RenderProcess(std::string id);
@@ -24,17 +30,37 @@ namespace yic {
 
         auto prepare() -> void;
         auto appendCommandRecord(const fn_cmdRecord& record) -> void;
+        auto appendCommandRecordExtra(const fn_cmdRecord& rec) -> void;
         auto process() -> std::optional<vk::CommandBuffer>;
 
+        //t
+//        auto registrationProcess(const std::string& name, const uint32_t& framebufferOffset) -> void;
+//        auto appendCommandRec(const std::string& name, const fn_cmdRecord &rec) -> void;
+//        auto prepare() -> void;
+//        auto process() -> std::optional<vk::CommandBuffer>;
     private:
         et::vkSetupContext ct;
         et::vkRenderContext rt;
 
         std::string mId;
+        uint32_t mImageCount{0};
         vkImg_sptr mOffImage;
+
         std::atomic<vk::Extent2D> mExtent;
         std::unique_ptr<RenderSession> mRenderSession;
+
+        std::shared_ptr<Descriptor> mPostDescriptor;
+        std::shared_ptr<RenderGroupGraphics> mRenderGroupGraphics;
+
         std::vector<fn_cmdRecord> mCommandBufferRecords;
+        std::vector<fn_cmdRecord> mCommandBufferRecordExtras;
+
+// test
+//        uint32_t mProcessCount;
+//        std::vector<std::function<void()>> mProcesses;
+//        tbb::concurrent_unordered_map<std::string, std::vector<fn_cmdRecord>> mCommandBufRecords;
+//
+//        std::vector<std::pair<std::string, uint32_t>> mRegisters;
     };
 
 
