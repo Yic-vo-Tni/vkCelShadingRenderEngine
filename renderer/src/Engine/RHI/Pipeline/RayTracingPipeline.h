@@ -62,6 +62,10 @@ namespace yic {
         vk::StridedDeviceAddressRegionKHR regionRgen{}, regionMiss{}, regionHit{}, regionCall{};
 
         std::vector<std::string> mShaderPaths;
+
+
+        //
+        std::shared_ptr<vkBuffer> rgenSbt, rmissSbt, rchitSbt;
     };
 
 } // yic

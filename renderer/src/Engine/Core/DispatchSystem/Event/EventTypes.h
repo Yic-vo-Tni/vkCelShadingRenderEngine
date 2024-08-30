@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_EVENTTYPES_H
 
 #include "Engine/RHI/vkStruct.h"
+#include "Engine/ECS/Model/ModelStruct.h"
 
 #define HANA(...) BOOST_HANA_DEFINE_STRUCT(__VA_ARGS__)
 

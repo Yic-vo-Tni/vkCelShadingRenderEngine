@@ -67,7 +67,7 @@ namespace yic {
         fn(cmd);
         cmd.end();
 
-        mInheritanceManager->release(entry);
+        //mInheritanceManager->release(entry);
 
         return cmd;
     }
@@ -85,7 +85,13 @@ namespace yic {
         get()->mCommandPoolManager.reset();
         get()->mInheritanceManager.reset();
         get()->mFenceManager.reset();
-    };
+    }
+
+    auto CommandBufferCoordinator::begin() -> void {
+
+    }
+
+
 
 
 

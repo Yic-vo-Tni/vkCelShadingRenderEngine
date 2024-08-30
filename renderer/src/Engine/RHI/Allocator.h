@@ -125,7 +125,10 @@ namespace yic {
 
         DEFINE_STATIC_CUSTOM_ACCESSOR(allocImgOffScreen_Storage, allocImgOffScreen_impl,
                                       (vk::Extent2D extent, size_t count = mMainRenderImageCount, const std::string& id = IdGenerator::uniqueId()),
-                                      (vkImageConfig{extent}.setImageFlags(vkImageConfig::eStorage).setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled), id, count));
+                                      (vkImageConfig{extent}
+                                      .setFormat(vk::Format::eR32G32B32A32Sfloat)
+                                      .setImageFlags(vkImageConfig::eStorage)
+                                      .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled), id, count));
 
         DEFINE_STATIC_ACCESSOR_PARAM(buildBLAS,
                                (const std::vector<BLASInput> &inputs, vk::BuildAccelerationStructureFlagsKHR flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace),
@@ -143,13 +146,18 @@ namespace yic {
                                              vk::BuildAccelerationStructureFlagsKHR flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace, bool update = false),
                                      ({ instance }, flags, update));
 
-        DEFINE_STATIC_ACCESSOR_PARAM(modelToGeometryKHR,
-                                     (const sc::Model::Generic& model),
-                                     (model));
+//        DEFINE_STATIC_ACCESSOR_PARAM(modelToGeometryKHR,
+//                                     (sc::Model::Generic& model),
+//                                     (model));
 
         DEFINE_STATIC_ACCESSOR_PARAM(allocAccel,
                                      (vk::AccelerationStructureCreateInfoKHR& inf),
                                      (inf));
+        DEFINE_STATIC_ACCESSOR_PARAM(allocAccel,
+                                     (vk::AccelerationStructureBuildSizesInfoKHR buildSize, vk::AccelerationStructureTypeKHR type),
+                                     (vk::AccelerationStructureCreateInfoKHR()
+                                             .setType(type)
+                                             .setSize(buildSize.accelerationStructureSize)));
 
 /// AUTO
     private:
@@ -286,7 +294,8 @@ namespace yic {
                             vk::BuildAccelerationStructureFlagsKHR flags, bool update) -> vkAccel_sptr;
         auto allocAccel_impl(vk::AccelerationStructureCreateInfoKHR& createInfo) -> vkAccel_sptr;
         inline static bool hasFlag(vk::Flags< vk::BuildAccelerationStructureFlagBitsKHR> item, vk::Flags< vk::BuildAccelerationStructureFlagBitsKHR> flag) { return (item & flag) == flag; }
-        auto modelToGeometryKHR_impl(const sc::Model::Generic& model) -> BLASInput;
+//        auto modelToGeometryKHR_impl(sc::Model::Generic& model) -> BLASInput;
+        auto modelToGeometryKHR_impl(sc::Model& model) -> BLASInput;
     private:
         et::vkSetupContext ct;
         et::vkRenderContext rt;

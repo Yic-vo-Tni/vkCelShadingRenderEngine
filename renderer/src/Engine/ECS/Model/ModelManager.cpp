@@ -10,8 +10,8 @@ namespace sc {
 
     ModelManager::ModelManager(const flecs::world* ecs) : ecs(ecs){
         p = {
-            .clearColor = glm::vec4(1, 0, 0, 1.00f),
-            .lightPosition =  {5.f, 15.f, 8.f},
+            .clearColor = glm::vec4(1.f, 1.f, 1.f, 1.00f),
+            .lightPosition =  {35.f, 15.f, 18.f},
             .lightIntensity = 100.f,
             .lightType = 0
         };
@@ -31,7 +31,7 @@ namespace sc {
         mRenderGroupRayTracing = yic::RenderGroupRayTracing::configure()
                 ->addDesSetLayout_(0, 0, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
                 ->addDesSetLayout_(0, 1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR)
-                ->addDesSetLayout_(0, 2, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->addDesSetLayout_(0, 2, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eRaygenKHR)
                 ->addDesSetLayout_(0, 3, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eClosestHitKHR)
                 ->addPushConstantRange_(vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR, 0, sizeof(PushConstantRay))
                 ->addShader_("rt_gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR)
@@ -45,7 +45,7 @@ namespace sc {
         globalCamera.initBuf();
 
         mRTBuilder = std::make_unique<yic::RTBuilder>();
-        mRTBuilder->cDesSets(globalCamera.getVpMatrixBuf());
+        mRTBuilder->cRTPipeAndSBT(globalCamera.getVpMatrixBuf());
     }
 
     ModelManager::~ModelManager() {
@@ -57,14 +57,52 @@ namespace sc {
     auto ModelManager::Render(const vk::CommandBuffer &cmd) -> void {
         oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, false);
 
-        auto query = ecs->query<Model::Generic>();
+//        auto query = ecs->query<Model::Generic>();
+        auto query = ecs->query<Model>();
+
+//        yic::EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext &uiWidgetContext) {
+//            mExtent.store(vk::Extent2D{(uint32_t) uiWidgetContext.viewportSize.value().x,
+//                                       (uint32_t) uiWidgetContext.viewport_height_v()});
+//            mRtStorageOffImg = yic::Allocator::allocImgOffScreen_Storage(mExtent, 1);
+//
+//            query.each([&](flecs::entity e, sc::Model &model) {
+//                auto& uniqueCmd = model.cmd;
+//
+//                vk::CommandBufferInheritanceInfo inheritanceInfo{
+//                        yic::FrameRender::eColorDepthStencilRenderPass, 0
+//                };
+//                vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse, &inheritanceInfo};
+//
+//                uniqueCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+//                uniqueCmd.begin(beginInfo);
+//                vk::Viewport viewport{
+//                        0.f, 0.f,
+//                        static_cast<float>(mExtent.load().width), static_cast<float>(mExtent.load().height),
+//                        0.f, 1.f
+//                };
+//                vk::Rect2D scissor{{0, 0}, mExtent};
+//                uniqueCmd.setViewport(0, viewport);
+//                uniqueCmd.setScissor(0, scissor);
+//                uniqueCmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
+//                for (const auto &mesh: model.meshes) {
+//                    uniqueCmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
+//                    uniqueCmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
+//                    uniqueCmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+//                                                 mRenderGroupGraphics->getPipelineLayout(), 0,
+//                                                 model.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
+//                    uniqueCmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
+//                }
+//                uniqueCmd.end();
+//
+//            });
+//        }, "ModelManager");
 
         yic::EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext &uiWidgetContext) {
             mExtent.store(vk::Extent2D{(uint32_t) uiWidgetContext.viewportSize.value().x,
                                        (uint32_t) uiWidgetContext.viewport_height_v()});
             mRtStorageOffImg = yic::Allocator::allocImgOffScreen_Storage(mExtent, 1);
 
-            query.each([&](flecs::entity e, sc::Model::Generic &model) {
+            query.each([&](flecs::entity e, sc::Model &model) {
                 auto& uniqueCmd = model.cmd;
 
                 vk::CommandBufferInheritanceInfo inheritanceInfo{
@@ -83,13 +121,13 @@ namespace sc {
                 uniqueCmd.setViewport(0, viewport);
                 uniqueCmd.setScissor(0, scissor);
                 uniqueCmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
-                for (const auto &mesh: model.meshes) {
-                    uniqueCmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
-                    uniqueCmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
+                for (const auto &subMesh: model.mesh.subMeshes) {
+                    uniqueCmd.bindVertexBuffers(0, model.mesh.vertBuf->buffer, {0});
+                    uniqueCmd.bindIndexBuffer(model.mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
                     uniqueCmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                                  mRenderGroupGraphics->getPipelineLayout(), 0,
-                                                 model.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
-                    uniqueCmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
+                                                 model.des.descriptor->getDescriptorSets()[subMesh.texIndex], nullptr);
+                    uniqueCmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
                 }
                 uniqueCmd.end();
 
@@ -103,28 +141,21 @@ namespace sc {
     auto ModelManager::renderRt(const vk::CommandBuffer &cmd) -> void {
         oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, false);
 
-        mRTBuilder->draw(cmd);
+        //mRTBuilder->draw(cmd);
+        mRTBuilder->drawNew(cmd);
+
+        //// --------------------
 //        auto query = ecs->query<Model::Generic>();
 //        query.each([&](flecs::entity e, sc::Model::Generic &model) {
-//            size_t desSetCount = model.rtDescriptor->getDescriptorSets().size();
-////            for (int i = 0; i < model.meshes.size(); i++) {
-////                cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
-////                                       mRenderGroupRayTracing->getPipelineLayout(), 0,
-////                                       i < desSetCount ? model.rtDescriptor->getDescriptorSets()[i] : model.rtDescriptor->getDescriptorSets().back(),
-////                                       nullptr);
 //                cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
 //                                       mRenderGroupRayTracing->getPipelineLayout(), 0,
-//                                       model.rtDescriptor->getDescriptorSets().back(),
+//                                       model.rtDescriptor->getDescriptorSets().front(),
 //                                       nullptr);
 //                cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRenderGroupRayTracing->acquire());
 //                cmd.pushConstants(mRenderGroupRayTracing->getPipelineLayout(),
-//                                  vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR |
-//                                  vk::ShaderStageFlagBits::eMissKHR,
+//                                  vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eClosestHitKHR ,
 //                                  0, sizeof(PushConstantRay), &p);
-////                cmd.pushConstants(mRenderGroupRayTracing->getPipelineLayout(),
-////                                  vk::ShaderStageFlagBits::eRaygenKHR |
-////                                  vk::ShaderStageFlagBits::eMissKHR,
-////                                  0, sizeof(PushConstantRay), &p);
+//
 //                auto extent = mExtent.load();
 //                cmd.traceRaysKHR(&mRenderGroupRayTracing->getRegionRgen(),
 //                                 &mRenderGroupRayTracing->getRegionMiss(),
@@ -132,8 +163,27 @@ namespace sc {
 //                                 &mRenderGroupRayTracing->getRegionCall(),
 //                                 extent.width, extent.height, 1,
 //                                 yic::EventBus::Get::vkSetupContext().dynamicDispatcher_ref());
-////            }
+//        });
+
+
+//        auto query = ecs->query<Model>();
+//        query.each([&](flecs::entity e, sc::Model &model) {
+//            cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
+//                                   mRenderGroupRayTracing->getPipelineLayout(), 0,
+//                                   model.des.rtDescriptor->getDescriptorSets().front(),
+//                                   nullptr);
+//            cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRenderGroupRayTracing->acquire());
+//            cmd.pushConstants(mRenderGroupRayTracing->getPipelineLayout(),
+//                              vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eClosestHitKHR ,
+//                              0, sizeof(PushConstantRay), &p);
 //
+//            auto extent = mExtent.load();
+//            cmd.traceRaysKHR(&mRenderGroupRayTracing->getRegionRgen(),
+//                             &mRenderGroupRayTracing->getRegionMiss(),
+//                             &mRenderGroupRayTracing->getRegionHit(),
+//                             &mRenderGroupRayTracing->getRegionCall(),
+//                             extent.width, extent.height, 1,
+//                             yic::EventBus::Get::vkSetupContext().dynamicDispatcher_ref());
 //        });
     }
 
@@ -144,39 +194,60 @@ namespace sc {
                 auto loadModel = [&](const ResFormat &format) {
                     if (res == format){
                         for(auto& pt : pts){
-                            auto model = ModelLoader::Load(pt, *mRenderGroupGraphics);
-                            model.shaderPaths = mRenderGroupGraphics->getShaderPaths();
-                            model.descriptor = yic::Descriptor::configure(*mRenderGroupGraphics)
-                                    ->updateDesSetAuto(globalCamera.getVpMatrixBuf(), model.diffTexs);
-                            std::vector<vkBuf_sptr> addrBufs;
-                            for(auto& mesh : model.meshes){
-                                addrBufs.emplace_back(mesh.addrBuf);
-                            }
-                            model.rtDescriptor = yic::Descriptor::configure(*mRenderGroupRayTracing)
-                                    ->updateDesSetAuto(model.tlas->accel,
-                                                       yic::ImgInfo{nullptr, mRtStorageOffImg->imageViews, vk::ImageLayout::eGeneral},
-                                                       globalCamera.getVpMatrixBuf(), addrBufs.front());
+//                            auto model = ModelLoader::Load(pt, *mRenderGroupGraphics);
+//                            model.shaderPaths = mRenderGroupGraphics->getShaderPaths();
+//                            model.descriptor = yic::Descriptor::configure(*mRenderGroupGraphics)
+//                                    ->updateDesSetAuto(globalCamera.getVpMatrixBuf(), model.diffTexs);
 //                            model.rtDescriptor = yic::Descriptor::configure(*mRenderGroupRayTracing)
 //                                    ->updateDesSetAuto(model.tlas->accel,
-//                                                       yic::ImgInfo{nullptr, mRtStorageOffImg->imageViews, vk::ImageLayout::eGeneral},
+//                                                       yic::ImgInfo{nullptr, mRtStorageOffImg, vk::ImageLayout::eGeneral},
+//                                                       globalCamera.getVpMatrixBuf(), model.meshesAddrBuf);
+//
+//                            model.cmd = yic::CommandBufferCoordinator::cmdDrawSecond(yic::FrameRender::eColorDepthStencilRenderPass, mExtent.load(), [&](vk::CommandBuffer& cmd){
+//                                cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
+//                                for (const auto &mesh: model.meshes) {
+//                                    cmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
+//                                    cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
+//                                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->getPipelineLayout(), 0,
+//                                                           model.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
+//                                    cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
+//                                }
+//                            });
+//
+//
+//
+//                            oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, true);
+//                            ecs->defer_begin();
+//                            ecs->entity(model.id.c_str()).set<Model::Generic>(model).add<Selected>();
+//                            ecs->defer_end();
+//                            vkInfo("add model successfully");
+
+
+                            auto model = ModelLoader::Load(pt);
+                            model.info.shaderPts = mRenderGroupGraphics->getShaderPaths();
+                            model.des.descriptor = yic::Descriptor::configure(*mRenderGroupGraphics)
+                                    ->updateDesSetAuto(globalCamera.getVpMatrixBuf(), model.texs.diffTexs);
+//                            model.des.rtDescriptor = yic::Descriptor::configure(*mRenderGroupRayTracing)
+//                                    ->updateDesSetAuto(model.as.tlas->get()->accel,
+//                                                       yic::ImgInfo{nullptr, mRtStorageOffImg, vk::ImageLayout::eGeneral},
 //                                                       globalCamera.getVpMatrixBuf());
 
                             model.cmd = yic::CommandBufferCoordinator::cmdDrawSecond(yic::FrameRender::eColorDepthStencilRenderPass, mExtent.load(), [&](vk::CommandBuffer& cmd){
                                 cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
-                                for (const auto &mesh: model.meshes) {
-                                    cmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
-                                    cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
+                                for(const auto& subMesh : model.mesh.subMeshes){
+                                    cmd.bindVertexBuffers(0, model.mesh.vertBuf->buffer, {0});
+                                    cmd.bindIndexBuffer(model.mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
                                     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->getPipelineLayout(), 0,
-                                                           model.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
-                                    cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
+                                                           model.des.descriptor->getDescriptorSets()[subMesh.texIndex], nullptr);
+                                    cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
+                                    vkInfo(subMesh.indexCount);
+                                    vkWarn(subMesh.firstIndex);
                                 }
                             });
 
-
-
                             oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, true);
                             ecs->defer_begin();
-                            ecs->entity(model.id.c_str()).set<Model::Generic>(model).add<Selected>();
+                            ecs->entity(model.info.id.c_str()).set<Model>(model).add<Selected>();
                             ecs->defer_end();
                             vkInfo("add model successfully");
                         }

@@ -9,6 +9,9 @@
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/RHI/Command.h"
 #include "Engine/RHI/Allocator.h"
+#include "Engine/ECS/Model/ModelLoader.h"
+
+#include "Engine/RHI/RenderGroup.h"
 
 namespace yic {
 
@@ -21,11 +24,15 @@ namespace yic {
         ~RTBuilder();
         auto cDesSets(const vkBuf_sptr& bufSptr) -> void;
         auto draw(const vk::CommandBuffer &cmd) -> void;
+
+        auto cRTPipeAndSBT(const vkBuf_sptr& bufSptr) -> void;
+        auto drawNew(const vk::CommandBuffer& cmd) -> void;
     private:
         auto cBLAS() -> void;
         auto cTLAS() -> void;
         auto cRtPipe() -> void;
         auto cSbt() -> void;
+
     private:
         vk::Device mDevice;
         vk::PhysicalDevice mPhysicalDevice;
@@ -46,6 +53,15 @@ namespace yic {
 
         vk::DescriptorPool descriptorPool;
         std::vector<vk::DescriptorSet> descriptorSets;
+
+        sc::Model mModel;
+
+
+
+        ///
+
+        RenderGroupRayTracing_sptr rayTracingSptr;
+        std::shared_ptr<Descriptor> descriptor;
     };
 
 } // yic

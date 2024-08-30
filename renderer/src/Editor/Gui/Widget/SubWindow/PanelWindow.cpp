@@ -17,27 +17,44 @@ namespace ui {
 
         auto ecs = yic::EventBus::val<et::eEcs_ptr>().ecs_ref();
 
-        ecs->query<sc::Model::Generic, Selected>().each([&](flecs::entity e, sc::Model::Generic& model, Selected selected){
-            shaderPts.insert(shaderPts.end(), model.shaderPaths.begin(), model.shaderPaths.end());
-        });
+//        ecs->query<sc::Model::Generic, Selected>().each([&](flecs::entity e, sc::Model::Generic& model, Selected selected){
+//            shaderPts.insert(shaderPts.end(), model.shaderPaths.begin(), model.shaderPaths.end());
+//        });
+//
+//        ecs->query<sc::Model::Pmx, Selected>().each([&](flecs::entity e, sc::Model::Pmx& pmx, Selected selected){
+//            if(ImGui::Button("Load Vmd Animation")){
+//                EventBus::publishAsync(et::eResPathsNfd{std::make_pair(ResFormat::eVmd, &pmx)});
+//
+//            }
+//
+//            shaderPts.insert(shaderPts.end(), pmx.shaderPaths.begin(), pmx.shaderPaths.end());
+//        });
+//
+//        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+//        for(const auto& pt : shaderPts){
+//            if(ImGui::Selectable(pt.c_str(), false, ImGuiSelectableFlags_DontClosePopups)){
+//                auto wholePt = shader_path + std::string ("/") + pt;
+//                ShaderEditor::openShaderFile(wholePt);
+//            }
+//        }
+//        ImGui::PopStyleColor(1);
 
-        ecs->query<sc::Model::Pmx, Selected>().each([&](flecs::entity e, sc::Model::Pmx& pmx, Selected selected){
-            if(ImGui::Button("Load Vmd Animation")){
-                EventBus::publishAsync(et::eResPathsNfd{std::make_pair(ResFormat::eVmd, &pmx)});
 
-            }
 
-            shaderPts.insert(shaderPts.end(), pmx.shaderPaths.begin(), pmx.shaderPaths.end());
-        });
 
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
-        for(const auto& pt : shaderPts){
-            if(ImGui::Selectable(pt.c_str(), false, ImGuiSelectableFlags_DontClosePopups)){
-                auto wholePt = shader_path + std::string ("/") + pt;
-                ShaderEditor::openShaderFile(wholePt);
-            }
-        }
-        ImGui::PopStyleColor(1);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //        if (EventBus::val<et::eModel_ptr>().model.has_value()) {
 //            auto model = EventBus::val<et::eModel_ptr>().model_ref();

@@ -9,7 +9,8 @@ namespace sc {
         ecs.set_threads(4);
 
         ecs.component<Camera>();
-        ecs.component<Model::Generic>();
+//        ecs.component<Model::Generic>();
+        ecs.component<Model>();
         ecs.component<Selected>();
 
         yic::EventBus::update(et::eEcs_ptr{&ecs});

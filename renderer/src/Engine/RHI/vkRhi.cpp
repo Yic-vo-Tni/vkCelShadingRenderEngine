@@ -29,6 +29,7 @@ namespace yic {
         vkWindow::get();
         vkInit::get(std::make_shared<vkInitCreateInfo>()
                             ->addInstanceLayers("VK_LAYER_KHRONOS_validation")
+                      //      ->addInstanceLayers("VK_LAYER_LUNARG_api_dump")
                             ->addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)

@@ -10,8 +10,8 @@
 layout(location = 0) rayPayloadEXT hitPayload prd;
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;  // 传递数据
-//layout(set = 0, binding = 1, rgba32f) uniform image2D image;  //  存储光线追踪结果图像
-layout(set = 0, binding = 1, rgba8) uniform image2D image;  //  存储光线追踪结果图像
+layout(set = 0, binding = 1, rgba32f) uniform image2D image;  //  存储光线追踪结果图像
+//layout(set = 0, binding = 1, rgba8) uniform image2D image;  //  存储光线追踪结果图像
 layout(set = 0, binding = 2) uniform _GlobalUniforms { GlobalUniforms uni; };  // 全局统一变量
 layout(push_constant) uniform _PushConstantRay { PushConstantRay pcRay; }; // 传递管线追踪参数
 

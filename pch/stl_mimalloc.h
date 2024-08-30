@@ -38,6 +38,7 @@ namespace vot{
 
     using string = std::basic_string<char, std::char_traits<char>, mi_stl_allocator<char>>;
 
+    using uint32L = std::initializer_list<uint32_t>;
 }
 
 

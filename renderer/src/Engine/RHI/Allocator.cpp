@@ -557,10 +557,6 @@ namespace yic {
                                                   vk::BufferUsageFlagBits::eShaderDeviceAddress |
                                                   vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
                                                   vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
-//        auto instBuf = Allocator::allocBufStaging(sizeof(vk::AccelerationStructureInstanceKHR) * size,
-//                                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
-//                                                  vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-//                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
 
         vk::BufferDeviceAddressInfo addrInfo{instBuf->buffer};
         vk::DeviceSize addrSize(mDevice.getBufferAddress(addrInfo, mDyDispatcher));
@@ -629,65 +625,40 @@ namespace yic {
         return std::make_shared<vkAccel>(buf.buf, buf.vmaAllocation, mVmaAllocator, as, mDevice, mDyDispatcher);
     }
 
-    auto Allocator::modelToGeometryKHR_impl(const sc::Model::Generic &model) -> BLASInput {
-        BLASInput input;
-        for(auto& mesh : model.meshes){
-            auto vertAddr = getBufAddr(mesh.vertBuf);
-            auto indexAddr = getBufAddr(mesh.indexBuf);
-//            vkInfo(mesh.bufAddr.indexAddr);
-//            vkWarn(indexAddr);
-
-            auto maxPrimitiveCount = mesh.indices.size() / 3;
-
-            auto tri = vk::AccelerationStructureGeometryTrianglesDataKHR()
-                    .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-                    .setVertexStride(sizeof(sc::Vertex))
-                    .setVertexData(vertAddr)
-                    .setMaxVertex(mesh.vertices.size())
-                    .setIndexType(vk::IndexType::eUint32)
-                    .setIndexData(indexAddr);
-            auto asGeo = vk::AccelerationStructureGeometryKHR()
-                    .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-                    .setGeometry(tri)
-                    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-            auto range = vk::AccelerationStructureBuildRangeInfoKHR()
-                    .setPrimitiveCount(maxPrimitiveCount)
-                    .setFirstVertex(0)
-                    .setPrimitiveOffset(0)
-                    .setTransformOffset(0);
-
-            input.asGeometry.emplace_back(asGeo);
-            input.asBuildRangeInfo.emplace_back(range);
-        }
-
-//        auto &mesh = model.meshes[0];
-//        auto vertAddr = getBufAddr(mesh.vertBuf);
-//        auto indexAddr = getBufAddr(mesh.indexBuf);
+//    auto Allocator::modelToGeometryKHR_impl(sc::Model::Generic &model) -> BLASInput {
+//        BLASInput input;
+//        for(auto& mesh : model.meshes){
+//            auto vertAddr = getBufAddr(mesh.vertBuf);
+//            auto indexAddr = getBufAddr(mesh.indexBuf);
 //
-//        auto maxPrimitiveCount = mesh.indices.size() / 3;
+//            model.meshesAddr.emplace_back(vertAddr, indexAddr);
 //
-//        auto tri = vk::AccelerationStructureGeometryTrianglesDataKHR()
-//                .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-//                .setVertexStride(sizeof(sc::Vertex))
-//                .setVertexData(vertAddr)
-//                .setMaxVertex(mesh.vertices.size())
-//                .setIndexType(vk::IndexType::eUint32)
-//                .setIndexData(indexAddr);
-//        auto asGeo = vk::AccelerationStructureGeometryKHR()
-//                .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-//                .setGeometry(tri)
-//                .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-//        auto range = vk::AccelerationStructureBuildRangeInfoKHR()
-//                .setPrimitiveCount(maxPrimitiveCount)
-//                .setFirstVertex(0)
-//                .setPrimitiveOffset(0)
-//                .setTransformOffset(0);
+//            auto maxPrimitiveCount = mesh.indices.size() / 3;
 //
-//        input.asGeometry.emplace_back(asGeo);
-//        input.asBuildRangeInfo.emplace_back(range);
-
-        return input;
-    }
+//            auto tri = vk::AccelerationStructureGeometryTrianglesDataKHR()
+//                    .setVertexFormat(vk::Format::eR32G32B32Sfloat)
+//                    .setVertexStride(sizeof(sc::Vertex))
+//                    .setVertexData(vertAddr)
+//                    .setMaxVertex(mesh.vertices.size())
+//                    .setIndexType(vk::IndexType::eUint32)
+//                    .setIndexData(indexAddr);
+//            auto asGeo = vk::AccelerationStructureGeometryKHR()
+//                    .setGeometryType(vk::GeometryTypeKHR::eTriangles)
+//                    .setGeometry(tri)
+//                    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+//            auto range = vk::AccelerationStructureBuildRangeInfoKHR()
+//                    .setPrimitiveCount(maxPrimitiveCount)
+//                    .setFirstVertex(0)
+//                    .setPrimitiveOffset(0)
+//                    .setTransformOffset(0);
+//
+//            input.asGeometry.emplace_back(asGeo);
+//            input.asBuildRangeInfo.emplace_back(range);
+//        }
+//        model.meshesAddrBuf = allocBufStaging(model.meshesAddr.size() * sizeof (sc::MeshBufAddress), model.meshesAddr.data(), vk::BufferUsageFlagBits::eStorageBuffer);
+//
+//        return input;
+//    }
 
     auto Allocator::getBufAddr(const vkBuf_sptr& buf) -> vk::DeviceAddress{
         if (!buf){

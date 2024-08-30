@@ -38,24 +38,32 @@ namespace yic {
             return *this;
         }
 
-        Render &bindModel(const flecs::query<sc::Model::Generic> &query) {
-            query.each([&](flecs::entity e, sc::Model::Generic &m) {
-                for (const auto &mesh: m.meshes) {
-                    cmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
-                    cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
-                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0,
-                                           m.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
-                    cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
-                }
-
+//        Render &bindModel(const flecs::query<sc::Model::Generic> &query) {
+//            query.each([&](flecs::entity e, sc::Model::Generic &m) {
+//                for (const auto &mesh: m.meshes) {
+//                    cmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
+//                    cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
+//                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0,
+//                                           m.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
+//                    cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
+//                }
+//
+////                cmd.executeCommands(m.cmd);
+//            });
+//
+//            return *this;
+//        }
+//
+//        Render &bindModelSecondary(const flecs::query<sc::Model::Generic> &query){
+//            query.each([&](flecs::entity e, sc::Model::Generic& m){
 //                cmd.executeCommands(m.cmd);
-            });
+//            });
+//
+//            return *this;
+//        }
 
-            return *this;
-        }
-
-        Render &bindModelSecondary(const flecs::query<sc::Model::Generic> &query){
-            query.each([&](flecs::entity e, sc::Model::Generic& m){
+        Render &bindModelSecondary(const flecs::query<sc::Model> &query){
+            query.each([&](flecs::entity e, sc::Model& m){
                 cmd.executeCommands(m.cmd);
             });
 
@@ -104,6 +112,11 @@ namespace yic {
         std::shared_ptr<RenderGroupBase<PipelineType>> addDesSetLayout_(const uint32_t &set, const uint32_t &binding, const vk::DescriptorType &descriptorType,
                                                                          const uint32_t &descriptorCount, const vk::ShaderStageFlags &flags){
             PipelineDesSetLayout::addDesSetLayout(set, binding, descriptorType, descriptorCount, flags);
+            return this->shared_from_this();
+        }
+        std::shared_ptr<RenderGroupBase<PipelineType>> addDesSetLayout_(const uint32_t &set, const uint32_t &binding, const vk::DescriptorType &descriptorType,
+                                                                        const vk::ShaderStageFlags &flags){
+            PipelineDesSetLayout::addDesSetLayout(set, binding, descriptorType, 1, flags);
             return this->shared_from_this();
         }
 

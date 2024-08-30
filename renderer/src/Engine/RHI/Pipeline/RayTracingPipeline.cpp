@@ -30,63 +30,82 @@ namespace yic {
     }
 
     void RayTracing::createRtSBT() {
-        auto handleCount = rtShaderGroups.size();
-        auto handleSize = rtProperties.shaderGroupHandleSize;
-        auto handleSizeAligned = align_up(handleSize, rtProperties.shaderGroupHandleAlignment);
-
-        regionRgen.stride = align_up(handleSizeAligned, rtProperties.shaderGroupBaseAlignment);
-        regionRgen.size = regionRgen.stride;
-
-        regionMiss.stride = handleSizeAligned;
-        regionMiss.size = align_up(missCount * handleSizeAligned, rtProperties.shaderGroupBaseAlignment);
-
-        regionHit.stride = handleSizeAligned;
-        regionHit.size = align_up(hitCount * handleSizeAligned, rtProperties.shaderGroupBaseAlignment);
-//        regionRgen.stride = handleSize;
-//        regionRgen.size = handleSize;
+//        auto handleCount = rtShaderGroups.size();
+//        auto handleSize = rtProperties.shaderGroupHandleSize;
+//        auto handleSizeAligned = align_up(handleSize, rtProperties.shaderGroupHandleAlignment);
 //
-//        regionMiss.stride = handleSize;
-//        regionMiss.size = missCount * handleSize;
+//        regionRgen.stride = align_up(handleSizeAligned, rtProperties.shaderGroupBaseAlignment);
+//        regionRgen.size = regionRgen.stride;
 //
-//        regionHit.size = handleSize;
-//        regionHit.size = hitCount * handleSize;
+//        regionMiss.stride = handleSizeAligned;
+//        regionMiss.size = align_up(missCount * handleSizeAligned, rtProperties.shaderGroupBaseAlignment);
+//
+//        regionHit.stride = handleSizeAligned;
+//        regionHit.size = align_up(hitCount * handleSizeAligned, rtProperties.shaderGroupBaseAlignment);
+//
+//        auto dataSize = handleCount * handleSize;
+//
+//        std::vector<uint8_t> handles = mDevice.getRayTracingShaderGroupHandlesKHR<uint8_t>(mRTPipeline, 0, handleCount, dataSize, mDyDispatcher);
+//
+//        auto sbtSize = regionRgen.size + regionMiss.size + regionHit.size + regionCall.size;
+//
+//        sbtBuf = Allocator::allocBuf(sbtSize, vk::BufferUsageFlagBits::eTransferSrc |
+//                                                   vk::BufferUsageFlagBits::eShaderDeviceAddress |
+//                                                   vk::BufferUsageFlagBits::eShaderBindingTableKHR,
+//                                          Allocator::MemoryUsage::eCpuToGpu, IdGenerator::uniqueId());
+//
+//        auto sbtAddr = mDevice.getBufferAddress(vk::BufferDeviceAddressInfo{sbtBuf->buffer});
+//        regionRgen.deviceAddress = sbtAddr;
+//        regionMiss.deviceAddress = sbtAddr + regionRgen.size;
+//        regionHit.deviceAddress = sbtAddr + regionRgen.size + regionMiss.size;
 
-        auto dataSize = handleCount * handleSize;
 
-        std::vector<uint8_t> handles = mDevice.getRayTracingShaderGroupHandlesKHR<uint8_t>(mRTPipeline, 0, handleCount, dataSize, mDyDispatcher);
+//        auto getHandle = [&](int i) { return handles.data() + i * handleSize; };
+//
+//        std::vector<uint8_t> tempBuf(sbtSize);
+//        auto* pData = tempBuf.data();
+//        auto index{0};
+//
+//        memcpy(pData, getHandle(index++), handleSize);
+//        pData += regionRgen.stride;
+//
+//        for(auto i = 0; i < missCount; i++){
+//            memcpy(pData, getHandle(index++), handleSize);
+//            pData += regionMiss.stride;
+//        }
+//        for(auto i = 0; i < hitCount; i++){
+//            memcpy(pData, getHandle(index++), handleSize);
+//            pData += regionHit.stride;
+//        }
+//
+//        sbtBuf->updateBuf(handles);
 
-        auto sbtSize = regionRgen.size + regionMiss.size + regionHit.size + regionCall.size;
 
-        sbtBuf = Allocator::allocBuf(sbtSize, vk::BufferUsageFlagBits::eTransferSrc |
-                                                   vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                                                   vk::BufferUsageFlagBits::eShaderBindingTableKHR,
-                                          Allocator::MemoryUsage::eCpuToGpu, IdGenerator::uniqueId());
+        const uint32_t hs = rtProperties.shaderGroupHandleSize;
+        const uint32_t hsAligned = align_up(rtProperties.shaderGroupHandleSize, rtProperties.shaderGroupHandleAlignment);
+        const uint32_t numGroup = rtShaderGroups.size();
+        const uint32_t sbtSize = numGroup * hsAligned;
 
-        auto sbtAddr = mDevice.getBufferAddress(vk::BufferDeviceAddressInfo{sbtBuf->buffer});
-        regionRgen.deviceAddress = sbtAddr;
-        regionMiss.deviceAddress = sbtAddr + regionRgen.size;
-        regionHit.deviceAddress = sbtAddr + regionRgen.size + regionMiss.size;
+        auto handles = mDevice.getRayTracingShaderGroupHandlesKHR<uint8_t >(mRTPipeline, 0, numGroup, sbtSize, mDyDispatcher);
+        auto bufUsage = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
+        Allocator::allocBufAuto(rgenSbt, hs, handles.data(), bufUsage,
+                                rmissSbt, hs * missCount, handles.data() + hsAligned * rgenCount,
+                                rchitSbt, hs * hitCount, handles.data() + hsAligned * (rgenCount + missCount));
 
-        auto getHandle = [&](int i) { return handles.data() + i * handleSize; };
-
-        std::vector<uint8_t> tempBuf(sbtSize);
-        auto* pData = tempBuf.data();
-        auto index{0};
-
-        memcpy(pData, getHandle(index++), handleSize);
-        pData += regionRgen.size;
-
-        for(auto i = 0; i < missCount; i++){
-            memcpy(pData, getHandle(index++), handleSize);
-            pData += regionMiss.stride;
-        }
-        for(auto i = 0; i < hitCount; i++){
-            memcpy(pData, getHandle(index++), handleSize);
-            pData += regionHit.stride;
-        }
-
-        sbtBuf->updateBuf(tempBuf);
+        regionRgen = vk::StridedDeviceAddressRegionKHR()
+                .setDeviceAddress(Allocator::getBufAddr(rgenSbt))
+                .setSize(hsAligned)
+                .setStride(hsAligned);
+        regionMiss = vk::StridedDeviceAddressRegionKHR()
+                .setDeviceAddress(Allocator::getBufAddr(rmissSbt))
+                .setStride(hsAligned)
+                .setSize(hsAligned * missCount);
+        regionHit = vk::StridedDeviceAddressRegionKHR()
+                .setDeviceAddress(Allocator::getBufAddr(rchitSbt))
+                .setStride(hsAligned)
+                .setSize(hsAligned * hitCount);
+        regionCall = vk::StridedDeviceAddressRegionKHR();
     }
 
     auto RayTracing::addShader(std::string path, vk::ShaderStageFlagBits flags) -> void {
@@ -189,11 +208,10 @@ namespace yic {
             mDevice.destroy(mRTPipeline);
         }
 
-        auto& x= rtCreateInfo;
         createShaderStage();
         rtCreateInfo.setStages(shaderStages)
                 .setGroups(rtShaderGroups)
-                .setMaxPipelineRayRecursionDepth(2);
+                .setMaxPipelineRayRecursionDepth(5);
 
         mRTPipeline = vkCreate("create rt pipeline") = [&]{
             return mDevice.createRayTracingPipelineKHR({}, {}, rtCreateInfo, nullptr, mDyDispatcher).value;

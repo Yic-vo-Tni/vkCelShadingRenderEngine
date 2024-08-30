@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "Engine/RHI/vkCommon.h"
-#include "Engine/ECS/Model/ModelStruct.h"
+#include "Engine/RHI/vkAsset.h"
 
 #include "Engine/Utils/Log.h"
 
@@ -32,11 +32,16 @@ namespace yic {
         ImgInfo(const std::vector<vk::ImageView>& imageViews, vk::ImageLayout imageLayout) : imageViews(imageViews), imageLayout(imageLayout){}
         ImgInfo(vk::Sampler sampler, const std::vector<vk::ImageView>& imageViews) : sampler(sampler), imageViews(imageViews){}
         ImgInfo(vk::Sampler sampler, const std::vector<vk::ImageView>& imageViews, vk::ImageLayout imageLayout) : sampler(sampler), imageViews(imageViews), imageLayout(imageLayout){}
+        ImgInfo(vk::Sampler sampler, const std::shared_ptr<yic::vkImage>& img, vk::ImageLayout imageLayout) : sampler(sampler), imageViews(img->imageViews), imageLayout(imageLayout){}
 
         explicit ImgInfo(const std::vector<std::shared_ptr<yic::vkImage>>& imgs){
             for(const auto& img : imgs){
                 imageViews.emplace_back(img->imageViews.back());
             }
+        }
+        explicit ImgInfo(const std::shared_ptr<yic::vkImage>& img){
+//            imageViews.emplace_back(img->imageViews.back());
+            imageViews.insert(imageViews.end(), img->imageViews.begin(), img->imageViews.end());
         }
 
     };
@@ -60,6 +65,8 @@ namespace yic {
 
         explicit AccelInfo(const vk::AccelerationStructureKHR& accel) : accel( {accel} ) {}
         explicit AccelInfo(const std::vector<vk::AccelerationStructureKHR>& accel) : accel(accel){}
+        explicit AccelInfo(const std::shared_ptr<vkAccel>& accel) : accel({accel->accel}){}
+
     };
 
 //    template<typename T>
@@ -139,6 +146,7 @@ namespace yic {
                               std::is_same_v<std::vector<std::shared_ptr<vkImage>>, T> ||
                               std::is_same_v<std::vector<vk::AccelerationStructureKHR>, T> ||
                               std::is_same_v<vk::AccelerationStructureKHR, T> ||
+                              std::is_same_v<std::shared_ptr<yic::vkAccel>, T> ||
                               std::is_same_v<ImgInfo, T> ||
                               std::is_same_v<BufInfo, T> ||
                               std::is_same_v<AccelInfo, T>,
@@ -153,7 +161,8 @@ namespace yic {
                                          || std::is_same_v<std::vector<std::shared_ptr<vkImage>>, T>) {
                         infos.emplace_back(ImgInfo{std::forward<decltype(arg)>(arg)});
                     } else if constexpr (std::is_same_v<std::vector<vk::AccelerationStructureKHR>, T> ||
-                                         std::is_same_v<vk::AccelerationStructureKHR, T>) {
+                                         std::is_same_v<vk::AccelerationStructureKHR, T> ||
+                                         std::is_same_v<std::shared_ptr<yic::vkAccel>, T>) {
                         infos.emplace_back(AccelInfo{std::forward<decltype(arg)>(arg)});
                     } else if constexpr (std::is_same_v<ImgInfo, T> || std::is_same_v<BufInfo, T> ||
                                          std::is_same_v<AccelInfo, T>) {

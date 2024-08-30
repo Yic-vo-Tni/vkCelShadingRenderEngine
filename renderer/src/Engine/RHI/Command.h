@@ -208,6 +208,18 @@ namespace yic {
         DEFINE_STATIC_ACCESSOR_PARAM(cmdDrawPrimary, (const std::function<void(vk::CommandBuffer&)>& fn), (fn));
         DEFINE_STATIC_ACCESSOR_PARAM(cmdDrawSecond, (vk::RenderPass rp, vk::Extent2D extent, const std::function<void(vk::CommandBuffer&)>& fn), (rp, extent, fn));
 
+
+#ifndef VULKAN_HPP_DISABLE_ENHANCED_MODE
+        static void buildAccelerationStructuresKHR(
+                VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::AccelerationStructureBuildGeometryInfoKHR> const &      infos,
+                VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::AccelerationStructureBuildRangeInfoKHR * const> const & pBuildRangeInfos
+                )  VULKAN_HPP_NOEXCEPT_WHEN_NO_EXCEPTIONS{
+            cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+               cmd.buildAccelerationStructuresKHR(infos, pBuildRangeInfos, EventBus::Get::vkSetupContext().dynamicDispatcher_ref());
+            });
+        };
+#endif /* VULKAN_HPP_DISABLE_ENHANCED_MODE */
+
     private:
         auto cmdAcquirePrimary_impl() -> vk::CommandBuffer;
         auto cmdReleasePrimary_impl(vk::CommandBuffer& entry) -> void;
@@ -215,6 +227,9 @@ namespace yic {
 
         auto cmdDrawSecond_impl(vk::RenderPass rp, vk::Extent2D extent, const std::function<void(vk::CommandBuffer&)>& fn) -> vk::CommandBuffer;
 
+
+        /// t
+        auto begin() -> void;
     private:
         vk::Device mDevice;
         vk::Queue mQueue;
