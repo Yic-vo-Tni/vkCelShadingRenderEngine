@@ -31,34 +31,6 @@ namespace sc {
         globalCamera.clear();
     }
 
-//    auto ModelManager::Render(const vk::CommandBuffer &cmd) -> void {
-//        oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, false);
-//
-//        rebuild();
-////        mRenderGroupGraphics->render(cmd)
-////                ->bindModelSecondary(query);
-//        if (mRenderOffImg != nullptr && !mRenderOffImg->framebuffers.empty()) {
-//            auto pri = yic::EventBus::val<et::pRenderProcess>(enum_name(RenderProcessPhases::ePrimary)).pProcess_ref();
-//            pri->appendRenderPassProcessSecondaryCommand(0, mRenderOffImg->framebuffers, [this](vk::CommandBuffer &cmd) {
-//                auto query = ecs->query<Model>();
-//                mRenderGroupGraphics->render(cmd)
-//                        ->bindModelSecondary(query);
-//            });
-//        }
-//    }
-//
-//    auto ModelManager::renderRt(const vk::CommandBuffer &cmd) -> void {
-//        oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, false);
-//
-//        //mRTBuilder->draw(cmd);
-////        mRTBuilder->drawNew(cmd);
-//
-//        auto t = yic::EventBus::val<et::pRenderProcess>(enum_name(RenderProcessPhases::ePrimary)).pProcess_ref();
-//        t->appendProcessCommand(1, [&](vk::CommandBuffer &cmd) {
-//            mRTBuilder->drawNew(cmd);
-//        });
-//    }
-
 
     auto ModelManager::prepare() -> void {
         oneapi::tbb::spin_rw_mutex::scoped_lock lock(mModelMutex, false);
