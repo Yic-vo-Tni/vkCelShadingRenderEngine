@@ -23,8 +23,9 @@ namespace sc {
             ecs.reset();
         }
 
-        auto Render(vk::CommandBuffer& cmd) -> void;
-        auto renderStorage(vk::CommandBuffer& cmd) -> void;
+//        auto Render(vk::CommandBuffer& cmd) -> void;
+//        auto renderStorage(vk::CommandBuffer& cmd) -> void;
+        auto prepare() -> void;
     private:
         flecs::world ecs;
 

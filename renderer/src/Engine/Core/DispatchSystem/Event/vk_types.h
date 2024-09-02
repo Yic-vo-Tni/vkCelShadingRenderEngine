@@ -18,7 +18,13 @@ namespace tbb{
     }
 }
 
+namespace yic{
+    class RenderProcessT;
+}
+
 namespace et {
+
+
 
     struct FrameEntry {
         vk::Image image;
@@ -121,6 +127,14 @@ namespace et {
 
         CHECK_MEMBER_EXISTS(desc);
     };
+
+    struct pRenderProcess{
+        HANA_OPT(pRenderProcess,
+                 (yic::RenderProcessT*, pProcess));
+
+        RETURN_REF(pProcess);
+    };
+
 
 
     struct test {

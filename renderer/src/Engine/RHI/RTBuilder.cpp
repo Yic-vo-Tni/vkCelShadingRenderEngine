@@ -19,7 +19,7 @@ namespace yic {
 //        cRtPipe();
 //        cSbt();
 
-        mExtent.setWidth(800).setHeight(600);
+        mExtent.setWidth(2560).setHeight(1440);
         Allocator::allocImgAuto(offRtImg, vk::ImageUsageFlagBits::eStorage, mExtent);
     }
     RTBuilder::~RTBuilder() {

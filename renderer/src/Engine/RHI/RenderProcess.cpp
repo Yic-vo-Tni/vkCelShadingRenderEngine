@@ -32,21 +32,11 @@ namespace yic {
         auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         auto& cmd = mRenderSession->beginCommandBuf(mExtent);
-       // if (index == 1) {
             for (auto &rec: mCommandBufferRecordExtras) {
-//                CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
                     rec(cmd);
-//                });
             }
-    //    }
 
         {
-//            mRenderSession->beginRenderPass(RenderSession::RenderPassInfo{
-//                    FrameRender::eColorDepthStencilRenderPass,
-//                    {mOffImage->framebuffers.begin() + offImageType::eStandard * mImageCount,
-//                     mOffImage->framebuffers.begin() + offImageType::eStandard * mImageCount + mImageCount},
-//                    RenderSession::ClearValue::ColorDepth()
-//            });
             mRenderSession->beginRenderPass(RenderSession::RenderPassInfo{
                     FrameRender::eColorDepthStencilRenderPass,
                     {mOffImage->framebuffers.begin() + offImageType::eStandard * mImageCount,

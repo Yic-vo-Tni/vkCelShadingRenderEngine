@@ -105,24 +105,6 @@ namespace sc {
         mesh.vertBuf = yic::Allocator::allocBufStaging(mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), vk::BufferUsageFlagBits::eVertexBuffer | usage);
         mesh.indexBuf = yic::Allocator::allocBufStaging(mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(), vk::BufferUsageFlagBits::eIndexBuffer | usage);
 
-//        auto& as = model.as;
-//        auto rtInput = yic::Allocator::modelToGeometryKHR(model);
-//        as.blas = yic::Allocator::buildBLAS(rtInput);
-//
-//        vk::TransformMatrixKHR identityMatrix;
-//        glm::mat4 matrix{1.f};
-//        auto temp = glm::transpose(matrix);
-//        memcpy(&identityMatrix, &temp, sizeof(vk::TransformMatrixKHR));
-//
-//        auto tfMatrix = yic::Allocator::glmMatToVkTransformMatrix();
-//        std::vector<vk::AccelerationStructureInstanceKHR> asInsts;
-//        vk::AccelerationStructureInstanceKHR asInst{
-//                identityMatrix, 0, 0xFF, 0,
-//                vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable, yic::Allocator::getAccelDevAddr(as.blas)
-//        };
-//        asInsts.emplace_back(asInst);
-//        *as.tlas = yic::Allocator::buildTLAS(asInsts);
-
         return model;
     }
 

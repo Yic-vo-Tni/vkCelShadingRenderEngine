@@ -24,13 +24,17 @@ namespace sc {
         ecs.reset();
     }
 
-    auto ECSManager::Render(vk::CommandBuffer &cmd) -> void {
-        mModelManager->Render(cmd);
+    auto ECSManager::prepare() -> void {
+        mModelManager->prepare();
     }
 
-    auto ECSManager::renderStorage(vk::CommandBuffer &cmd) -> void {
-        mModelManager->renderRt(cmd);
-    }
+//    auto ECSManager::Render(vk::CommandBuffer &cmd) -> void {
+//        mModelManager->Render(cmd);
+//    }
+//
+//    auto ECSManager::renderStorage(vk::CommandBuffer &cmd) -> void {
+//        mModelManager->renderRt(cmd);
+//    }
 
 
 } // sc

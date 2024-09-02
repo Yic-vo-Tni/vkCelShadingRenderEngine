@@ -153,6 +153,7 @@ namespace yic {
 
         ImGui::Begin("Yicvot", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration |
                                         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar);
+//        ImGui::Begin("Yicvot");
         {
             if (ImGui::BeginMenuBar()){
                 if (ImGui::BeginMenu("File")) {

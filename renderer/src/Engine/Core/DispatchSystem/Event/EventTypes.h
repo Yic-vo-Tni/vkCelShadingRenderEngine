@@ -96,6 +96,7 @@ using opt = std::optional<T>;
 #include "vk_types.h"
 #include "ui_types.h"
 #include "ecs_types.h"
+#include "setting_types.h"
 
 namespace et{
 

@@ -38,6 +38,7 @@ namespace sc {
         glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
+        vk::Extent2D extent;
         vkBuf_sptr buf{};
     public:
         bool firstMouse = true;
@@ -52,6 +53,7 @@ namespace sc {
 
         auto initBuf() -> void{
             buf = yic::Allocator::allocBuf(sizeof(VpMatrix), vk::BufferUsageFlagBits::eUniformBuffer, yic::Allocator::MemoryUsage::eCpuToGpu, "global_camera");
+            extent = yic::EventBus::val<et::ResolutionRatio>().extent_v();
         }
         auto clear() -> void{
             buf.reset();
@@ -68,6 +70,9 @@ namespace sc {
             mProj = glm::perspective(fov, mSize.x / mSize.y, 0.1f, 500.f) *
                     glm::scale(glm::mat4(1.f), glm::vec3(1.f, -1.f, 1.f));
             mProjInverse = glm::inverse(mProj);
+//            mProj = glm::perspective(fov, (float)extent.width / (float)extent.height, 0.1f, 500.f) *
+//                    glm::scale(glm::mat4(1.f), glm::vec3(1.f, -1.f, 1.f));
+//            mProjInverse = glm::inverse(mProj);
         }
 
         auto computeViewProjMatrix() -> void{

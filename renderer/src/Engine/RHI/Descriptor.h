@@ -40,7 +40,6 @@ namespace yic {
             }
         }
         explicit ImgInfo(const std::shared_ptr<yic::vkImage>& img){
-//            imageViews.emplace_back(img->imageViews.back());
             imageViews.insert(imageViews.end(), img->imageViews.begin(), img->imageViews.end());
         }
 

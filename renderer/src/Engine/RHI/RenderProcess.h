@@ -33,11 +33,7 @@ namespace yic {
         auto appendCommandRecordExtra(const fn_cmdRecord& rec) -> void;
         auto process() -> std::optional<vk::CommandBuffer>;
 
-        //t
-//        auto registrationProcess(const std::string& name, const uint32_t& framebufferOffset) -> void;
-//        auto appendCommandRec(const std::string& name, const fn_cmdRecord &rec) -> void;
-//        auto prepare() -> void;
-//        auto process() -> std::optional<vk::CommandBuffer>;
+
     private:
         et::vkSetupContext ct;
         et::vkRenderContext rt;
@@ -54,13 +50,6 @@ namespace yic {
 
         std::vector<fn_cmdRecord> mCommandBufferRecords;
         std::vector<fn_cmdRecord> mCommandBufferRecordExtras;
-
-// test
-//        uint32_t mProcessCount;
-//        std::vector<std::function<void()>> mProcesses;
-//        tbb::concurrent_unordered_map<std::string, std::vector<fn_cmdRecord>> mCommandBufRecords;
-//
-//        std::vector<std::pair<std::string, uint32_t>> mRegisters;
     };
 
 

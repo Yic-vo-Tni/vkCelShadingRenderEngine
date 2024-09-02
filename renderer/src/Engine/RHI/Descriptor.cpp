@@ -184,7 +184,23 @@ namespace yic {
                 ImGui::Image((ImTextureID)desc, imageSize);
             }
         } else{
-            ImGui::Image((ImTextureID)descs[index] ? (ImTextureID)descs[index] : (ImTextureID)descs.back(), imageSize);
+            auto window = ImGui::GetWindowSize();
+            //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.f, 0.f});
+            auto e = EventBus::val<et::ResolutionRatio>().extent_v();
+            float scaleX = static_cast<float>(window.x) / (float)e.width;
+            float scaleY = static_cast<float>(window.y) / (float)e.height;
+            float scale = std::min(scaleX, scaleY);
+
+            float scaledWidth = (float)e.width * scale;
+            float scaledHeight = (float)e.height * scale;
+
+
+            float cursorX = (window.x - scaledWidth) * 0.5f;
+            float cursorY = (window.y - scaledHeight + 40.f) * 0.5f;
+            ImGui::SetCursorPos({cursorX > 0 ? cursorX : 0, cursorY > 0 ? cursorY : 0});
+
+            ImGui::Image((ImTextureID)descs[index] ? (ImTextureID)descs[index] : (ImTextureID)descs.back(), ImVec2(scaledWidth, scaledHeight));
+            //ImGui::PopStyleVar();
         }
 
     }

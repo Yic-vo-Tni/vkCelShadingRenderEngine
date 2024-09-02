@@ -26,7 +26,7 @@ namespace yic {
 //                .setDescriptorBindingSampledImageUpdateAfterBind(vk::True)
 //                .setDescriptorBindingVariableDescriptorCount(vk::True)
 //                .setDescriptorBindingPartiallyBound(vk::True);
-        vkWindow::get();
+        vkWindow::get(1920, 1080);
         vkInit::get(std::make_shared<vkInitCreateInfo>()
                             ->addInstanceLayers("VK_LAYER_KHRONOS_validation")
                       //      ->addInstanceLayers("VK_LAYER_LUNARG_api_dump")
@@ -42,6 +42,8 @@ namespace yic {
 
                             ->setQueuesPriority(std::vector<float>{1.f, 0.9f})
         );
+
+        EventBus::update(et::ResolutionRatio{vk::Extent2D{2560, 1440}});
 
         auto ct = EventBus::Get::vkSetupContext();
         {

@@ -15,12 +15,19 @@ namespace ui {
         ImVec2 available = ImGui::GetContentRegionAvail();
         auto windowPos = ImGui::GetCursorScreenPos();
 
-        if (mAvailable.x != available.x || mAvailable.y != available.y) {
+//        if (mAvailable.x != available.x || mAvailable.y != available.y) {
+//            EventBus::publish(et::uiWidgetContext{
+//                    .viewportSize = available
+//            }, enum_name(RenderProcessPhases::ePrimary), "ModelManager");
+//
+//            mAvailable = available;
+//        }
+        if (mAvailable.x != 2560 || mAvailable.y != 1440) {
             EventBus::publish(et::uiWidgetContext{
-                    .viewportSize = available
+                    .viewportSize = ImVec2{2560, 1440}
             }, enum_name(RenderProcessPhases::ePrimary), "ModelManager");
 
-            mAvailable = available;
+            mAvailable = ImVec2{2560, 1440};
         }
 
         ImGuiDescriptorManager::drawImage(enum_name(RenderProcessPhases::ePrimary), ImVec2(available.x, available.y), index);

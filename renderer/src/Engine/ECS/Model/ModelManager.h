@@ -9,25 +9,19 @@
 #include "Engine/RHI/FrameRender.h"
 #include "Engine/ECS/Model/ModelLoader.h"
 #include "Engine/RHI/RenderGroup.h"
-//#include "Engine/ECS/Model/PmxLoader.h"
 #include "Engine/RHI/RTBuilder.h"
+#include "Engine/RHI/RenderProcessT.h"
 
 namespace sc {
-
-    struct PushConstantRay{
-        glm::vec4 clearColor;
-        glm::vec3 lightPosition;
-        float lightIntensity;
-        int lightType;
-    };
 
     class ModelManager {
     public:
         explicit ModelManager(const flecs::world* ecs);
         ~ModelManager();
 
-        auto Render(const vk::CommandBuffer& cmd) -> void;
-        auto renderRt(const vk::CommandBuffer& cmd) -> void;
+        auto prepare() -> void;
+
+    private:
         auto subscribeModel() -> void;
     private:
         const flecs::world *ecs;
@@ -35,14 +29,12 @@ namespace sc {
         oneapi::tbb::spin_rw_mutex mModelMutex;
         vkImg_sptr mRtStorageOffImg;
         std::shared_ptr<yic::RenderGroupGraphics> mRenderGroupGraphics;
-        std::shared_ptr<yic::RenderGroupRayTracing> mRenderGroupRayTracing;
 
 
         ///t
-        PushConstantRay p{};
-
-//        vkAccel_sptr tlas;
         std::unique_ptr<yic::RTBuilder> mRTBuilder;
+        vkImg_sptr  mRenderOffImg;
+        auto rebuild() -> void;
     };
 
 } // sc

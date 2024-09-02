@@ -17,6 +17,10 @@ enum class RenderProcessPhases{
     ePrimary, ePost
 };
 
+//enum RenderProcessPhases{
+//    ePrimary, ePost
+//};
+
 enum class ResFormat{
     ePmx, eObj, eFbx, eGltf,
     eImg,
