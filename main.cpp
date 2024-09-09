@@ -2,6 +2,7 @@
 #include "renderer/src/Application.h"
 
 int main() {
+
     yic::Application app{};
 
     try {

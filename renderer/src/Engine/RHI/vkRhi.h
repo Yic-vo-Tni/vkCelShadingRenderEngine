@@ -11,9 +11,7 @@
 #include "Engine/RHI/vkSemaphore.h"
 #include "Engine/RHI/FrameRender.h"
 #include "Engine/RHI/Descriptor.h"
-#include "Engine/RHI/RenderProcessManager.h"
-
-
+#include "Engine/RHI/RenderProcessHandler.h"
 
 namespace yic {
 
@@ -30,8 +28,8 @@ namespace yic {
         auto beginFrame() -> void;
         auto endFrame() -> void;
     private:
-
         std::unique_ptr<vkSwapchain> mSwapchain{};
+        std::unique_ptr<RenderProcessHandler> mRenderProcessHandler{};
     };
 
 } // yic

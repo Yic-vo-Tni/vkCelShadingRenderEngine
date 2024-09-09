@@ -10,7 +10,7 @@
 #include "Engine/ECS/Model/ModelLoader.h"
 #include "Engine/RHI/RenderGroup.h"
 #include "Engine/RHI/RTBuilder.h"
-#include "Engine/RHI/RenderProcessT.h"
+#include "Engine/RHI/RenderProcess.h"
 
 namespace sc {
 
@@ -22,19 +22,20 @@ namespace sc {
         auto prepare() -> void;
 
     private:
+        auto rebuild() -> void;
         auto subscribeModel() -> void;
     private:
         const flecs::world *ecs;
-        std::atomic<vk::Extent2D> mExtent;
-        oneapi::tbb::spin_rw_mutex mModelMutex;
-        vkImg_sptr mRtStorageOffImg;
+        vkImg_sptr mRenderTargetOffImg;
+        vk::Extent2D mExtent{2560, 1440};
+        oneapi::tbb::spin_rw_mutex mSubscribeModelMutex;
+        flecs::query<Model> mModelQuery;
+        yic::RenderProcess* mRenderHandle;
         std::shared_ptr<yic::RenderGroupGraphics> mRenderGroupGraphics;
 
 
         ///t
         std::unique_ptr<yic::RTBuilder> mRTBuilder;
-        vkImg_sptr  mRenderOffImg;
-        auto rebuild() -> void;
     };
 
 } // sc

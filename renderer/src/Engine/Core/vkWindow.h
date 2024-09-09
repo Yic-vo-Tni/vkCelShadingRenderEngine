@@ -22,7 +22,7 @@ namespace yic {
             bool maximized = false;
         };
     public:
-        vkGet auto get = [](const int& w = 1800, const int& h = 1200){ return Singleton<vkWindow>::get(w, h);};
+        vkGet auto get = [](const int& w = 2000, const int& h = 1200){ return Singleton<vkWindow>::get(w, h);};
 
         vkWindow(const int& w, const int& h);
         ~vkWindow() = default;

@@ -45,29 +45,22 @@ namespace yic {
 
         EventBus::update(et::ResolutionRatio{vk::Extent2D{2560, 1440}});
 
-        auto ct = EventBus::Get::vkSetupContext();
+        auto ct = mg::SystemHub.val<ev::pVkSetupContext>();
         {
             auto id = et::vkRenderContext::id::mainRender;
-            auto queue = ct.qGraphicsPrimary_ref();
-            auto qIndex = ct.qIndexGraphicsPrimary_v();
 
-            mSwapchain = std::make_unique<vkSwapchain>(id, queue, qIndex);
-            RenderProcessManager::get();
-            Allocator::get();
-
-            TaskBus::registerTask(tt::RenderTarget_s::eMainWindow, [this] {
-                FrameLoop();
-            });
+            mSwapchain = std::make_unique<vkSwapchain>(id, ct.queueFamily->gPrimary(), ct.queueFamily->gIndexPrimary());
+            mRenderProcessHandler = std::make_unique<RenderProcessHandler>();
         }
 
     }
 
     vkRhi::~vkRhi() {
-        EventBus::Get::vkSetupContext().qGraphicsPrimary_ref().waitIdle();
-        EventBus::Get::vkSetupContext().device_ref().waitIdle();
+        mg::SystemHub.val<ev::pVkSetupContext>().queueFamily->gPrimary().waitIdle();
+        mg::SystemHub.val<ev::pVkSetupContext>().device->waitIdle();
 
         Allocator::clear();
-        RenderProcessManager::clear();
+        mRenderProcessHandler->clear();
         ImGuiDescriptorManager::clear();
         EventBus::destroy<et::vkResource>();
     }
@@ -75,11 +68,11 @@ namespace yic {
     bool vkRhi::FrameLoop() {
         beginFrame();
 
-        ShaderHotReLoader::executeShaderTask();
-        RenderProcessManager::prepare();
+//        ShaderHotReLoader::executeShaderTask();
+        mRenderProcessHandler->prepare();
         mSwapchain->updateEveryFrame();
 
-        auto cmds = RenderProcessManager::RenderProcedure();
+        auto cmds = mRenderProcessHandler->procedure();
         mSwapchain->submitFrame(cmds);
 
         endFrame();

@@ -19,7 +19,7 @@ namespace tbb{
 }
 
 namespace yic{
-    class RenderProcessT;
+    class RenderProcess;
 }
 
 namespace et {
@@ -130,7 +130,7 @@ namespace et {
 
     struct pRenderProcess{
         HANA_OPT(pRenderProcess,
-                 (yic::RenderProcessT*, pProcess));
+                 (yic::RenderProcess*, pProcess));
 
         RETURN_REF(pProcess);
     };

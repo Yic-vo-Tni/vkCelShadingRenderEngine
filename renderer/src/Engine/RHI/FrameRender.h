@@ -39,8 +39,7 @@ namespace yic {
         static vk::RenderPass eColorDepthStencilRenderPass;
 
     private:
-        et::vkSetupContext ct;
-
+        ev::pVkSetupContext ct;
     };
 
 

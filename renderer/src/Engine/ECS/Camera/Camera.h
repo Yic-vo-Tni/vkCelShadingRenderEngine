@@ -28,7 +28,7 @@ namespace sc {
         glm::mat4 mViewInverse{1.f};
         glm::mat4 mProjInverse{1.f};
         glm::mat4 mVp{};
-        ImVec2 mSize{0, 0};
+        ImVec2 mSize{2560, 1440};
 
         float fov   =  45.0f;
         float sensitivity = 0.1f;
@@ -38,7 +38,7 @@ namespace sc {
         glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        vk::Extent2D extent;
+//        vk::Extent2D extent;
         vkBuf_sptr buf{};
     public:
         bool firstMouse = true;
@@ -53,7 +53,7 @@ namespace sc {
 
         auto initBuf() -> void{
             buf = yic::Allocator::allocBuf(sizeof(VpMatrix), vk::BufferUsageFlagBits::eUniformBuffer, yic::Allocator::MemoryUsage::eCpuToGpu, "global_camera");
-            extent = yic::EventBus::val<et::ResolutionRatio>().extent_v();
+            //extent = yic::EventBus::val<et::ResolutionRatio>().extent_v();
         }
         auto clear() -> void{
             buf.reset();
@@ -64,15 +64,15 @@ namespace sc {
             mViewInverse = glm::inverse(mView);
         }
         auto computeProjMatrix() -> void{
-            if (!yic::EventBus::val<et::uiWidgetContext>(enum_name(RenderProcessPhases::ePrimary)).viewportSize_exists())
-                return;
-            mSize = yic::EventBus::val<et::uiWidgetContext>(enum_name(RenderProcessPhases::ePrimary)).viewportSize_v();
+//            if (yic::EventBus::val<et::uiWidgetContext>(enum_name(RenderPhase::ePrimary)).viewportSize_exists()){
+//                mSize = yic::EventBus::val<et::uiWidgetContext>(enum_name(RenderPhase::ePrimary)).viewportSize_v();
+//
+//                //  bad = =
+//            }
+
             mProj = glm::perspective(fov, mSize.x / mSize.y, 0.1f, 500.f) *
                     glm::scale(glm::mat4(1.f), glm::vec3(1.f, -1.f, 1.f));
             mProjInverse = glm::inverse(mProj);
-//            mProj = glm::perspective(fov, (float)extent.width / (float)extent.height, 0.1f, 500.f) *
-//                    glm::scale(glm::mat4(1.f), glm::vec3(1.f, -1.f, 1.f));
-//            mProjInverse = glm::inverse(mProj);
         }
 
         auto computeViewProjMatrix() -> void{

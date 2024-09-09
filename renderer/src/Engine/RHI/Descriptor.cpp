@@ -9,7 +9,7 @@
 namespace yic {
 
     Descriptor::Descriptor(const std::string &id, PipelineDesSetLayout& setLayout) :
-            Identifiable(id), mSetLayout(setLayout), mDevice(EventBus::Get::vkSetupContext().device_ref()) {
+            Identifiable(id), mSetLayout(setLayout), mDevice(*mg::SystemHub.val<ev::pVkSetupContext>().device) {
 
     }
 
@@ -165,8 +165,6 @@ namespace yic {
             .desc = desc
         });
 
-//        desc->addDesSetLayout({vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eCombinedImageSampler, 1,
-//                                                              vk::ShaderStageFlagBits::eFragment}});
         desc->updateDesSet(views.size(), {ImgInfo{views}});
     }
 
@@ -185,7 +183,6 @@ namespace yic {
             }
         } else{
             auto window = ImGui::GetWindowSize();
-            //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.f, 0.f});
             auto e = EventBus::val<et::ResolutionRatio>().extent_v();
             float scaleX = static_cast<float>(window.x) / (float)e.width;
             float scaleY = static_cast<float>(window.y) / (float)e.height;
@@ -200,13 +197,12 @@ namespace yic {
             ImGui::SetCursorPos({cursorX > 0 ? cursorX : 0, cursorY > 0 ? cursorY : 0});
 
             ImGui::Image((ImTextureID)descs[index] ? (ImTextureID)descs[index] : (ImTextureID)descs.back(), ImVec2(scaledWidth, scaledHeight));
-            //ImGui::PopStyleVar();
         }
 
     }
 
     ImGuiDescriptorManager::ImGuiDescriptorManager() {
-        mSetLayout = std::make_shared<PipelineDesSetLayout>(EventBus::Get::vkSetupContext().device_ref());
+        mSetLayout = std::make_shared<PipelineDesSetLayout>(*mg::SystemHub.val<ev::pVkSetupContext>().device);
 
         mSetLayout->addDesSetLayout(0, 0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
         mSetLayout->createDesSetLayout();
@@ -217,3 +213,57 @@ namespace yic {
 
 
 } // yic
+
+namespace Hide{
+//    auto ImGuiDescriptorManager::updateImage(const std::string &id, const std::vector<vk::ImageView> &views) -> void {
+//        auto desc = std::make_shared<yic::Descriptor>(id, *mSetLayout);
+////        EventBus::update(et::vkResource{
+////                .desc = desc
+////        });
+//
+//        desc->updateDesSet(views.size(), {yic::ImgInfo{views}});
+//    }
+//
+//    auto ImGuiDescriptorManager::drawImage(const std::string &id, const ImVec2& imageSize, const uint32_t& index) -> void {
+////        if (!EventBus::Get::vkResource().desc_exists())
+////            return;
+////
+////        if (EventBus::Get::vkResource().desc_ref().find_ref(id) == nullptr){
+////            return;
+////        }
+////        auto& descs = EventBus::Get::vkResource().desc_ref().find_ref(id)->getDescriptorSets();
+//
+////        if (index == UINT32_MAX){
+////            for(auto& desc : descs){
+////                ImGui::Image((ImTextureID)desc, imageSize);
+////            }
+////        } else{
+////            auto window = ImGui::GetWindowSize();
+//// //           auto e = EventBus::val<et::ResolutionRatio>().extent_v();
+////            float scaleX = static_cast<float>(window.x) / (float)e.width;
+////            float scaleY = static_cast<float>(window.y) / (float)e.height;
+////            float scale = std::min(scaleX, scaleY);
+////
+////            float scaledWidth = (float)e.width * scale;
+////            float scaledHeight = (float)e.height * scale;
+////
+////
+////            float cursorX = (window.x - scaledWidth) * 0.5f;
+////            float cursorY = (window.y - scaledHeight + 40.f) * 0.5f;
+////            ImGui::SetCursorPos({cursorX > 0 ? cursorX : 0, cursorY > 0 ? cursorY : 0});
+////
+////            ImGui::Image((ImTextureID)descs[index] ? (ImTextureID)descs[index] : (ImTextureID)descs.back(), ImVec2(scaledWidth, scaledHeight));
+////        }
+//
+//    }
+//
+    ImGuiDescriptorManager::ImGuiDescriptorManager() {
+        mSetLayout = std::make_shared<PipelineDesSetLayout>(*mg::SystemHub.val<ev::pVkSetupContext>().device);
+
+        mSetLayout->addDesSetLayout(0, 0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment);
+        mSetLayout->createDesSetLayout();
+    }
+    ImGuiDescriptorManager::~ImGuiDescriptorManager() {
+        mSetLayout.reset();
+    }
+}

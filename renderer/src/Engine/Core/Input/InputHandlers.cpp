@@ -13,9 +13,13 @@ namespace yic {
         registerCmd(GLFW_KEY_SPACE, "test", [&]() { return std::make_shared<TestCommand>(mWindow); });
 
 
-        EventBus::subscribeAuto([&](const et::glKeyInput& input){
-            auto inputHandlers = InputHandlers::get();
-            inputHandlers->handleUserInput(input.key.value(), input.action.value());
+//        EventBus::subscribeAuto([&](const et::glKeyInput& input){
+//            auto inputHandlers = InputHandlers::get();
+//            inputHandlers->handleUserInput(input.key.value(), input.action.value());
+//        });
+        mg::SystemHub.subscribe([&](const et::glKeyInput& input){
+            auto inputHandle = InputHandlers::get();
+            inputHandle->handleUserInput(input.key.value(), input.action.value());
         });
 
         callback(mWindow);

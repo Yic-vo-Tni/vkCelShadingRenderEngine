@@ -45,6 +45,8 @@ namespace yic {
         };
         ImGui_ImplVulkan_Init(&info);
 
+        callback();
+
         ImGui_ImplVulkan_CreateFontsTexture();
     }
 
@@ -65,8 +67,6 @@ namespace yic {
         base();
 
         mWidgetManager.render();
-
-        callback();
 
         //if (mShowDemo) ImGui::ShowDemoWindow(&mShowDemo);
 
@@ -179,7 +179,7 @@ namespace yic {
     }
 
     auto vkImGui::callback() -> void{
-        EventBus::subscribeDeferredAuto([&](const et::glKeyInput& input){
+        mg::SystemHub.subscribe([&](const et::glKeyInput& input){
             auto& io = ImGui::GetIO();
             switch (input.action.value()) {
                 case GLFW_PRESS:
@@ -199,14 +199,14 @@ namespace yic {
             ImGui_ImplGlfw_KeyCallback(mWindow, input.key.value(), input.scancode.value(), input.action.value(), input.mods.value());
         });
 
-        EventBus::subscribeDeferredAuto([&](const et::glMouseInput& input){
+        mg::SystemHub.subscribe([&](const et::glMouseInput& input){
             ImGui_ImplGlfw_MouseButtonCallback(mWindow, input.button.value(), input.action.value(), input.modes.value());
         });
 
-        EventBus::subscribeDeferredAuto([&](const et::glCursorPosInput& input){
+        mg::SystemHub.subscribe([&](const et::glCursorPosInput& input){
             ImGui_ImplGlfw_CursorPosCallback(mWindow, input.xpos.value(), input.ypos.value());
         });
-        EventBus::subscribeDeferredAuto([&](const et::glScrollInput& input){
+        mg::SystemHub.subscribe([&](const et::glScrollInput& input){
             ImGui_ImplGlfw_ScrollCallback(mWindow, input.xoffset.value(), input.yoffset.value());
         });
     }

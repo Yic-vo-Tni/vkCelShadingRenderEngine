@@ -9,8 +9,6 @@
 #include "Model/ModelManager.h"
 
 
-
-
 namespace sc {
 
     class ECSManager {
@@ -23,8 +21,6 @@ namespace sc {
             ecs.reset();
         }
 
-//        auto Render(vk::CommandBuffer& cmd) -> void;
-//        auto renderStorage(vk::CommandBuffer& cmd) -> void;
         auto prepare() -> void;
     private:
         flecs::world ecs;

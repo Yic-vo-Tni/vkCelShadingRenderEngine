@@ -11,11 +11,11 @@ namespace yic {
         return integral((x + (integral(a) - 1)) & ~integral(a - 1));
     }
 
-    RayTracing::RayTracing(): mDevice(EventBus::Get::vkSetupContext().device_ref()),
-            mDyDispatcher(EventBus::Get::vkSetupContext().dynamicDispatcher_ref()) {
+    RayTracing::RayTracing(): mDevice(*mg::SystemHub.val<ev::pVkSetupContext>().device),
+            mDyDispatcher(*mg::SystemHub.val<ev::pVkSetupContext>().dynamicDispatcher) {
         vk::PhysicalDeviceProperties2 properties2{};
         properties2.pNext = &rtProperties;
-        EventBus::Get::vkSetupContext().physicalDevice_ref().getProperties2(&properties2);
+        mg::SystemHub.val<ev::pVkSetupContext>().physicalDevice->getProperties2(&properties2);
     }
 
     RayTracing::~RayTracing() {

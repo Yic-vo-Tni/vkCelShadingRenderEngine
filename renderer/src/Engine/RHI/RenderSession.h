@@ -12,43 +12,35 @@ namespace yic {
 
     class RenderSession {
     public:
-        struct ClearValue {
-            static std::vector<vk::ClearValue> Color() {
-                return {vk::ClearColorValue{std::array<float, 4>{0.44f, 0.37f, 0.61f, 1.0f}}};
-            }
-
-            static std::vector<vk::ClearValue> ColorDepth() {
-                return {
-                        vk::ClearColorValue{std::array<float, 4>{0.19f, 0.2f, 0.25f, 1.0f}},
-                        vk::ClearDepthStencilValue{1.f, 0}
-                };
-            }
+        struct clearValue{
+            static inline vot::vector<vk::ClearValue> color{vk::ClearColorValue{0.19f, 0.2f, 0.25f, 1.0f}};
+            static inline vot::vector<vk::ClearValue> colorDepth{vk::ClearColorValue{0.19f, 0.2f, 0.25f, 1.0f}, vk::ClearDepthStencilValue{1.f, 0}};
         };
-        struct RenderPassInfo{
+        struct passInfo{
             vk::RenderPass renderPass;
-            std::vector<vk::Framebuffer> framebuffers;
+            const std::vector<vk::Framebuffer>& framebuffers;
             opt<vk::Extent2D> extent{std::nullopt};
             vk::Offset2D offset2D{0, 0};
-            std::vector<vk::ClearValue> clearValues;
+            const vot::vector<vk::ClearValue>& clearValues;
             vk::SubpassContents subpassContents{vk::SubpassContents::eInline};
 
-            RenderPassInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers,
-                           vk::Extent2D extent, const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
+            passInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers,
+                           vk::Extent2D extent, const vot::vector<vk::ClearValue> &clearValues = clearValue::color)
                     : renderPass(RenderPass),
                       framebuffers(framebuffers),
                       extent(extent),
                       clearValues(clearValues) {
 
             };
-            RenderPassInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers,
-                           const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
+            passInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers,
+                           const vot::vector<vk::ClearValue> &clearValues = clearValue::color)
                     : renderPass(RenderPass),
                       framebuffers(framebuffers),
                       clearValues(clearValues) {
 
             };
-            RenderPassInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers, vk::SubpassContents subpassContents,
-                           const std::vector<vk::ClearValue> &clearValues = ClearValue::Color())
+            passInfo(vk::RenderPass RenderPass, const std::vector<vk::Framebuffer> &framebuffers, vk::SubpassContents subpassContents,
+                           const vot::vector<vk::ClearValue> &clearValues = clearValue::color)
                     : renderPass(RenderPass),
                       framebuffers(framebuffers),
                       subpassContents(subpassContents),
@@ -58,12 +50,13 @@ namespace yic {
         };
     public:
         RenderSession(std::string  id, const uint32_t& qIndex, const uint32_t& CommandBufferCount);
+        RenderSession(std::string  id, const uint32_t& qIndex, const uint32_t& CommandBufferCount, vk::CommandBufferUsageFlags flags);
         ~RenderSession();
 
         auto beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer&;
         auto endCommandBuf() -> void;
 
-        auto beginRenderPass(RenderPassInfo passInfo) -> void;
+        auto beginRenderPass(passInfo info) -> void;
         auto endRenderPass() -> void;
 
     private:
@@ -78,6 +71,7 @@ namespace yic {
         vk::CommandPool mCommandPool{};
         vk::Extent2D mExtent;
         std::vector<vk::CommandBuffer> mCommandBuffers{};
+        vk::CommandBufferUsageFlags mFlags{};
     };
 
 

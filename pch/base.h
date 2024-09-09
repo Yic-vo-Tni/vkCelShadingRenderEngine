@@ -24,7 +24,13 @@ public:
         return &singleton;
     }
 
+    template<typename...Args>
+    static T& ref(Args&&...args){
+        static T singleton{std::forward<Args>(args)...};
+        return singleton;
+    }
 };
+
 
 
 #define vkGet inline static constexpr

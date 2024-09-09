@@ -186,9 +186,11 @@ namespace yic {
         VmaAllocation vmaAllocation{};
         VmaAllocator &mAllocator;
         vk::AccelerationStructureKHR accel;
+        bool update{false};
 
         vkAccel(vk::Buffer buf, VmaAllocation alloc, VmaAllocator &allocatorRef, vk::AccelerationStructureKHR accel, vk::Device dev, vk::DispatchLoaderDynamic dyDis) :
             buffer(buf), vmaAllocation(alloc), mAllocator(allocatorRef), accel(accel), device(dev), dyDispatch(dyDis){
+            update = true;
         }
         ~vkAccel() {
             vmaDestroyBuffer(mAllocator, buffer, vmaAllocation);

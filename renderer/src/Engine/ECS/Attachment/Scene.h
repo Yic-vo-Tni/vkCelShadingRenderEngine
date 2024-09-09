@@ -5,27 +5,55 @@
 #ifndef VKCELSHADINGRENDERER_SCENE_H
 #define VKCELSHADINGRENDERER_SCENE_H
 
+#include <utility>
+
 #include "Engine/RHI/vkAsset.h"
 #include "Engine/ECS/Model/ModelStruct.h"
 #include "Engine/RHI/Descriptor.h"
 
 namespace sc {
 
-    class Scene {
+    struct Scene {
+        explicit Scene(std::string id) : id(std::move(id)) {};
+
+        std::string id;
+        std::shared_ptr<yic::vkAccel> tlas;
+        std::shared_ptr<yic::Descriptor> rtDesSet;
+        std::vector<const Model*> models;
+        std::vector<std::shared_ptr<yic::vkAccel>> blass;
+    };
+
+    class SceneManager{
     public:
-        explicit Scene(const std::string& id = IdGenerator::uniqueId());
-        ~Scene() = default;
-        auto updateScene(const Model& model) -> void;
+        SceneManager();
+        vkGet auto inst = []{ return Singleton<SceneManager>::get(); };
+        auto switchScene(const std::string& id) -> void;
+        auto loadScene(const std::string& id = {}) -> void;
+        auto unloadScene(const std::string& id) -> void;
+        auto addModel(const Model* model) -> void;
+        auto updateScene() -> void;
         auto removeModel(const std::string& id) -> void;
-        [[nodiscard]] auto getSceneId() const -> std::string { return mId; };
+
+    public:
+        auto getActiveScene() { return mActiveScene; }
 
     private:
-        std::string mId;
-        std::shared_ptr<yic::vkAccel> mTLAS;
-        std::shared_ptr<yic::Descriptor> mRtDes;
-        std::vector<const Model*> mModels;
+        auto cBlas(const Model* model) -> std::shared_ptr<yic::vkAccel>;
+        auto cTlas(const std::vector<std::shared_ptr<yic::vkAccel>>& blass, std::shared_ptr<yic::vkAccel>& tlas) -> void;
+
+    private:
+        vk::Device mDevice;
+        vk::DispatchLoaderDynamic mDyDispatcher;
+
+        uint8_t mSceneCount{0};
+        Scene* mActiveScene{};
+        std::unordered_map<std::string, Scene> mScenes;
     };
 
 } // sc
+
+namespace Manager{
+    inline auto Scene = sc::SceneManager::inst();
+}
 
 #endif //VKCELSHADINGRENDERER_SCENE_H

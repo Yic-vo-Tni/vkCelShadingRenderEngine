@@ -31,6 +31,14 @@ namespace yic{
                 .device = mDevice,
                 .queueFamily = *mQueueFamily
         });
+        mg::SystemHub.sto(ev::pVkSetupContext{
+            .instance = &mInstance,
+            .dynamicDispatcher = &mDynamicDispatcher,
+            .debugMessenger = &mDebugMessenger,
+            .physicalDevice = &mPhysicalDevice,
+            .device = &mDevice,
+            .queueFamily = mQueueFamily.get()
+        });
     }
 
 

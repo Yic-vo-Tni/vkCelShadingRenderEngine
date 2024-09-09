@@ -10,7 +10,7 @@ namespace yic {
     vk::RenderPass FrameRender::eColorDepthStencilRenderPass;
 
     FrameRender::FrameRender() {
-        ct = EventBus::Get::vkSetupContext();
+        ct = mg::SystemHub.val<ev::pVkSetupContext>();
 
         std::vector<vk::AttachmentReference> attachColorRef{
                 {0, vk::ImageLayout::eColorAttachmentOptimal},
@@ -86,7 +86,7 @@ namespace yic {
                     views.emplace_back(imgSptrs->depthImageView);
                 }
 
-                framebuffers.emplace_back(get()->ct.device_ref().createFramebuffer(createInfo(imgSptrs, views)));
+                framebuffers.emplace_back(get()->ct.device->createFramebuffer(createInfo(imgSptrs, views)));
             }
         } else if constexpr (std::is_same_v<type, std::vector<std::shared_ptr<vkImage>>>){
             for(size_t i = 0; i < imgSptrs.front()->info_.imageCount; i++){

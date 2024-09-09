@@ -139,10 +139,6 @@ namespace yic {
 
 
         blas = Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
-//        auto asCreateInfo = vk::AccelerationStructureCreateInfoKHR()
-//                .setSize(asBuildSizeInfo.accelerationStructureSize)
-//                .setType(vk::AccelerationStructureTypeKHR::eBottomLevel);
-//        blas = Allocator::allocAccel(asCreateInfo);
 
         auto scratchBuf = Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
         auto scratchBufAddr = vk::DeviceOrHostAddressKHR{Allocator::getBufAddr(scratchBuf)};

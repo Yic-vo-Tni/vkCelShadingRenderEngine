@@ -17,24 +17,6 @@
 
 namespace sc {
 
-//    class ModelLoader {
-//        using pt = std::filesystem::path;
-//    public:
-//        ModelLoader() = default;
-//        ~ModelLoader() = default;
-//
-//        static auto Load(const std::string& path, PipelineDesSetLayout& setLayout) -> Model::Generic;
-//        static auto buildDescriptor(Model::Generic& model, PipelineDesSetLayout& setLayout) -> void;
-////        static auto Pmx(const std::string& path, PipelineDesSetLayout& setLayout) -> Model::Pmx;
-////        static auto Vmd(const std::string& path, Model::Pmx& pmx) -> void;
-//    private:
-//        static auto process(const aiScene *scene, const std::filesystem::path& modelDirPath, PipelineDesSetLayout& setLayout) -> Model::Generic;
-//        static auto processMesh(const aiMesh* aiMesh, Mesh& mesh, const aiVector3D& center) -> void;
-//        static auto processMeshCenter(const aiScene* scene, Model::Generic& model) -> aiVector3D;
-//        static auto processMaterial(aiMaterial *aiMaterial, Model::Generic& model, Mesh& mesh, oneapi::tbb::concurrent_unordered_map<pt, uint32_t>& paths, const std::filesystem::path& modelDirPath) -> void;
-
-//};
-
     class ModelLoader{
         using pt = std::filesystem::path;
     public:
@@ -42,11 +24,7 @@ namespace sc {
 
     private:
         static auto process(const aiScene *scene, const std::filesystem::path &modelDirPath) -> Model;
-//        static auto processMesh(const aiMesh *aiMesh, Mesh &mesh, const aiVector3D &center) -> void;
         static auto processMeshCenter(const aiScene *scene, Model &model) -> aiVector3D;
-//        static auto processMaterial(aiMaterial *aiMaterial, Model &model, Mesh &mesh,
-//                                    oneapi::tbb::concurrent_unordered_map<pt, uint32_t> &paths,
-//                                    const std::filesystem::path &modelDirPath) -> void;
     };
 
 } // sc

@@ -9,6 +9,7 @@ namespace yic {
     Engine::Engine() = default;
 
     bool Engine::run() {
+
         ShaderFolderWatcher::start();
 
         if ([]{
@@ -28,11 +29,10 @@ namespace yic {
         auto numThreads = std::thread::hardware_concurrency();
         vkInfo("Max threads counts: {0}", numThreads);
 
-
         mFrameLoopThread = std::make_unique<std::thread>([this]{
             mRhi = std::make_unique<vkRhi>();
             while (mFrameLoop.load()){
-                TaskBus::executeTaskSpecific(tt::RenderTarget_s::eMainWindow, {}, true);
+                mRhi->FrameLoop();
             }
         });
 

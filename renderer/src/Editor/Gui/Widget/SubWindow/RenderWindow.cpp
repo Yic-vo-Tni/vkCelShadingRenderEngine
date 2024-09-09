@@ -25,12 +25,12 @@ namespace ui {
         if (mAvailable.x != 2560 || mAvailable.y != 1440) {
             EventBus::publish(et::uiWidgetContext{
                     .viewportSize = ImVec2{2560, 1440}
-            }, enum_name(RenderProcessPhases::ePrimary), "ModelManager");
+            }, enum_name(RenderPhase::ePrimary), "ModelManager");
 
             mAvailable = ImVec2{2560, 1440};
         }
 
-        ImGuiDescriptorManager::drawImage(enum_name(RenderProcessPhases::ePrimary), ImVec2(available.x, available.y), index);
+        ImGuiDescriptorManager::drawImage(enum_name(RenderPhase::ePrimary), ImVec2(available.x, available.y), index);
 
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         char fps_text[32];

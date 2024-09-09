@@ -17,19 +17,19 @@ namespace glfw_callback {
     };
 
     inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {
-        yic::EventBus::publish(et::glKeyInput{key, action, scancode, mods});
+        mg::SystemHub.publish(et::glKeyInput{key, action, scancode, mods});
     };
 
     inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {
-        yic::EventBus::publish(et::glMouseInput{button, action, mods});
+        mg::SystemHub.publish(et::glMouseInput{button, action, mods});
     };
 
     inline auto setCursorPosCallback = [](GLFWwindow*w, double xpos, double ypos){
-        yic::EventBus::publish(et::glCursorPosInput{xpos, ypos});
+        mg::SystemHub.publish(et::glCursorPosInput{xpos, ypos});
     };
 
     inline auto setScrollBack = [](GLFWwindow *w, double xoffset, double yoffset){
-        yic::EventBus::publish(et::glScrollInput{xoffset, yoffset});
+        mg::SystemHub.publish(et::glScrollInput{xoffset, yoffset});
     };
 
     inline auto setWindowPosCallback = [](GLFWwindow *w, int xpos, int ypos) {

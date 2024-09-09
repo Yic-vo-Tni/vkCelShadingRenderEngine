@@ -208,8 +208,8 @@ namespace yic {
         uint32_t mIndex{};
         vk::DescriptorPool mDesPool{};
         PipelineDesSetLayout& mSetLayout;
-        std::vector<vk::DescriptorSet> mDesSet{};
-        std::vector<std::vector<vk::WriteDescriptorSet>> mWriteDesSets{};
+        vot::vector<vk::DescriptorSet> mDesSet{};
+        vot::vector<vot::vector<vk::WriteDescriptorSet>> mWriteDesSets{};
     };
 
     class ImGuiDescriptorManager{
@@ -226,5 +226,26 @@ namespace yic {
     };
 
 } // yic
+
+namespace Hide{
+    class ImGuiDescriptorManager{
+    public:
+        ImGuiDescriptorManager();
+        ~ImGuiDescriptorManager();
+
+//        auto updateImage(const std::string& id, const std::vector<vk::ImageView>& views) -> void;
+//        auto drawImage(const std::string& id, const ImVec2& imageSize, const uint32_t& index = UINT32_MAX) -> void;
+//        auto clear() { mSetLayout.reset(); }
+    private:
+        std::shared_ptr<PipelineDesSetLayout> mSetLayout;
+    };
+}
+
+//namespace mg{
+//    inline auto& ImGuiDescriptorHub = Singleton<Hide::ImGuiDescriptorManager>::ref();
+//}
+
+
+
 
 #endif //VKCELSHADINGRENDERER_DESCRIPTOR_H

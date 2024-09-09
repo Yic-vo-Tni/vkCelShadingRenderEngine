@@ -9,12 +9,12 @@ namespace sc {
         ecs.set_threads(4);
 
         ecs.component<Camera>();
-//        ecs.component<Model::Generic>();
         ecs.component<Model>();
         ecs.component<Selected>();
 
         yic::EventBus::update(et::eEcs_ptr{&ecs});
 
+        globalCamera.initBuf();
         mModelManager = std::make_unique<ModelManager>(&ecs);
 
 
@@ -22,19 +22,13 @@ namespace sc {
 
     ECSManager::~ECSManager() {
         ecs.reset();
+        globalCamera.clear();
     }
 
     auto ECSManager::prepare() -> void {
         mModelManager->prepare();
     }
 
-//    auto ECSManager::Render(vk::CommandBuffer &cmd) -> void {
-//        mModelManager->Render(cmd);
-//    }
-//
-//    auto ECSManager::renderStorage(vk::CommandBuffer &cmd) -> void {
-//        mModelManager->renderRt(cmd);
-//    }
 
 
 } // sc

@@ -17,7 +17,7 @@ namespace ui {
         auto calculateFPS() -> void;
 
     private:
-        ImVec2 mAvailable{0, 0};
+        ImVec2 mAvailable{2560, 1440};
     private:
         float mFps = 0.f;
         float mFpsTimer = 0.f;

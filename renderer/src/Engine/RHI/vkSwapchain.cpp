@@ -9,10 +9,10 @@ namespace yic {
     vkSwapchain::vkSwapchain(const std::string &id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex,
                              vk::Format format) :
             mId(id),
-            mWindow(EventBus::Get::vkRenderContext(id).window_ref()),
-            mInstance(EventBus::Get::vkSetupContext().instance_ref()),
-            mDevice(EventBus::Get::vkSetupContext().device_ref()),
-            mPhysicalDevice(EventBus::Get::vkSetupContext().physicalDevice_ref()),
+            mWindow(mg::SystemHub.val<ev::hVkRenderContext>().window),
+            mInstance(*mg::SystemHub.val<ev::pVkSetupContext>().instance),
+            mDevice(*mg::SystemHub.val<ev::pVkSetupContext>().device),
+            mPhysicalDevice(*mg::SystemHub.val<ev::pVkSetupContext>().physicalDevice),
             mSurface(createSurface()),
             mGraphicsQueue(graphicsQueue),
             mGraphicsQueueFamilyIndex(queueFamilyIndex),
@@ -33,6 +33,10 @@ namespace yic {
         }, mId);
 
         mImGui = std::make_unique<vkImGui>(id, graphicsQueue, queueFamilyIndex);
+
+        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
+            mUpdateSize.store(true);
+        }, mId);
     }
 
     vkSwapchain::~vkSwapchain() {
@@ -140,9 +144,6 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
-            mUpdateSize.store(true);
-        }, mId);
         if (mUpdateSize.load()){
             mGraphicsQueue.waitIdle();
             recreateSwapchain();
@@ -159,9 +160,9 @@ namespace yic {
 
     auto vkSwapchain::submitFrame(const std::vector<vk::CommandBuffer>& cmds, const std::function<void()>& fun) -> void {
         auto& cmd = mRenderSession->beginCommandBuf(mExtent);
-        mRenderSession->beginRenderPass(RenderSession::RenderPassInfo{
+        mRenderSession->beginRenderPass(RenderSession::passInfo{
                 mRenderPass, mFramebuffers, mExtent,
-                RenderSession::ClearValue::Color()
+                RenderSession::clearValue::color
         });
 
         mImGui->render(cmd);

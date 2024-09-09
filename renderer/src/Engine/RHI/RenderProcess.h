@@ -1,59 +1,59 @@
 //
-// Created by lenovo on 7/14/2024.
+// Created by lenovo on 8/31/2024.
 //
 
-#ifndef VKCELSHADINGRENDERER_RENDERPROCESS_H
-#define VKCELSHADINGRENDERER_RENDERPROCESS_H
+#ifndef VKCELSHADINGRENDERER_RENDERPORCESST_H
+#define VKCELSHADINGRENDERER_RENDERPORCESST_H
 
-#include "Engine/Core/DispatchSystem/Schedulers.h"
+
 #include "Engine/Utils/Log.h"
 
 #include "Engine/RHI/vkAsset.h"
-#include "Engine/RHI/RenderSession.h"
-#include "Engine/RHI/vkPipeline.h"
-#include "Engine/RHI/Allocator.h"
-#include "Engine/RHI/FrameRender.h"
 #include "Engine/RHI/Descriptor.h"
-
+#include "Engine/RHI/RenderSession.h"
 #include "Engine/RHI/RenderGroup.h"
 
 namespace yic {
 
     class RenderProcess {
-        enum offImageType{
-            eStandard, eRayTraced, eComposite, eCount
-        };
-        using fn_cmdRecord = std::function<void(vk::CommandBuffer& cmd)>;
+        using recCommandFn = std::function<void(vk::CommandBuffer& cmd)>;
     public:
         explicit RenderProcess(std::string id);
         ~RenderProcess();
 
         auto prepare() -> void;
-        auto appendCommandRecord(const fn_cmdRecord& record) -> void;
-        auto appendCommandRecordExtra(const fn_cmdRecord& rec) -> void;
         auto process() -> std::optional<vk::CommandBuffer>;
 
+        auto appendRenderPassProcessSecondaryCommand(const uint8_t &seq, const std::shared_ptr<vkImage> &imgSptr,
+                                                     const yic::RenderProcess::recCommandFn &rec) -> void;
+        auto appendRenderPassProcessSecondaryCommand(const uint8_t &seq, const vkImage* imgPtr,
+                                                     const yic::RenderProcess::recCommandFn &rec) -> void;
+        auto appendRenderPassProcessCommand(const uint8_t &seq, const std::vector<vk::Framebuffer> &framebuffers,
+                                           const yic::RenderProcess::recCommandFn &rec) -> void;
+        auto appendProcessCommand(const uint8_t &seq, const yic::RenderProcess::recCommandFn &rec) -> void;
+        auto appendFinalProcessCommand(const uint8_t &seq) -> void;
+        auto updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage>& image) -> void;
+        auto rebuild() -> void;
 
+        auto& acquire() { return mRenderGroupGraphics; };
+        auto& descriptor() { return mDescriptor; };
     private:
         et::vkSetupContext ct;
         et::vkRenderContext rt;
 
         std::string mId;
         uint32_t mImageCount{0};
-        vkImg_sptr mOffImage;
+        std::shared_ptr<vkImage> mOffImage;
 
-        std::atomic<vk::Extent2D> mExtent;
+        vk::Extent2D mExtent{2560, 1440};
         std::unique_ptr<RenderSession> mRenderSession;
 
-        std::shared_ptr<Descriptor> mPostDescriptor;
+        vot::vector<recCommandFn > mCommandBufRecs;
         std::shared_ptr<RenderGroupGraphics> mRenderGroupGraphics;
-
-        std::vector<fn_cmdRecord> mCommandBufferRecords;
-        std::vector<fn_cmdRecord> mCommandBufferRecordExtras;
+        std::shared_ptr<Descriptor> mDescriptor;
+        vot::vector<std::shared_ptr<vkImage>> mDyRenderTargetStageImgs;
     };
-
-
 
 } // yic
 
-#endif //VKCELSHADINGRENDERER_RENDERPROCESS_H
+#endif //VKCELSHADINGRENDERER_RENDERPORCESST_H

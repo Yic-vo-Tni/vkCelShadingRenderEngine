@@ -11,6 +11,11 @@ namespace yic {
                 ImVec2((float)mWidth, (float)mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
         }, et::vkRenderContext::id::mainRender);
 
+        mg::SystemHub.sto(ev::hVkRenderContext{
+           .size = ImVec2{(float)mWidth, (float)mHeight},
+           .window = mWindow.get()
+        });
+
         if_debug {
             EventBus::subscribeAuto([&](const et::vkRenderContext &vkRenderContext) {
                 vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());

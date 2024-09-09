@@ -60,6 +60,25 @@ namespace yic{
         [[nodiscard]] inline const auto getDownloadTransferFamilyIndex() const { return mQueueFamilies.at(QueueType::eTransfer).familyIndex.value();}
         [[nodiscard]] inline auto& getDownloadTransferQueue() { return mQueueFamilies.at(QueueType::eTransfer).queues.at(1);}
         [[nodiscard]] inline const auto& getDownloadTransferQueue() const { return mQueueFamilies.at(QueueType::eTransfer).queues.at(1);}
+
+
+        [[nodiscard]] inline auto gIndexPrimary() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
+        [[nodiscard]] inline const auto gIndexPrimary() const { return mQueueFamilies.at(QueueType::eGraphics).familyIndex.value();}
+        [[nodiscard]] inline auto& gPrimary() { return mQueueFamilies.at(QueueType::eGraphics).queues.at(0);}
+        [[nodiscard]] inline const auto& gPrimary() const { return mQueueFamilies.at(QueueType::eGraphics).queues.at(0);}
+        [[nodiscard]] inline auto gIndexAuxiliary() { return mQueueFamilies[QueueType::eGraphics].familyIndex.value();}
+        [[nodiscard]] inline const auto gIndexAuxiliary() const { return mQueueFamilies.at(QueueType::eGraphics).familyIndex.value();}
+        [[nodiscard]] inline auto& gAuxiliary() { return mQueueFamilies.at(QueueType::eGraphics).queues.at(1);}
+        [[nodiscard]] inline const auto& gAuxiliary() const { return mQueueFamilies.at(QueueType::eGraphics).queues.at(1);}
+
+        [[nodiscard]] inline auto tIndexUpload() { return mQueueFamilies[QueueType::eTransfer].familyIndex.value();}
+        [[nodiscard]] inline const auto tIndexUpload() const { return mQueueFamilies.at(QueueType::eTransfer).familyIndex.value();}
+        [[nodiscard]] inline auto& tUpload() { return mQueueFamilies.at(QueueType::eTransfer).queues.at(0);}
+        [[nodiscard]] inline const auto& tUpload() const { return mQueueFamilies.at(QueueType::eTransfer).queues.at(0);}
+        [[nodiscard]] inline auto tIndexDownload() { return mQueueFamilies[QueueType::eTransfer].familyIndex.value();}
+        [[nodiscard]] inline const auto tIndexDownload() const { return mQueueFamilies.at(QueueType::eTransfer).familyIndex.value();}
+        [[nodiscard]] inline auto& tDownload() { return mQueueFamilies.at(QueueType::eTransfer).queues.at(1);}
+        [[nodiscard]] inline const auto& tDownload() const { return mQueueFamilies.at(QueueType::eTransfer).queues.at(1);}
     private:
         void addQueueFamily(vk::PhysicalDevice phy, QueueType type) {
             mQueueFamilies.emplace(type, Family{.familyIndex = fn::findQueueFamily(phy, type)});

@@ -11,24 +11,22 @@
 namespace yic {
 
     class RT {
-//    public:
-//        vkGet auto get = []{ return Singleton<RT>::get(); };
-//        auto init() -> void;
-//        auto initRayTracing() -> void;
-//        auto createBLAS() -> void;
-//        auto createTLAS() -> void;
-//        auto createRTPipeline() -> void;
-//        auto createRTSBT() -> void;
-//
-//    private:
-//        vk::Device mDevice;
-//        vk::PhysicalDevice mPhysicalDevice;
-//        uint32_t mQueueIndex{};
-//        vk::Queue mGraphicsQueue;
-//
-//        RTBuilder mRTBuilder;
-//        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR mRtProperties;
+    public:
+        friend struct build;
+    protected:
+        static vk::Device mDevice;
+        static vk::DispatchLoaderDynamic mDispatcher;
+    public:
+        vkGet auto inst = []{ return Singleton<RT>::get(); };
+
+        struct build{
+            auto blas(const vk::AccelerationStructureGeometryKHR& asGeom, const uint32_t& numTri) -> void;
+            auto tlas(const std::vector<vkAccel_sptr>& blass, vkAccel_sptr& tlas, bool update = false) -> void;
+        };
+
     };
+
+    inline auto rayTracing = RT::inst();
 
 } // yic
 

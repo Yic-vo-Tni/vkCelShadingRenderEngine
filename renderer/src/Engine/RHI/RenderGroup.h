@@ -22,89 +22,16 @@ namespace yic {
     template<typename T>
     concept isRT = std::is_same_v<T, RayTracing>;
 
-    struct Render{
-        Render(const vk::CommandBuffer &cmd, const vk::Pipeline &pipe,
-               const vk::PipelineLayout &pipeLayout) : cmd(cmd),
-                                                       mPipeline(pipe),
-                                                       mPipelineLayout(pipeLayout){
-        }
-        Render& bindPipeline(){
-            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline);
-            return *this;
-        }
-        template<typename T>
-        Render& pushConstants(const vk::ShaderStageFlags& flags, uint32_t offset, uint32_t size, const T value){
-            cmd.pushConstants(mPipelineLayout, flags, offset, size, &value);
-            return *this;
-        }
-
-//        Render &bindModel(const flecs::query<sc::Model::Generic> &query) {
-//            query.each([&](flecs::entity e, sc::Model::Generic &m) {
-//                for (const auto &mesh: m.meshes) {
-//                    cmd.bindVertexBuffers(0, mesh.vertBuf->buffer, {0});
-//                    cmd.bindIndexBuffer(mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
-//                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0,
-//                                           m.descriptor->getDescriptorSets()[mesh.texIndex], nullptr);
-//                    cmd.drawIndexed(mesh.indices.size(), 1, 0, 0, 0);
-//                }
-//
-////                cmd.executeCommands(m.cmd);
-//            });
-//
-//            return *this;
-//        }
-//
-//        Render &bindModelSecondary(const flecs::query<sc::Model::Generic> &query){
-//            query.each([&](flecs::entity e, sc::Model::Generic& m){
-//                cmd.executeCommands(m.cmd);
-//            });
-//
-//            return *this;
-//        }
-
-        Render &bindModelSecondary(const flecs::query<sc::Model> &query){
-            query.each([&](flecs::entity e, sc::Model& m){
-                cmd.executeCommands(m.cmd);
-            });
-
-            return *this;
-        }
-
-//        Render &bindModel(const flecs::query<sc::Model::Pmx> &query) {
-//            query.each([&](flecs::entity e, sc::Model::Pmx &pmx) {
-//                cmd.bindVertexBuffers(0, pmx.vertBuf->buffer, {0});
-//                cmd.bindIndexBuffer(pmx.indexBuf->buffer, 0, vk::IndexType::eUint32);
-//                for (uint32_t i = 0; i < pmx.pmx->GetSubMeshCount(); i++) {
-//                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 0,
-//                                           pmx.descriptor->getDescriptorSets()[pmx.texIndex[i]], nullptr);
-//
-//                    cmd.drawIndexed(pmx.pmx->GetSubMeshes()[i].m_vertexCount, 1,
-//                                    pmx.pmx->GetSubMeshes()[i].m_beginIndex, 0, 1);
-//                }
-//            });
-//
-//            return *this;
-//        }
-
-    private:
-        vk::CommandBuffer cmd;
-        vk::Pipeline mPipeline;
-        vk::PipelineLayout mPipelineLayout;
-    };
-
-
-
     template<typename PipelineType>
     class RenderGroupBase
             : public PipelineDesSetLayout, public PipelineType, public std::enable_shared_from_this<RenderGroupBase<PipelineType>> {
     public:
-        explicit RenderGroupBase(vk::RenderPass rp) requires isGraphics<PipelineType> : PipelineDesSetLayout({EventBus::Get::vkSetupContext().device_ref()}), PipelineType(rp){
-
+        explicit RenderGroupBase(vk::RenderPass rp) requires isGraphics<PipelineType>
+                : PipelineDesSetLayout({*mg::SystemHub.val<ev::pVkSetupContext>().device}), PipelineType(rp){
         }
 
-        explicit RenderGroupBase() requires isRT<PipelineType>: PipelineDesSetLayout(
-                {EventBus::Get::vkSetupContext().device_ref()}), RayTracing() {
-
+        explicit RenderGroupBase() requires isRT<PipelineType>
+                : PipelineDesSetLayout({*mg::SystemHub.val<ev::pVkSetupContext>().device}), RayTracing() {
         }
 
         ~RenderGroupBase() = default;
@@ -162,17 +89,6 @@ namespace yic {
             RayTracing::create();
             return this->shared_from_this();
         }
-
-        std::shared_ptr<Render> render(const vk::CommandBuffer& cmd) requires isGraphics<PipelineType>{
-            mRender = std::make_shared<Render>(cmd, Graphics::mPipeline, getPipelineLayout());
-            return mRender;
-        }
-        std::shared_ptr<Render> chain(){
-            return mRender;
-        }
-
-    private:
-        std::shared_ptr<Render> mRender;
     };
 
     using RenderGroupGraphics = RenderGroupBase<Graphics>;
@@ -181,38 +97,38 @@ namespace yic {
     using RenderGroupGraphics_sptr = std::shared_ptr<RenderGroupGraphics>;
     using RenderGroupRayTracing_sptr = std::shared_ptr<RenderGroupRayTracing>;
 
-    class RenderGroupCombine{
-    public:
-        auto configureGraphicsPipeline(const vk::RenderPass& rp = {}) -> RenderGroupGraphics_sptr {
-            if (graphicsSptr == nullptr){
-                if (!rp){ throw std::runtime_error("First configure graphics pipeline must include a valid render pass");}
-                graphicsSptr = RenderGroupGraphics ::configure(rp);
-            }
-            return graphicsSptr;
-        }
-
-        auto configureRayTracingPipeline() -> RenderGroupRayTracing_sptr {
-            if (rayTracingSptr == nullptr){
-                rayTracingSptr = RenderGroupRayTracing ::configure();
-            }
-            return rayTracingSptr;
-        }
-
-        auto graphics() {
-            return graphicsSptr;
-        }
-        auto rayTracing() {
-            return rayTracingSptr;
-        }
-
-        auto clear() -> void{
-            graphicsSptr.reset();
-            rayTracingSptr.reset();
-        }
-    private:
-        RenderGroupGraphics_sptr graphicsSptr;
-        RenderGroupRayTracing_sptr rayTracingSptr;
-    };
+//    class RenderGroupCombine{
+//    public:
+//        auto configureGraphicsPipeline(const vk::RenderPass& rp = {}) -> RenderGroupGraphics_sptr {
+//            if (graphicsSptr == nullptr){
+//                if (!rp){ throw std::runtime_error("First configure graphics pipeline must include a valid render pass");}
+//                graphicsSptr = RenderGroupGraphics ::configure(rp);
+//            }
+//            return graphicsSptr;
+//        }
+//
+//        auto configureRayTracingPipeline() -> RenderGroupRayTracing_sptr {
+//            if (rayTracingSptr == nullptr){
+//                rayTracingSptr = RenderGroupRayTracing ::configure();
+//            }
+//            return rayTracingSptr;
+//        }
+//
+//        auto graphics() {
+//            return graphicsSptr;
+//        }
+//        auto rayTracing() {
+//            return rayTracingSptr;
+//        }
+//
+//        auto clear() -> void{
+//            graphicsSptr.reset();
+//            rayTracingSptr.reset();
+//        }
+//    private:
+//        RenderGroupGraphics_sptr graphicsSptr;
+//        RenderGroupRayTracing_sptr rayTracingSptr;
+//    };
 
 
 

@@ -9,9 +9,19 @@ namespace yic {
     RenderSession::RenderSession(std::string id, const uint32_t &qIndex, const uint32_t& CommandBufferCount)
             : mId(std::move(id)),
               mQueueIndex(qIndex),
-              mDevice(EventBus::Get::vkSetupContext().device_ref()),
+              mDevice(*mg::SystemHub.val<ev::pVkSetupContext>().device),
+              mFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit),
               mCommandPool(createCommandPool()),
-              mCommandBuffers(createCommandBuffers(CommandBufferCount)) {
+              mCommandBuffers(createCommandBuffers(CommandBufferCount)){
+
+    }
+    RenderSession::RenderSession(std::string id, const uint32_t &qIndex, const uint32_t &CommandBufferCount,
+                                 vk::CommandBufferUsageFlags flags) : mId(std::move(id)),
+                                                                     mQueueIndex(qIndex),
+                                                                     mDevice(*mg::SystemHub.val<ev::pVkSetupContext>().device),
+                                                                     mFlags(flags),
+                                                                     mCommandPool(createCommandPool()),
+                                                                     mCommandBuffers(createCommandBuffers(CommandBufferCount)){
 
     }
 
@@ -37,7 +47,7 @@ namespace yic {
     }
 
     auto RenderSession::beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer & {
-        vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
+        vk::CommandBufferBeginInfo beginInfo{mFlags};
 
         auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
@@ -64,20 +74,20 @@ namespace yic {
         mActiveCommandBuffer.end();
     }
 
-    auto RenderSession::beginRenderPass(RenderPassInfo passInfo) -> void {
-        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
-
-        if (!passInfo.extent.has_value()){
-            passInfo.extent = mExtent;
-        }
-        vk::RenderPassBeginInfo renderPassBeginInfo{passInfo.renderPass, passInfo.framebuffers[imageIndex],
-                                                    {passInfo.offset2D, passInfo.extent.value()}, passInfo.clearValues};
-
-        mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, passInfo.subpassContents);
-    }
-
     auto RenderSession::endRenderPass() -> void {
         mActiveCommandBuffer.endRenderPass();
+    }
+
+    auto RenderSession::beginRenderPass(RenderSession::passInfo info) -> void {
+        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
+
+        if (!info.extent.has_value()){
+            info.extent = mExtent;
+        }
+        vk::RenderPassBeginInfo renderPassBeginInfo{info.renderPass, info.framebuffers[imageIndex],
+                                                    {info.offset2D, info.extent.value()}, info.clearValues};
+
+        mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, info.subpassContents);
     }
 
 
