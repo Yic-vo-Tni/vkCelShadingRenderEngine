@@ -10,6 +10,11 @@
 #include <Saba/Base/UnicodeUtil.h>
 #include <Saba/Base/Time.h>
 
+#include "Saba/Model/MMD/PMXModel.h"
+#include "Saba/Model/MMD/VMDFile.h"
+#include "Saba/Model/MMD/VMDAnimation.h"
+#include "Saba/Model/MMD/VMDCameraAnimation.h"
+
 #include "ModelStruct.h"
 #include "Engine/Core/FileOperator/FileOperation.h"
 #include "Engine/RHI/Descriptor.h"

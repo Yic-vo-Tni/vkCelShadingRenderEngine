@@ -25,7 +25,7 @@ namespace yic {
     private:
         std::unique_ptr<sc::ECSManager> mEcsManager;
 
-        vot::vector<std::unique_ptr<RenderProcess>> mRenderProcessT;
+        vot::vector<std::unique_ptr<RenderProcess>> mRenderProcess;
         std::vector<vk::CommandBuffer> cmds;
     };
 

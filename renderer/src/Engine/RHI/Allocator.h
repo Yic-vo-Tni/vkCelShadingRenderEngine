@@ -295,9 +295,8 @@ namespace yic {
         auto allocAccel_impl(vk::AccelerationStructureCreateInfoKHR& createInfo) -> vkAccel_sptr;
         inline static bool hasFlag(vk::Flags< vk::BuildAccelerationStructureFlagBitsKHR> item, vk::Flags< vk::BuildAccelerationStructureFlagBitsKHR> flag) { return (item & flag) == flag; }
 //        auto modelToGeometryKHR_impl(sc::Model::Generic& model) -> BLASInput;
-        auto modelToGeometryKHR_impl(sc::Model& model) -> BLASInput;
     private:
-        et::vkSetupContext ct;
+        ev::pVkSetupContext ct{};
         et::vkRenderContext rt;
 
         vk::Device mDevice;

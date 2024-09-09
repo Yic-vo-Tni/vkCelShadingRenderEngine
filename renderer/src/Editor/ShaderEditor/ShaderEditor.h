@@ -5,6 +5,12 @@
 #ifndef VKCELSHADINGRENDERER_SHADEREDITOR_H
 #define VKCELSHADINGRENDERER_SHADEREDITOR_H
 
+#include "wx/wx.h"
+#include "wx/stc/stc.h"
+#include "wx/file.h"
+#include "wx/button.h"
+#include "wx/aui/auibook.h"
+
 namespace se {
 
     inline wxDECLARE_EVENT(CUSTOM_EVT, wxCommandEvent);

@@ -10,6 +10,10 @@
 #include "Engine/ECS/Model/ModelStruct.h"
 #include "Engine/RHI/Descriptor.h"
 
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
+
 #include <Saba/Base/Path.h>
 #include <Saba/Base/File.h>
 #include <Saba/Base/UnicodeUtil.h>

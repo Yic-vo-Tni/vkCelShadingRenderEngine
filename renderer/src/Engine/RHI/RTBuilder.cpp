@@ -12,7 +12,10 @@ namespace yic {
     }
 
     RTBuilder::RTBuilder() {
-        EventBus::valAuto(mDevice, mPhysicalDevice, mDyDispatcher);
+        auto ct = mg::SystemHub.val<ev::pVkSetupContext>();
+        mDevice = *ct.device;
+        mPhysicalDevice = *ct.physicalDevice;
+        mDyDispatcher = *ct.dynamicDispatcher;
 
         cBLAS();
         cTLAS();

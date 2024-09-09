@@ -14,10 +14,10 @@
 namespace yic {
 
     RenderProcess::RenderProcess(std::string id) : mId(std::move(id)){
-        ct = EventBus::Get::vkSetupContext();
+        ct = mg::SystemHub.val<ev::pVkSetupContext>();
         rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
 
-        mRenderSession = std::make_unique<RenderSession>(mId, ct.qIndexGraphicsPrimary_v(), rt.imageCount_v(), vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+        mRenderSession = std::make_unique<RenderSession>(mId, ct.queueFamily->gIndexPrimary(), rt.imageCount_v(), vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
         mImageCount = rt.imageCount_v();
         mOffImage = Allocator::allocImgOffScreen_DepthStencilAndFramebuffers(vkImageConfig{mExtent}, FrameRender::eColorDepthStencilRenderPass, mId, mImageCount);
@@ -113,7 +113,7 @@ namespace yic {
     auto RenderProcess::prepare() -> void {
         EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext& uiWidgetContext){
             mExtent = vk::Extent2D{(uint32_t)uiWidgetContext.viewportSize.value().x, (uint32_t )uiWidgetContext.viewport_height_v()};
-            ct.qGraphicsPrimary_ref().waitIdle();
+            ct.queueFamily->gPrimary().waitIdle();
             mImageCount = rt.imageCount_v();
 
             mOffImage = Allocator::allocImgOffScreen_DepthStencilAndFramebuffers(vkImageConfig{mExtent}, FrameRender::eColorDepthStencilRenderPass, mId, mImageCount);

@@ -7,7 +7,6 @@
 
 #include "Engine/Core/DispatchSystem/Schedulers.h"
 #include "Engine/RHI/FrameRender.h"
-#include "Engine/ECS/Model/ModelLoader.h"
 #include "Engine/RHI/RenderGroup.h"
 #include "Engine/RHI/RTBuilder.h"
 #include "Engine/RHI/RenderProcess.h"

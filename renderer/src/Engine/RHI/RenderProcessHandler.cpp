@@ -9,7 +9,7 @@ namespace yic {
     RenderProcessHandler::RenderProcessHandler() {
         FrameRender::get();
 
-        mRenderProcessT.resize(static_cast<int>(RenderPhase::eCount));
+        mRenderProcess.resize(static_cast<int>(RenderPhase::eCount));
 
         auto primary = registerRenderProcess(RenderPhase::ePrimary);
         primary ->acquire() = RenderGroupGraphics ::configure(FrameRender::eColorDepthStencilRenderPass)
@@ -28,7 +28,7 @@ namespace yic {
     auto RenderProcessHandler::prepare() -> void {
         sc::globalCamera.computeViewProjMatrix();
 
-        for(const auto& rp : mRenderProcessT){
+        for(const auto& rp : mRenderProcess){
             rp->prepare();
         }
 
@@ -38,7 +38,7 @@ namespace yic {
     auto RenderProcessHandler::procedure() -> std::vector<vk::CommandBuffer> {
         cmds.clear();
 
-        for(const auto& rp : mRenderProcessT){
+        for(const auto& rp : mRenderProcess){
             auto r = rp->process();
             if (r.has_value()){
                 cmds.emplace_back(r.value());
@@ -49,13 +49,13 @@ namespace yic {
     }
 
     auto RenderProcessHandler::clear() -> void {
-        mRenderProcessT.clear();
+        mRenderProcess.clear();
         mEcsManager->clear();
     }
 
 
     auto RenderProcessHandler::registerRenderProcess(RenderPhase phases) -> RenderProcess* {
-        auto& rp = mRenderProcessT[static_cast<int>(phases)] = std::make_unique<RenderProcess>(enum_name(phases));
+        auto& rp = mRenderProcess[static_cast<int>(phases)] = std::make_unique<RenderProcess>(enum_name(phases));
         EventBus::update(et::pRenderProcess{rp.get()}, enum_name(phases));
         return rp.get();
     }

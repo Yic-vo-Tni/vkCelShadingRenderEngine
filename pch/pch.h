@@ -67,6 +67,8 @@
 #include "filesystem"
 #include "semaphore"
 #include "immintrin.h"
+#include "list"
+#include "unordered_set"
 
 #include "include/spdlog/spdlog.h"
 #include "include/spdlog/sinks/stdout_color_sinks.h"
@@ -97,25 +99,26 @@
 
 #include "flecs/flecs.h"
 
-#include "wx/wx.h"
-#include "wx/stc/stc.h"
-#include "wx/file.h"
-#include "wx/button.h"
-#include "wx/aui/auibook.h"
+//#include "wx/wx.h"
+//#include "wx/stc/stc.h"
+//#include "wx/file.h"
+//#include "wx/button.h"
+//#include "wx/aui/auibook.h"
+#include "wx/string.h" // vulkan sdk conflict
 
-#include "assimp/Importer.hpp"
-#include "assimp/scene.h"
-#include "assimp/postprocess.h"
+//#include "assimp/Importer.hpp"
+//#include "assimp/scene.h"
+//#include "assimp/postprocess.h"
 
-#include "caches/include/cache.hpp"
-#include "caches/include/lru_cache_policy.hpp"
+//#include "caches/include/cache.hpp"
+//#include "caches/include/lru_cache_policy.hpp"
 
 #include "nfd/src/include/nfd.h"
 
-#include "Saba/Model/MMD/PMXModel.h"
-#include "Saba/Model/MMD/VMDFile.h"
-#include "Saba/Model/MMD/VMDAnimation.h"
-#include "Saba/Model/MMD/VMDCameraAnimation.h"
+//#include "Saba/Model/MMD/PMXModel.h"
+//#include "Saba/Model/MMD/VMDFile.h"
+//#include "Saba/Model/MMD/VMDAnimation.h"
+//#include "Saba/Model/MMD/VMDCameraAnimation.h"
 
 #include "mimalloc.h"
 

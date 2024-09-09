@@ -23,14 +23,6 @@ namespace yic{
         mDynamicDispatcher.init(mDevice);
         mQueueFamily->createQueues(mDevice, createInfo->mPriorities.size());
 
-        EventBus::update(et::vkSetupContext{
-                .instance = mInstance,
-                .dynamicDispatcher = mDynamicDispatcher,
-                .debugMessenger = mDebugMessenger,
-                .physicalDevice = mPhysicalDevice,
-                .device = mDevice,
-                .queueFamily = *mQueueFamily
-        });
         mg::SystemHub.sto(ev::pVkSetupContext{
             .instance = &mInstance,
             .dynamicDispatcher = &mDynamicDispatcher,

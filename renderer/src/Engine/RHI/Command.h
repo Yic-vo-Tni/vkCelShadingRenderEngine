@@ -215,7 +215,7 @@ namespace yic {
                 VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::AccelerationStructureBuildRangeInfoKHR * const> const & pBuildRangeInfos
                 )  VULKAN_HPP_NOEXCEPT_WHEN_NO_EXCEPTIONS{
             cmdDrawPrimary([&](vk::CommandBuffer& cmd){
-               cmd.buildAccelerationStructuresKHR(infos, pBuildRangeInfos, EventBus::Get::vkSetupContext().dynamicDispatcher_ref());
+               cmd.buildAccelerationStructuresKHR(infos, pBuildRangeInfos, *mg::SystemHub.val<ev::pVkSetupContext>().dynamicDispatcher);
             });
         };
 #endif /* VULKAN_HPP_DISABLE_ENHANCED_MODE */

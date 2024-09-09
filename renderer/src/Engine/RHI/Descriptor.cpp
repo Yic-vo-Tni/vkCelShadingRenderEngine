@@ -127,7 +127,7 @@ namespace yic {
     vk::Sampler FixSampler::eDefault;
 
     FixSampler::FixSampler() {
-        auto dev = EventBus::Get::vkSetupContext().device_ref();
+        auto dev = *mg::SystemHub.val<ev::pVkSetupContext>().device;
 
         eDefault = dev.createSampler(vk::SamplerCreateInfo{
                 {},
@@ -140,12 +140,12 @@ namespace yic {
     }
 
     FixSampler::~FixSampler() {
-        auto dev = EventBus::Get::vkSetupContext().device_ref();
+        auto dev = *mg::SystemHub.val<ev::pVkSetupContext>().device;
         dev.destroy(eDefault);
     }
 
     auto FixSampler::createSampler() -> vk::Sampler {
-        auto dev = EventBus::Get::vkSetupContext().device_ref();
+        auto dev = *mg::SystemHub.val<ev::pVkSetupContext>().device;
 
         return dev.createSampler(vk::SamplerCreateInfo{
                 {},

@@ -13,11 +13,11 @@ namespace yic {
     uint32_t Allocator::mMainRenderImageCount = 0;
 
     Allocator::Allocator() {
-        ct = EventBus::Get::vkSetupContext();
+        ct = mg::SystemHub.val<ev::pVkSetupContext>();
         rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
 
-        mDevice = ct.device_ref();
-        mDyDispatcher = ct.dynamicDispatcher_ref();
+        mDevice = *ct.device;
+        mDyDispatcher = *ct.dynamicDispatcher;
         mMainRenderImageCount = rt.imageCount_v();
 
         FixSampler::get();
@@ -25,13 +25,13 @@ namespace yic {
         auto allocatorInfo = VmaAllocatorCreateInfo();
         //allocatorInfo.flags = VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
         allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-        allocatorInfo.instance = ct.instance_ref();
-        allocatorInfo.physicalDevice = ct.physicalDevice_ref();
-        allocatorInfo.device = ct.device_ref();
+        allocatorInfo.instance = *ct.instance;
+        allocatorInfo.physicalDevice = *ct.physicalDevice;
+        allocatorInfo.device = *ct.device;
 
         vmaCreateAllocator(&allocatorInfo, &mVmaAllocator);
 
-        CommandBufferCoordinator::init(mDevice, ct.qIndexGraphicsAuxiliary_v(), ct.qGraphicsAuxiliary_ref());
+        CommandBufferCoordinator::init(mDevice, ct.queueFamily->gIndexAuxiliary(), ct.queueFamily->gAuxiliary());
     }
 
     Allocator::~Allocator(){

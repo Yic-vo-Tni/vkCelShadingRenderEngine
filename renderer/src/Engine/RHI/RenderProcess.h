@@ -38,7 +38,7 @@ namespace yic {
         auto& acquire() { return mRenderGroupGraphics; };
         auto& descriptor() { return mDescriptor; };
     private:
-        et::vkSetupContext ct;
+        ev::pVkSetupContext ct;
         et::vkRenderContext rt;
 
         std::string mId;

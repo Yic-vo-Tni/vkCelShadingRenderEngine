@@ -33,32 +33,32 @@ namespace et {
         vk::Semaphore writtenSemaphore;
     };
 
-    struct vkSetupContext {
-        HANA_OPT(vkSetupContext,
-                 (vk::Instance, instance),
-                 (vk::DispatchLoaderDynamic, dynamicDispatcher),
-                 (vk::DebugUtilsMessengerEXT, debugMessenger),
-                 (vk::PhysicalDevice, physicalDevice),
-                 (vk::Device, device),
-                 (yic::QueueFamily, queueFamily));
-
-
-        RETURN_REF(instance);
-        RETURN_REF(dynamicDispatcher);
-        RETURN_REF(debugMessenger);
-        RETURN_REF(physicalDevice);
-        RETURN_REF(device);
-
-        RETURN_CUSTOM_REF(qGraphicsPrimary, queueFamily, queueFamily->getPrimaryGraphicsQueue());
-        RETURN_CUSTOM_REF(qGraphicsAuxiliary, queueFamily, queueFamily->getAuxiliaryGraphicsQueue());
-        RETURN_CUSTOM_REF(qTransferUpload, queueFamily, queueFamily->getUploadTransferQueue());
-        RETURN_CUSTOM_REF(qTransferDownload, queueFamily, queueFamily->getDownloadTransferQueue());
-
-        RETURN_CUSTOM_VALUE(qIndexGraphicsPrimary, queueFamily, queueFamily->getPrimaryGraphicsFamilyIndex());
-        RETURN_CUSTOM_VALUE(qIndexGraphicsAuxiliary, queueFamily, queueFamily->getAuxiliaryGraphicsFamilyIndex());
-        RETURN_CUSTOM_VALUE(qIndexTransferUpload, queueFamily, queueFamily->getUploadTransferFamilyIndex());
-        RETURN_CUSTOM_VALUE(qIndexTransferDownload, queueFamily, queueFamily->getDownloadTransferFamilyIndex());
-    };
+//    struct vkSetupContext {
+//        HANA_OPT(vkSetupContext,
+//                 (vk::Instance, instance),
+//                 (vk::DispatchLoaderDynamic, dynamicDispatcher),
+//                 (vk::DebugUtilsMessengerEXT, debugMessenger),
+//                 (vk::PhysicalDevice, physicalDevice),
+//                 (vk::Device, device),
+//                 (yic::QueueFamily, queueFamily));
+//
+//
+//        RETURN_REF(instance);
+//        RETURN_REF(dynamicDispatcher);
+//        RETURN_REF(debugMessenger);
+//        RETURN_REF(physicalDevice);
+//        RETURN_REF(device);
+//
+//        RETURN_CUSTOM_REF(qGraphicsPrimary, queueFamily, queueFamily->getPrimaryGraphicsQueue());
+//        RETURN_CUSTOM_REF(qGraphicsAuxiliary, queueFamily, queueFamily->getAuxiliaryGraphicsQueue());
+//        RETURN_CUSTOM_REF(qTransferUpload, queueFamily, queueFamily->getUploadTransferQueue());
+//        RETURN_CUSTOM_REF(qTransferDownload, queueFamily, queueFamily->getDownloadTransferQueue());
+//
+//        RETURN_CUSTOM_VALUE(qIndexGraphicsPrimary, queueFamily, queueFamily->getPrimaryGraphicsFamilyIndex());
+//        RETURN_CUSTOM_VALUE(qIndexGraphicsAuxiliary, queueFamily, queueFamily->getAuxiliaryGraphicsFamilyIndex());
+//        RETURN_CUSTOM_VALUE(qIndexTransferUpload, queueFamily, queueFamily->getUploadTransferFamilyIndex());
+//        RETURN_CUSTOM_VALUE(qIndexTransferDownload, queueFamily, queueFamily->getDownloadTransferFamilyIndex());
+//    };
 
 
     struct vkRenderContext {

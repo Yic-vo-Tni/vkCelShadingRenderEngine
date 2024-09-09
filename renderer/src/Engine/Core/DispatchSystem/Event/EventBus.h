@@ -117,9 +117,9 @@ namespace yic {
         }
 
         struct Get {
-            static auto vkSetupContext(default_parm_id) {
-                return getState<et::vkSetupContext>(id);
-            }
+//            static auto vkSetupContext(default_parm_id) {
+//                return getState<et::vkSetupContext>(id);
+//            }
 
             static auto vkRenderContext(parm_id) {
                 return getState<et::vkRenderContext>(id);
@@ -173,15 +173,15 @@ namespace yic {
     static auto valAuto(T& t, Args&&...args){
         using f = std::decay_t<T>;
 
-        if constexpr (std::is_same_v<f, vk::Instance>){
-            t = val<et::vkSetupContext>().instance_ref();
-        } else if constexpr (std::is_same_v<f, vk::Device>){
-            t = val<et::vkSetupContext>().device_ref();
-        } else if constexpr (std::is_same_v<f, vk::PhysicalDevice>){
-            t = val<et::vkSetupContext>().physicalDevice_ref();
-        } else if constexpr (std::is_same_v<f, vk::DispatchLoaderDynamic>) {
-            t = val<et::vkSetupContext>().dynamicDispatcher_ref();
-        }
+//        if constexpr (std::is_same_v<f, vk::Instance>){
+//            t = val<et::vkSetupContext>().instance_ref();
+//        } else if constexpr (std::is_same_v<f, vk::Device>){
+//            t = val<et::vkSetupContext>().device_ref();
+//        } else if constexpr (std::is_same_v<f, vk::PhysicalDevice>){
+//            t = val<et::vkSetupContext>().physicalDevice_ref();
+//        } else if constexpr (std::is_same_v<f, vk::DispatchLoaderDynamic>) {
+//            t = val<et::vkSetupContext>().dynamicDispatcher_ref();
+//        }
 //        } else if constexpr (){
 //
 //        } else if constexpr (){

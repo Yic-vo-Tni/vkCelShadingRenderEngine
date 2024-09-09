@@ -21,21 +21,21 @@ namespace yic {
 
         ImGui_ImplGlfw_InitForVulkan(mWindow, false);
 
+        auto ct = mg::SystemHub.val<ev::pVkSetupContext>();
+        auto rt = EventBus::Get::vkRenderContext(mId);
+
         vk::DescriptorPoolSize poolSize[] = {{vk::DescriptorType::eCombinedImageSampler, 1}};
         auto pool_info = vk::DescriptorPoolCreateInfo().setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
                 .setMaxSets(1)
                 .setPoolSizes(poolSize);
         mDescriptorPool = vkCreate("create imgui descriptor pool") = [&] {
-            return EventBus::Get::vkSetupContext().device_ref().createDescriptorPool(pool_info);
+            return ct.device->createDescriptorPool(pool_info);
         };
 
-        auto ct = EventBus::Get::vkSetupContext();
-        auto rt = EventBus::Get::vkRenderContext(mId);
-
         ImGui_ImplVulkan_InitInfo info{
-                .Instance = ct.instance_ref(),
-                .PhysicalDevice = ct.physicalDevice_ref(),
-                .Device = ct.device_ref(),
+                .Instance = *ct.instance,
+                .PhysicalDevice = *ct.physicalDevice,
+                .Device = *ct.device,
                 .QueueFamily = mQueueIndex,
                 .Queue = mQueue,
                 .DescriptorPool = mDescriptorPool,
@@ -56,7 +56,7 @@ namespace yic {
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
-        EventBus::Get::vkSetupContext().device_ref().destroy(mDescriptorPool);
+        mg::SystemHub.val<ev::pVkSetupContext>().device->destroy(mDescriptorPool);
     }
 
     auto vkImGui::render(vk::CommandBuffer& cmd) -> void {

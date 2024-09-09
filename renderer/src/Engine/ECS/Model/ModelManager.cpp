@@ -3,6 +3,7 @@
 //
 
 #include "ModelManager.h"
+#include "Engine/ECS/Model/ModelLoader.h"
 
 namespace sc {
 
