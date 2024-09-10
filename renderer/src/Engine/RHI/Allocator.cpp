@@ -10,7 +10,6 @@
 #include "vma/vk_mem_alloc.h"
 
 namespace yic {
-    uint32_t Allocator::mMainRenderImageCount = 0;
 
     Allocator::Allocator() {
         ct = mg::SystemHub.val<ev::pVkSetupContext>();
@@ -18,7 +17,6 @@ namespace yic {
 
         mDevice = *ct.device;
         mDyDispatcher = *ct.dynamicDispatcher;
-        mMainRenderImageCount = rt.imageCount_v();
 
         FixSampler::get();
 
@@ -32,48 +30,75 @@ namespace yic {
         vmaCreateAllocator(&allocatorInfo, &mVmaAllocator);
 
         CommandBufferCoordinator::init(mDevice, ct.queueFamily->gIndexAuxiliary(), ct.queueFamily->gAuxiliary());
-    }
+    };
 
     Allocator::~Allocator(){
         vmaDestroyAllocator(mVmaAllocator);
     }
 
 
-    auto Allocator::allocBuf_impl(vk::DeviceSize deviceSize, const void *data,
-                                    vk::BufferUsageFlags flags, MemoryUsage usage, const std::string& id,
-                                    bool unmap) -> vkBuf_sptr {
+//    auto Allocator::make() -> void {
+//
+//    }
+
+
+    //-------------------------------------------------------------------------------------------------//
+    //----------------------------------------    buf    ----------------------------------------------//
+    //-------------------------------------------------------------------------------------------------//
+
+
+    auto Allocator::allocBuffer(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags,
+                             MemoryUsage usage, const std::string &id, bool unmap) -> vkBuf_sptr {
         bufCreateInfo createInfo{
                 .deviceSize = deviceSize,
                 .usage = flags,
 
                 .memoryUsage = usage,
-                .allocStrategy = unmap ? AllocStrategy::eMinTime : AllocStrategy::eMapped,
+                .allocStrategy = unmap ? AllocStrategy::eMinTime : AllocStrategy::eMapped
         };
+
         auto buf = createBuf(createInfo);
 
         auto mapped = mapBuf(buf, deviceSize, data, unmap);
 
-        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, mapped, mVmaAllocator, id, [=](const void* src){
+        return std::make_shared<yic::vkBuffer>(buf.buf, buf.vmaAllocation, mapped, mVmaAllocator, id, [=](const void* src){
             memcpy(mapped, src, deviceSize);
         });
     }
 
-    auto Allocator::allocBufStaging_impl(vk::DeviceSize deviceSize, const void *data,
-                                            vk::BufferUsageFlags flags, const std::string& id, MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
+    auto Allocator::allocBuffer(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, MemoryUsage usage,
+                             const std::string &id, bool unmap) -> vkBuf_sptr {
+        return allocBuffer(deviceSize, nullptr, flags, usage, id, unmap);
+    }
 
+    auto
+    Allocator::allocBuffer(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags, const std::string &id,
+                        MemoryUsage usage, bool unmap) -> vkBuf_sptr {
+        return allocBuffer(deviceSize, data, flags, usage, id, unmap);
+    }
+
+    auto
+    Allocator::allocBuffer(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, const std::string &id, MemoryUsage usage,
+                        bool unmap) -> vkBuf_sptr {
+        return allocBuffer(deviceSize, nullptr, flags, usage, id, unmap);
+    }
+
+    auto Allocator::allocBufferStaging(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags,
+                                    MemoryUsage usage, AllocStrategy allocStrategy,
+                                    const std::string &id) -> vkBuf_sptr {
         if (data == nullptr){
             auto buf = createBuf({
                                          .deviceSize = deviceSize,
                                          .usage = vk::BufferUsageFlagBits::eTransferDst | flags,
                                          .memoryUsage = usage,
                                          .allocStrategy = allocStrategy,
-            });
+                                 });
 
-            return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, deviceSize, buf](const void* src){
+            return std::make_shared<yic::vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, deviceSize, buf](const void* src){
                 auto stagingBuf = acquireStagingBuf(deviceSize);
                 mapBuf(stagingBuf.stgBuf, deviceSize, src, false);
 
-                CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+                yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
                     copyBuf(stagingBuf.stgBuf.buf, buf.buf, deviceSize, cmd);
                     resetBuf(stagingBuf, cmd);
                 });
@@ -92,17 +117,17 @@ namespace yic {
                                      .allocStrategy = allocStrategy,
                              });
 
-        CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+        yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
             copyBuf(stagingBuf.stgBuf.buf, buf.buf, deviceSize, cmd);
             resetBuf(stagingBuf, cmd);
         });
         releaseStagingBuf(stagingBuf);
 
-        return std::make_shared<vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, deviceSize, buf](const void* src) {
+        return std::make_shared<yic::vkBuffer>(buf.buf, buf.vmaAllocation, nullptr, mVmaAllocator, id, [this, deviceSize, buf](const void* src) {
             auto stagingBuf = acquireStagingBuf(deviceSize);
             mapBuf(stagingBuf.stgBuf, deviceSize, src, false);
 
-            CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+            yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
                 copyBuf(stagingBuf.stgBuf.buf, buf.buf, deviceSize, cmd);
                 resetBuf(stagingBuf, cmd);
             });
@@ -112,9 +137,31 @@ namespace yic {
 
     }
 
+    auto Allocator::allocBufferStaging(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags,
+                                    MemoryUsage usage, AllocStrategy allocStrategy,
+                                    const std::string &id) -> vkBuf_sptr {
+        return allocBufferStaging(deviceSize, nullptr, flags, usage, allocStrategy, id);
+    }
+
+    auto Allocator::allocBufferStaging(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, const std::string &id,
+                                    MemoryUsage usage, AllocStrategy allocStrategy) -> vkBuf_sptr {
+        return allocBufferStaging(deviceSize, nullptr, flags, usage, allocStrategy, id);
+    }
+
+    auto Allocator::allocBufferStaging(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags,
+                                    const std::string &id, MemoryUsage usage,
+                                    AllocStrategy allocStrategy) -> vkBuf_sptr {
+        return allocBufferStaging(deviceSize, data, flags, usage, allocStrategy, id);
+    }
 
 
-    auto Allocator::allocImgOffScreen_impl(vkImageConfig config, const std::string& id, size_t count) -> vkImg_sptr {
+
+    //-------------------------------------------------------------------------------------------------//
+    //-----------------------------             img             ---------------------------------------//
+    //-------------------------------------------------------------------------------------------------//
+
+
+    auto Allocator::allocImage(yic::ImageConfig config, const std::string& id) -> vkImg_sptr {
         auto createImage = [&]{
             vk::ImageCreateInfo imageInfo{
                     {},
@@ -129,9 +176,7 @@ namespace yic {
                     config.sharingMode
             };
 
-            VmaAllocationCreateInfo allocInfo{
-                    .usage = VMA_MEMORY_USAGE_GPU_ONLY
-            };
+            VmaAllocationCreateInfo allocInfo{ .usage = VMA_MEMORY_USAGE_GPU_ONLY };
 
             VkImage image;
             VmaAllocation allocation;
@@ -158,6 +203,7 @@ namespace yic {
         std::vector<vk::Image> images;
         std::vector<vk::ImageView> imageViews;
         std::vector<VmaAllocation> allocations;
+        auto count = config.imageCount;
         images.reserve(count);
         imageViews.reserve(count);
         allocations.reserve(count);
@@ -169,27 +215,22 @@ namespace yic {
             allocations.emplace_back(vma);
         }
 
-        if (config.imageFlags == vkImageConfig::eColor){
-            auto img = std::make_shared<vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config,id);
-//            EventBus::update(et::vkResource{
-//                .img = img
-//            });
-            return img;
+        if (config.imageFlags == yic::ImageFlags::eColor){
+            return std::make_shared<yic::vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
         }
-        if (config.imageFlags == vkImageConfig::eStorage){
+        if (config.imageFlags == yic::ImageFlags::eStorage){
             vk::ImageMemoryBarrier barrier{
                     {}, vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eShaderRead, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
                     0, 0, images[0], {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
             };
-            CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
-               cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {},
-                                   {}, {}, barrier);
+            yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+                cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {},
+                                    {}, {}, barrier);
             });
 
-            auto img = std::make_shared<vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
-            return img;
+            return std::make_shared<yic::vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
         }
-        if ((config.imageFlags & (vkImageConfig::eDepthStencil | vkImageConfig::eColor)) != 0){
+        if ((config.imageFlags & (yic::ImageFlags::eDepthStencil | yic::ImageFlags::eColor)) != 0){
             auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
 
             auto depthFormat = [&] {
@@ -226,22 +267,20 @@ namespace yic {
                     framebuffers.emplace_back(mDevice.createFramebuffer(createInfo));
                 }
 
-                auto img = std::make_shared<vkImage>(images, imageViews, allocations,
-                                                 depthImage, depthImageView, depthVma,
-                                                 framebuffers,mDevice, mVmaAllocator, config, id);
-                //EventBus::update(et::vkResource{.img = img});
+                auto img = std::make_shared<yic::vkImage>(images, imageViews, allocations,
+                                                          depthImage, depthImageView, depthVma,
+                                                          framebuffers,mDevice, mVmaAllocator, config, id);
                 return img;
             }
-            auto img = std::make_shared<vkImage>(images, imageViews, allocations, depthImage, depthImageView, depthVma,
-                                             mDevice, mVmaAllocator, config, id);
-            //EventBus::update(et::vkResource{.img = img});
+            auto img = std::make_shared<yic::vkImage>(images, imageViews, allocations, depthImage, depthImageView, depthVma,
+                                                      mDevice, mVmaAllocator, config, id);
             return img;
         }
 
         throw std::runtime_error("failed to create off img");
     }
 
-    auto Allocator::allocImg_impl(const imgPath& imgPath, std::optional<vkImageConfig> config, std::string id) -> vkImg_sptr {
+    auto Allocator::allocImage(const imgPath& imgPath, std::optional<yic::ImageConfig> config, std::string id) -> vkImg_sptr {
         int w, h, c;
         vk::DeviceSize imgSize{0};
         std::vector<stbi_uc> pixels;
@@ -318,9 +357,9 @@ namespace yic {
         auto stgBuf = acquireStagingBuf(imgSize);
         mapBuf(stgBuf.stgBuf, imgSize, pixels.data(), false);
 
-        auto img = allocImgOffScreen_impl(config.value().setExtent(w, h), id, 1);
+        auto img = allocImage(config.value().setExtent(w, h).setImageCount(1), id);
 
-        CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+        yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
             copyBufToImg(stgBuf.stgBuf.buf, img->images[0], (uint32_t)w, (uint32_t)h, cmd);
             resetBuf(stgBuf, cmd);
         });
@@ -329,6 +368,36 @@ namespace yic {
 
         return img;
     }
+
+
+    //-------------------------------------------------------------------------------------------------//
+    //--------------------------------------    accel     ---------------------------------------------//
+    //-------------------------------------------------------------------------------------------------//
+
+    auto Allocator::allocAccel(vk::AccelerationStructureCreateInfoKHR &createInfo) -> vkAccel_sptr{
+        bufCreateInfo bufCreateInfo{
+                .deviceSize = createInfo.size,
+                .usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+
+                .memoryUsage = MemoryUsage::eGpuOnly,
+                .allocStrategy = AllocStrategy::eDefault,
+        };
+        auto buf = createBuf(bufCreateInfo);
+        createInfo.buffer = buf.buf;
+        auto as = mDevice.createAccelerationStructureKHR(createInfo, nullptr, mDyDispatcher);
+        return std::make_shared<yic::vkAccel>(buf.buf, buf.vmaAllocation, mVmaAllocator, as, mDevice, mDyDispatcher);
+    }
+
+    auto Allocator::allocAccel(vk::AccelerationStructureBuildSizesInfoKHR buildSize,
+                               vk::AccelerationStructureTypeKHR type) -> vkAccel_sptr {
+        return allocAccel(vk::AccelerationStructureCreateInfoKHR()
+                                  .setType(type)
+                                  .setSize(buildSize.accelerationStructureSize));
+    }
+
+    //-------------------------------------------------------------------------------------------------//
+    //-------------------------------------------------------------------------------------------------//
+    //-------------------------------------------------------------------------------------------------//
 
     auto Allocator::createBuf(const bufCreateInfo& bufCreateInfo) -> buf {
         VkBuffer buf;
@@ -381,6 +450,7 @@ namespace yic {
         return mappedData;
     }
 
+
     auto Allocator::copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h, vk::CommandBuffer &cmd) -> void {
         transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eTransferDstOptimal, cmd);
@@ -396,7 +466,6 @@ namespace yic {
         transitionImageLayout(img, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eShaderReadOnlyOptimal, cmd);
     }
-
 
     auto Allocator::transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout,
                                             vk::ImageLayout newLayout, vk::CommandBuffer& cmd) -> void {
@@ -468,205 +537,14 @@ namespace yic {
         mStagingBufs.clear();
     }
 
-        auto
-        Allocator::buildBLAS_impl(const std::vector<BLASInput> &input, vk::BuildAccelerationStructureFlagsKHR flags) -> std::vector<vkAccel_sptr> {
-        auto size = input.size();
-        vk::DeviceSize asTotalSize{}, maxScratchSize{};
-        uint32_t compactions{};
-
-        std::vector<BuildAccelerationStructure> buildAS(size);
-
-        for(size_t i = 0; i < size; i++){
-            auto& build = buildAS[i];
-            auto& blas = input[i];
-
-            build.geoInfo.setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
-                            .setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
-                            .setFlags(blas.flags | flags)
-                            .setGeometries(blas.asGeometry);
-
-            build.rangeInfo = blas.asBuildRangeInfo.data();
-
-            std::vector<uint32_t> maxPrimitiveCount( blas.asBuildRangeInfo.size() );
-            for(auto t = 0; t < blas.asBuildRangeInfo.size(); t++){
-                maxPrimitiveCount[t] = blas.asBuildRangeInfo[t].primitiveCount;
-            }
-
-            build.sizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
-                                                          build.geoInfo, maxPrimitiveCount, mDyDispatcher);
-
-            asTotalSize += build.sizeInfo.accelerationStructureSize;
-            maxScratchSize = std::max(maxScratchSize, build.sizeInfo.buildScratchSize);
-            compactions += hasFlag(build.geoInfo.flags, vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction);
-        }
-
-        auto scratchBuf = Allocator::allocBufStaging(maxScratchSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eStorageBuffer);
-        vk::BufferDeviceAddressInfo bufferInfo{scratchBuf->buffer};
-        vk::DeviceAddress  scratchAddress = mDevice.getBufferAddress(bufferInfo);
-
-        std::vector<uint32_t> indices{};
-        vk::DeviceSize batchSize{};
-        vk::DeviceSize batchLimit{256'000'000};
-
-        for(auto i = 0; i < size; i++){
-            indices.emplace_back(i);
-            batchSize += buildAS[i].sizeInfo.accelerationStructureSize;
-
-            if (batchSize >= batchLimit || i == size - 1){
-                for(const auto& index : indices){
-                    auto &build = buildAS[index];
-                    auto createInfo = vk::AccelerationStructureCreateInfoKHR()
-                            .setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
-                            .setSize(build.sizeInfo.accelerationStructureSize);
-
-                    build.asSptr = allocAccel(createInfo);
-                    build.geoInfo.setDstAccelerationStructure(build.asSptr->accel)
-                            .setScratchData(scratchAddress);
-
-                    CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer &cmd) {
-                        cmd.buildAccelerationStructuresKHR(build.geoInfo, build.rangeInfo,
-                                                           mDyDispatcher);
-
-                        vk::MemoryBarrier barrier{vk::AccessFlagBits::eAccelerationStructureWriteKHR,
-                                                  vk::AccessFlagBits::eAccelerationStructureReadKHR};
-                        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-                                            vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-                                            {}, barrier, {}, {});
-                    });
-                }
-
-                batchSize = 0;
-                indices.clear();
-            }
-        }
-
-        std::vector<vkAccel_sptr> as{};
-        for(auto& build : buildAS){
-            as.emplace_back(build.asSptr);
-        }
-
-        return as;
-    }
-
-    auto Allocator::buildTLAS_impl(const std::vector<vk::AccelerationStructureInstanceKHR> &instances,
-                                   vk::BuildAccelerationStructureFlagsKHR flags,
-                                   bool update) -> vkAccel_sptr {
-        uint32_t size = instances.size();
-
-        auto instBuf = Allocator::allocBufStaging(sizeof(vk::AccelerationStructureInstanceKHR) * size, instances.data(),
-                                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                                                  vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
-
-        vk::BufferDeviceAddressInfo addrInfo{instBuf->buffer};
-        vk::DeviceSize addrSize(mDevice.getBufferAddress(addrInfo, mDyDispatcher));
-
-        vk::AccelerationStructureGeometryInstancesDataKHR geoInstData{{}, addrSize};
-        vk::AccelerationStructureGeometryKHR tlasGeo{vk::GeometryTypeKHR::eInstances, geoInstData};
-
-        vk::AccelerationStructureBuildGeometryInfoKHR info{
-                vk::AccelerationStructureTypeKHR::eTopLevel, flags,
-                update ? vk::BuildAccelerationStructureModeKHR::eUpdate : vk::BuildAccelerationStructureModeKHR::eBuild,
-                {}, {}, tlasGeo, {}
-        };
-
-        auto sizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
-                                                                      info, size, mDyDispatcher);
-
-#ifdef  VK_NV_ray_tracing_motion_blur
-        vk::AccelerationStructureMotionInfoNV motionInfoNv{size};
-#endif
-
-        vkAccel_sptr tlas;
-        if (!update) {
-            auto createInfo = vk::AccelerationStructureCreateInfoKHR()
-                    .setType(vk::AccelerationStructureTypeKHR::eTopLevel)
-                    .setSize(sizeInfo.accelerationStructureSize);
-
-            tlas = Allocator::allocAccel(createInfo);
-        }
-
-        auto scratchBuf = Allocator::allocBufStaging(sizeInfo.buildScratchSize,
-                                                     vk::BufferUsageFlagBits::eStorageBuffer |
-                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress);
-
-        vk::BufferDeviceAddressInfo bufAddrInfo{scratchBuf->buffer};
-        vk::DeviceSize scratchAddr = mDevice.getBufferAddress(bufAddrInfo, mDyDispatcher);
-
-        info.setSrcAccelerationStructure(update ? tlas->accel : VK_NULL_HANDLE)
-                .setDstAccelerationStructure(tlas->accel)
-                .setScratchData(scratchAddr);
-
-        vk::AccelerationStructureBuildRangeInfoKHR rangeInfoKhr{size, 0, 0, 0};
-
-        CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer &cmd) {
-            vk::MemoryBarrier barrier{
-                    vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead
-            };
-            cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR, {}, barrier, {}, {});
-            cmd.buildAccelerationStructuresKHR(info, &rangeInfoKhr, mDyDispatcher);
-        });
-
-        return tlas;
-    }
-
-    auto Allocator::allocAccel_impl(vk::AccelerationStructureCreateInfoKHR &createInfo) -> vkAccel_sptr{
-        bufCreateInfo bufCreateInfo{
-                .deviceSize = createInfo.size,
-                .usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-
-                .memoryUsage = MemoryUsage::eGpuOnly,
-                .allocStrategy = AllocStrategy::eDefault,
-        };
-        auto buf = createBuf(bufCreateInfo);
-        createInfo.buffer = buf.buf;
-        auto as = mDevice.createAccelerationStructureKHR(createInfo, nullptr, mDyDispatcher);
-        return std::make_shared<vkAccel>(buf.buf, buf.vmaAllocation, mVmaAllocator, as, mDevice, mDyDispatcher);
-    }
-
-//    auto Allocator::modelToGeometryKHR_impl(sc::Model::Generic &model) -> BLASInput {
-//        BLASInput input;
-//        for(auto& mesh : model.meshes){
-//            auto vertAddr = getBufAddr(mesh.vertBuf);
-//            auto indexAddr = getBufAddr(mesh.indexBuf);
-//
-//            model.meshesAddr.emplace_back(vertAddr, indexAddr);
-//
-//            auto maxPrimitiveCount = mesh.indices.size() / 3;
-//
-//            auto tri = vk::AccelerationStructureGeometryTrianglesDataKHR()
-//                    .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-//                    .setVertexStride(sizeof(sc::Vertex))
-//                    .setVertexData(vertAddr)
-//                    .setMaxVertex(mesh.vertices.size())
-//                    .setIndexType(vk::IndexType::eUint32)
-//                    .setIndexData(indexAddr);
-//            auto asGeo = vk::AccelerationStructureGeometryKHR()
-//                    .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-//                    .setGeometry(tri)
-//                    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-//            auto range = vk::AccelerationStructureBuildRangeInfoKHR()
-//                    .setPrimitiveCount(maxPrimitiveCount)
-//                    .setFirstVertex(0)
-//                    .setPrimitiveOffset(0)
-//                    .setTransformOffset(0);
-//
-//            input.asGeometry.emplace_back(asGeo);
-//            input.asBuildRangeInfo.emplace_back(range);
-//        }
-//        model.meshesAddrBuf = allocBufStaging(model.meshesAddr.size() * sizeof (sc::MeshBufAddress), model.meshesAddr.data(), vk::BufferUsageFlagBits::eStorageBuffer);
-//
-//        return input;
-//    }
-
     auto Allocator::getBufAddr(const vkBuf_sptr& buf) -> vk::DeviceAddress{
         if (!buf){
             return 0;
         }
 
-        return get()->mDevice.getBufferAddress(buf->buffer);
+        return mDevice.getBufferAddress(buf->buffer);
     }
 
 
 } // yic
+

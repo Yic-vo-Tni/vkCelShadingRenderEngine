@@ -24,11 +24,12 @@ namespace yic {
                   vmaAllocation(alloc),
                   mappedData(data),
                   mAllocator(allocatorRef), mUpdateStagingFunc(std::move(updateStagingFunc)), Identifiable(id){
-
+            vkWarn("buf: + {0}", id);
         }
 
         ~vkBuffer() override {
             vmaDestroyBuffer(mAllocator, buffer, vmaAllocation);
+            vkWarn("buf: --------- {0}", id);
         }
 
         vkBuffer(const vkBuffer &) = delete;
@@ -101,30 +102,35 @@ namespace yic {
             size_t height{};
         } info_;
 
+// new
         vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews,
                 vk::Device dev, const std::vector<VmaAllocation> &alloc,
-                VmaAllocator &allocatorRef, vkImageConfig config, const std::string &id)
+                VmaAllocator &allocatorRef, ImageConfig config, const std::string &id)
                 : images(imgs), imageViews(imgViews),
                   mDevice(dev), vmaAllocation(alloc),
                   mAllocator(allocatorRef), Identifiable(id) {
             info_.imageCount = imgs.size();
             info_.width = config.extent.width;
             info_.height = config.extent.height;
+
+            vkInfo("img: + {0}", id);
         }
         vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews, const std::vector<VmaAllocation> &alloc,
                 const vk::Image& depthImg, const vk::ImageView& depthImgViews, const VmaAllocation& depthAlloc,
-                vk::Device dev, VmaAllocator &allocatorRef, vkImageConfig config, const std::string &id)
+                vk::Device dev, VmaAllocator &allocatorRef, ImageConfig config, const std::string &id)
                 : images(imgs), imageViews(imgViews), vmaAllocation(alloc),
                   depthImage(depthImg), depthImageView(depthImgViews), depthVmaAllocation(depthAlloc),
                   mDevice(dev), mAllocator(allocatorRef), Identifiable(id) {
             info_.imageCount = imgs.size();
             info_.width = config.extent.width;
             info_.height = config.extent.height;
+
+            vkInfo("img: + {0}", id);
         }
         vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews, const std::vector<VmaAllocation> &alloc,
                 const vk::Image& depthImg, const vk::ImageView& depthImgViews, const VmaAllocation& depthAlloc,
                 const std::vector<vk::Framebuffer>& framebuffers,
-                vk::Device dev, VmaAllocator &allocatorRef, vkImageConfig config, const std::string &id)
+                vk::Device dev, VmaAllocator &allocatorRef, ImageConfig config, const std::string &id)
                 : images(imgs), imageViews(imgViews), vmaAllocation(alloc),
                   depthImage(depthImg), depthImageView(depthImgViews), depthVmaAllocation(depthAlloc),
                   framebuffers(framebuffers),
@@ -132,6 +138,8 @@ namespace yic {
             info_.imageCount = imgs.size();
             info_.width = config.extent.width;
             info_.height = config.extent.height;
+
+            vkInfo("img: + {0}", id);
         }
 
         ~vkImage() override{
@@ -152,6 +160,8 @@ namespace yic {
                 mDevice.destroy(imageViews[i]);
                 vmaFreeMemory(mAllocator, vmaAllocation[i]);
             }
+
+            vkInfo("img: ------- {0}", id);
         }
 
         vkImage(const vkImage &) = delete;

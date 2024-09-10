@@ -25,8 +25,12 @@ namespace sc {
         mModelQuery = ecs->query<Model>();
         mRenderHandle = yic::EventBus::val<et::pRenderProcess>(enum_name(RenderPhase::ePrimary)).pProcess_ref();
 
-        mRenderTargetOffImg = yic::Allocator::allocImgOffScreen_DepthStencilAndFramebuffers(yic::vkImageConfig{mExtent}, yic::FrameRender::eColorDepthStencilRenderPass,
-                                                                                            enum_name(RenderPhase::ePrimary), 3);
+        mRenderTargetOffImg = mg::Allocator->allocImage(yic::ImageConfig()
+                .setExtent(mExtent)
+                .setImageFlags(yic::ImageFlags::eDepthStencil)
+                .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
+                .setImageCount(3), " enum(PrimaryRenderSeq::Graphics)");
+
         mRenderHandle->updateDescriptor(static_cast<int>(RenderPhase::ePrimary), mRenderTargetOffImg);
 
         mRTBuilder = std::make_unique<yic::RTBuilder>();
@@ -97,8 +101,13 @@ namespace sc {
     auto ModelManager::rebuild() -> void {
         yic::EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext &uiWidgetContext) {
             mExtent = (vk::Extent2D{(uint32_t) uiWidgetContext.viewportSize.value().x, (uint32_t) uiWidgetContext.viewport_height_v()});
-            mRenderTargetOffImg = yic::Allocator::allocImgOffScreen_DepthStencilAndFramebuffers(yic::vkImageConfig{mExtent}, yic::FrameRender::eColorDepthStencilRenderPass,
-                                                                                          enum_name(RenderPhase::ePrimary), 3);
+
+            mRenderTargetOffImg = mg::Allocator->allocImage(yic::ImageConfig()
+                                                                    .setExtent(mExtent)
+                                                                    .setImageFlags(yic::ImageFlags::eDepthStencil)
+                                                                    .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
+                                                                    .setImageCount(3), " enum(PrimaryRenderSeq::Graphics)");
+
             mRenderHandle->updateDescriptor(static_cast<int>(RenderPhase::ePrimary), mRenderTargetOffImg);
 
             mModelQuery.each([&](flecs::entity e, sc::Model &model) {

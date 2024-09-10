@@ -52,7 +52,8 @@ namespace sc {
         [[nodiscard]] inline auto& getVpMatrixBuf() const { return buf;}
 
         auto initBuf() -> void{
-            buf = yic::Allocator::allocBuf(sizeof(VpMatrix), vk::BufferUsageFlagBits::eUniformBuffer, yic::Allocator::MemoryUsage::eCpuToGpu, "global_camera");
+            //buf = yic::Allocator::allocBuf(sizeof(VpMatrix), vk::BufferUsageFlagBits::eUniformBuffer, yic::Allocator::MemoryUsage::eCpuToGpu, "global_camera");
+            buf = mg::Allocator->allocBuffer(sizeof (VpMatrix), vk::BufferUsageFlagBits::eUniformBuffer, "global camera");
             //extent = yic::EventBus::val<et::ResolutionRatio>().extent_v();
         }
         auto clear() -> void{

@@ -209,7 +209,8 @@ namespace yic{
             eColor = 1 << 0,
             eDepth = 1 << 1,
             eDepthStencil = 1 << 2,
-            eStorage = 1 << 3,
+            eFramebuffer = 1 << 3,
+            eStorage = 1 << 4,
         };
         ImageFlags imageFlags = eColor;
         vk::ImageType imageType = vk::ImageType::e2D;
@@ -244,7 +245,6 @@ namespace yic{
 
         vk::RenderPass renderPass;
 
-        //bool bFramebuffers = false;
         bool custom_define = false;
 
         explicit vkImageConfig(vk::Extent2D e2d){ extent = vk::Extent3D{e2d, 1}; };
@@ -254,10 +254,6 @@ namespace yic{
             extent = vk::Extent3D{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
         };
 
-//        vkImageConfig& enableFramebuffers(){
-//            bFramebuffers = true;
-//            return *this;
-//        }
         vkImageConfig& setRenderPass(vk::RenderPass rp){
             renderPass = rp;
             return *this;
@@ -325,6 +321,144 @@ namespace yic{
 
         vkImageConfig& setAspect(vk::ImageAspectFlags flags){
             imageSubresourceRange.aspectMask = flags;
+            return *this;
+        }
+    };
+
+
+    enum ImageFlags : uint32_t{
+        eNone = 0,
+        eColor = 1 << 0,
+        eDepth = 1 << 1,
+        eDepthStencil = 1 << 2,
+        eStorage = 1 << 3,
+    };
+    struct ImageConfig{
+        ImageFlags imageFlags = eColor;
+        uint8_t imageCount;
+        vk::ImageType imageType = vk::ImageType::e2D;
+        vk::Format format = vk::Format::eR8G8B8A8Unorm;
+        vk::Extent3D extent = {};
+        uint32_t mipLevels = 1;
+        uint32_t arrayLayers = 1;
+        vk::SampleCountFlagBits sampleCountFlags = vk::SampleCountFlagBits::e1;
+        vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
+        vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment;
+        vk::SharingMode sharingMode = vk::SharingMode::eExclusive;
+
+        vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
+        vk::ComponentSwizzle componentSwizzle = vk::ComponentSwizzle::eIdentity;
+        vk::ImageSubresourceRange imageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+        vk::Filter magFilter = vk::Filter::eLinear;
+        vk::Filter minFilter = vk::Filter::eNearest;
+        vk::SamplerMipmapMode samplerMipMap = vk::SamplerMipmapMode::eLinear;
+        vk::SamplerAddressMode u = vk::SamplerAddressMode::eRepeat;
+        vk::SamplerAddressMode v = vk::SamplerAddressMode::eRepeat;
+        vk::SamplerAddressMode w = vk::SamplerAddressMode::eRepeat;
+        float mipLodBias = 0.f;
+        vk::Bool32 anisotropyEnable = vk::False;
+        float maxAnisotropy = 1.f;
+        vk::Bool32 compareEnable = vk::False;
+        vk::CompareOp compareOp = vk::CompareOp::eAlways;
+        float minLod = 0.f;
+        float maxLod = 0.f;
+        vk::BorderColor borderColor = vk::BorderColor::eIntOpaqueBlack;
+        vk::Bool32  unNormalizedCoordinates = vk::False;
+
+        vk::RenderPass renderPass;
+
+        bool custom_define = false;
+
+        explicit ImageConfig(vk::Extent2D e2d = {2560, 1440}, uint8_t imgCount = 1) : extent(e2d, 1), imageCount(imgCount) {
+        };
+        explicit ImageConfig(vk::Extent2D e2d, ImageFlags flags, uint8_t imgCount = 1) : extent(e2d, 1), imageFlags(flags), imageCount(imgCount) {
+        };
+
+        ImageConfig(vk::Extent2D e2d, ImageFlags flags, vk::RenderPass rp, uint8_t imgCount = 1)
+                : extent(e2d, 1), imageFlags(flags),  renderPass(rp), imageCount(imgCount) {
+        };
+
+//        template<typename T>
+//        explicit ImageConfig(T width, T height) {
+//            extent = vk::Extent3D{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
+//        };
+
+        ImageConfig& setRenderPass(vk::RenderPass rp){
+            renderPass = rp;
+            return *this;
+        }
+
+        ImageConfig& setImageFlags(ImageFlags flags) {
+            imageFlags = flags;
+            return *this;
+        }
+
+        ImageConfig& setImageType(vk::ImageType type) {
+            imageType = type;
+            return *this;
+        }
+
+        ImageConfig& setFormat(vk::Format f) {
+            format = f;
+            return *this;
+        }
+
+        ImageConfig& setExtent(vk::Extent3D e) {
+            extent = e;
+            return *this;
+        }
+        ImageConfig& setExtent(vk::Extent2D e) {
+            extent = vk::Extent3D{e, 1};
+            return *this;
+        }
+
+        template<typename T>
+        ImageConfig& setExtent(T w_, T h_) {
+            extent = vk::Extent3D{static_cast<uint32_t>(w_), static_cast<uint32_t>(h_), 1};
+            return *this;
+        }
+
+        ImageConfig& setMipLevels(uint32_t levels) {
+            mipLevels = levels;
+            return *this;
+        }
+
+        ImageConfig& setArrayLayers(uint32_t layers) {
+            arrayLayers = layers;
+            return *this;
+        }
+
+        ImageConfig& setSampleCountFlags(vk::SampleCountFlagBits flags) {
+            sampleCountFlags = flags;
+            return *this;
+        }
+
+        ImageConfig& setTiling(vk::ImageTiling t) {
+            tiling = t;
+            return *this;
+        }
+
+        ImageConfig& addUsage(vk::ImageUsageFlags usg) {
+            usage |= usg;
+            return *this;
+        }
+        ImageConfig& setUsage(vk::ImageUsageFlags usg) {
+            usage = usg;
+            return *this;
+        }
+
+        ImageConfig& setSharingMode(vk::SharingMode mode) {
+            sharingMode = mode;
+            return *this;
+        }
+
+        ImageConfig& setAspect(vk::ImageAspectFlags flags){
+            imageSubresourceRange.aspectMask = flags;
+            return *this;
+        }
+        ImageConfig& setImageCount(uint8_t count){
+            imageCount = count;
             return *this;
         }
     };

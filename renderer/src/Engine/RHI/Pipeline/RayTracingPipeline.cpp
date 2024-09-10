@@ -89,20 +89,23 @@ namespace yic {
         auto handles = mDevice.getRayTracingShaderGroupHandlesKHR<uint8_t >(mRTPipeline, 0, numGroup, sbtSize, mDyDispatcher);
         auto bufUsage = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
-        Allocator::allocBufAuto(rgenSbt, hs, handles.data(), bufUsage,
-                                rmissSbt, hs * missCount, handles.data() + hsAligned * rgenCount,
-                                rchitSbt, hs * hitCount, handles.data() + hsAligned * (rgenCount + missCount));
+//        Allocator::allocBufAuto(rgenSbt, hs, handles.data(), bufUsage,
+//                                rmissSbt, hs * missCount, handles.data() + hsAligned * rgenCount,
+//                                rchitSbt, hs * hitCount, handles.data() + hsAligned * (rgenCount + missCount));
+        rgenSbt = mg::Allocator->allocBuffer(hs, handles.data(), bufUsage, "rgen sbt");
+        rmissSbt = mg::Allocator->allocBuffer(hs * missCount, handles.data() + hsAligned * rgenCount, bufUsage, "rmiss sbt");
+        rchitSbt = mg::Allocator->allocBuffer(hs * hitCount, handles.data() + hsAligned * (rgenCount + missCount), bufUsage, "rchit sbt");
 
         regionRgen = vk::StridedDeviceAddressRegionKHR()
-                .setDeviceAddress(Allocator::getBufAddr(rgenSbt))
+                .setDeviceAddress(mg::Allocator->getBufAddr(rgenSbt))
                 .setSize(hsAligned)
                 .setStride(hsAligned);
         regionMiss = vk::StridedDeviceAddressRegionKHR()
-                .setDeviceAddress(Allocator::getBufAddr(rmissSbt))
+                .setDeviceAddress(mg::Allocator->getBufAddr(rmissSbt))
                 .setStride(hsAligned)
                 .setSize(hsAligned * missCount);
         regionHit = vk::StridedDeviceAddressRegionKHR()
-                .setDeviceAddress(Allocator::getBufAddr(rchitSbt))
+                .setDeviceAddress(mg::Allocator->getBufAddr(rchitSbt))
                 .setStride(hsAligned)
                 .setSize(hsAligned * hitCount);
         regionCall = vk::StridedDeviceAddressRegionKHR();

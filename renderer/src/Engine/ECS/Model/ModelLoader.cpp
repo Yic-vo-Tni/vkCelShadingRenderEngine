@@ -95,15 +95,18 @@ namespace sc {
                 }
                 if (texAlloc) {
                     if (texs.diffTexs[index] == nullptr) {
-                        texs.diffTexs[index] = yic::Allocator::allocImg(loadPt.string());
+//                        texs.diffTexs[index] = yic::Allocator::allocImg(loadPt.string());
+                        texs.diffTexs[index] = mg::Allocator->allocImage(loadPt.string());
                     }
                 }
             }
         }
 
         auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-        mesh.vertBuf = yic::Allocator::allocBufStaging(mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), vk::BufferUsageFlagBits::eVertexBuffer | usage);
-        mesh.indexBuf = yic::Allocator::allocBufStaging(mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(), vk::BufferUsageFlagBits::eIndexBuffer | usage);
+//        mesh.vertBuf = yic::Allocator::allocBufStaging(mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), vk::BufferUsageFlagBits::eVertexBuffer | usage);
+//        mesh.indexBuf = yic::Allocator::allocBufStaging(mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(), vk::BufferUsageFlagBits::eIndexBuffer | usage);
+        mesh.vertBuf = mg::Allocator->allocBufferStaging(mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), vk::BufferUsageFlagBits::eVertexBuffer | usage, "model: " + model.info.id + " vert buf");
+        mesh.indexBuf = mg::Allocator->allocBufferStaging(mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(), vk::BufferUsageFlagBits::eIndexBuffer | usage, "model: " + model.info.id + " index buf");
 
         return model;
     }

@@ -44,6 +44,9 @@ namespace yic {
         );
 
         EventBus::update(et::ResolutionRatio{vk::Extent2D{2560, 1440}});
+        {
+            mg::Allocator = Allocator::make();
+        }
 
         auto ct = mg::SystemHub.val<ev::pVkSetupContext>();
         {
@@ -53,13 +56,15 @@ namespace yic {
             mRenderProcessHandler = std::make_unique<RenderProcessHandler>();
         }
 
+
     }
 
     vkRhi::~vkRhi() {
         mg::SystemHub.val<ev::pVkSetupContext>().queueFamily->gPrimary().waitIdle();
         mg::SystemHub.val<ev::pVkSetupContext>().device->waitIdle();
 
-        Allocator::clear();
+        //Allocator::clear();
+        mg::Allocator->clear();
         mRenderProcessHandler->clear();
         ImGuiDescriptorManager::clear();
         EventBus::destroy<et::vkResource>();

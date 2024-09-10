@@ -23,7 +23,13 @@ namespace yic {
 //        cSbt();
 
         mExtent.setWidth(2560).setHeight(1440);
-        Allocator::allocImgAuto(offRtImg, vk::ImageUsageFlagBits::eStorage, mExtent);
+//        Allocator::allocImgAuto(offRtImg, vk::ImageUsageFlagBits::eStorage, mExtent);
+//        offRtImg = mg::Allocator->allocImage(ImageConfig()
+//                .setExtent(mExtent)
+//                .setImageFlags(ImageFlags::eStorage)
+//                .setUsage(vk::ImageUsageFlagBits::eStorage)
+//                .setImageCount(1), "off: raytracing");
+        mg::Allocator->allocAuto(offRtImg, vk::ImageUsageFlagBits::eStorage, mExtent, std::string("off: raytracing"));
     }
     RTBuilder::~RTBuilder() {
         mDevice.destroy(desSetLayout);
@@ -116,8 +122,10 @@ namespace yic {
 //        });
 
         auto& m = (mModel = sc::ModelLoader::Load(R"(E:\Material\model\Nilou\Nilou.pmx)")).mesh;
-        INIT_MULTI(vk::DeviceOrHostAddressConstKHR, vertBufAddr{Allocator::getBufAddr(m.vertBuf)},
-                                                    indexBufAddr{Allocator::getBufAddr(m.indexBuf)});
+//        INIT_MULTI(vk::DeviceOrHostAddressConstKHR, vertBufAddr{Allocator::getBufAddr(m.vertBuf)},
+//                                                    indexBufAddr{Allocator::getBufAddr(m.indexBuf)});
+        INIT_MULTI(vk::DeviceOrHostAddressConstKHR, vertBufAddr{mg::Allocator->getBufAddr(m.vertBuf)},
+                                                    indexBufAddr{mg::Allocator->getBufAddr(m.indexBuf)});
 
         auto maxVert = (uint32_t )m.vertices.size();
         auto numTri = (uint32_t )m.indices.size() / 3;
@@ -141,10 +149,17 @@ namespace yic {
         auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, numTri, mDyDispatcher);
 
 
-        blas = Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
+//        blas = Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
+//
+//        auto scratchBuf = Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+//        auto scratchBufAddr = vk::DeviceOrHostAddressKHR{Allocator::getBufAddr(scratchBuf)};
+        blas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
 
-        auto scratchBuf = Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
-        auto scratchBufAddr = vk::DeviceOrHostAddressKHR{Allocator::getBufAddr(scratchBuf)};
+        auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize,
+                                                            vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                                                            vk::BufferUsageFlagBits::eStorageBuffer,
+                                                            "model: " + mModel.info.id + " blas scratch buf");
+        auto scratchBufAddr = vk::DeviceOrHostAddressKHR{mg::Allocator->getBufAddr(scratchBuf)};
 
         asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
                 .setDstAccelerationStructure(blas->accel)
@@ -222,7 +237,46 @@ namespace yic {
 //
 //        CommandBufferCoordinator::buildAccelerationStructuresKHR(asGeomBuildInfo, &asBuildRangInfo);
 
-        auto tfMat = Allocator::glmMatToVkTransformMatrix();
+///////////////////////
+
+//        auto tfMat = Allocator::glmMatToVkTransformMatrix();
+//
+//        auto inst = vk::AccelerationStructureInstanceKHR()
+//                .setTransform(tfMat)
+//                .setInstanceCustomIndex(0)
+//                .setMask(0xFF)
+//                .setInstanceShaderBindingTableRecordOffset(0)
+//                .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
+//                .setAccelerationStructureReference(Allocator::getAccelDevAddr(blas));
+//
+//        auto instBuf = Allocator::allocBufStaging(sizeof(vk::AccelerationStructureInstanceKHR), &inst,
+//                                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
+//                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
+//
+//        auto asGeom = vk::AccelerationStructureGeometryKHR()
+//                .setGeometryType(vk::GeometryTypeKHR::eInstances)
+//                .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
+//                .setGeometry(vk::AccelerationStructureGeometryDataKHR()
+//                .setInstances(vk::AccelerationStructureGeometryInstancesDataKHR()
+//                .setArrayOfPointers(vk::False)
+//                .setData(Allocator::getBufAddr(instBuf))));
+//        auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
+//                .setType(vk::AccelerationStructureTypeKHR::eTopLevel)
+//                .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
+//                .setGeometries(asGeom);
+//
+//        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, 1, mDyDispatcher);
+//
+//        tlas = Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
+//
+//        auto scratchBuf = Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize,
+//                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+//
+//        asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
+//                .setDstAccelerationStructure(tlas->accel)
+//                .setScratchData(vk::DeviceOrHostAddressKHR{Allocator::getBufAddr(scratchBuf)});
+
+        auto tfMat = mg::Allocator->glmMatToVkTransformMatrix();
 
         auto inst = vk::AccelerationStructureInstanceKHR()
                 .setTransform(tfMat)
@@ -230,19 +284,19 @@ namespace yic {
                 .setMask(0xFF)
                 .setInstanceShaderBindingTableRecordOffset(0)
                 .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
-                .setAccelerationStructureReference(Allocator::getAccelDevAddr(blas));
+                .setAccelerationStructureReference(mg::Allocator->getAccelDevAddr(blas));
 
-        auto instBuf = Allocator::allocBufStaging(sizeof(vk::AccelerationStructureInstanceKHR), &inst,
+        auto instBuf = mg::Allocator->allocBufferStaging(sizeof(vk::AccelerationStructureInstanceKHR), &inst,
                                                   vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
+                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR, "model: " + mModel.info.id + " tlas inst buf");
 
         auto asGeom = vk::AccelerationStructureGeometryKHR()
                 .setGeometryType(vk::GeometryTypeKHR::eInstances)
                 .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
                 .setGeometry(vk::AccelerationStructureGeometryDataKHR()
-                .setInstances(vk::AccelerationStructureGeometryInstancesDataKHR()
-                .setArrayOfPointers(vk::False)
-                .setData(Allocator::getBufAddr(instBuf))));
+                                     .setInstances(vk::AccelerationStructureGeometryInstancesDataKHR()
+                                                           .setArrayOfPointers(vk::False)
+                                                           .setData(mg::Allocator->getBufAddr(instBuf))));
         auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
                 .setType(vk::AccelerationStructureTypeKHR::eTopLevel)
                 .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
@@ -250,14 +304,14 @@ namespace yic {
 
         auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, 1, mDyDispatcher);
 
-        tlas = Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
+        tlas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
 
-        auto scratchBuf = Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize,
-                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+        auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize,
+                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, "model: " + mModel.info.id + " tlas scratch buf");
 
         asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
                 .setDstAccelerationStructure(tlas->accel)
-                .setScratchData(vk::DeviceOrHostAddressKHR{Allocator::getBufAddr(scratchBuf)});
+                .setScratchData(vk::DeviceOrHostAddressKHR{mg::Allocator->getBufAddr(scratchBuf)});
 
         auto asBuildRangInfo = vk::AccelerationStructureBuildRangeInfoKHR()
                 .setPrimitiveCount(1)

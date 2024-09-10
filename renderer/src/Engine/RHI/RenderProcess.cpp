@@ -20,7 +20,11 @@ namespace yic {
         mRenderSession = std::make_unique<RenderSession>(mId, ct.queueFamily->gIndexPrimary(), rt.imageCount_v(), vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
         mImageCount = rt.imageCount_v();
-        mOffImage = Allocator::allocImgOffScreen_DepthStencilAndFramebuffers(vkImageConfig{mExtent}, FrameRender::eColorDepthStencilRenderPass, mId, mImageCount);
+        mOffImage = mg::Allocator->allocImage(ImageConfig()
+                .setExtent(mExtent)
+                .setImageFlags(ImageFlags::eDepthStencil)
+                .setRenderPass(FrameRender::eColorDepthStencilRenderPass)
+                .setImageCount(mImageCount), mId);
 
         ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
     }
@@ -116,7 +120,11 @@ namespace yic {
             ct.queueFamily->gPrimary().waitIdle();
             mImageCount = rt.imageCount_v();
 
-            mOffImage = Allocator::allocImgOffScreen_DepthStencilAndFramebuffers(vkImageConfig{mExtent}, FrameRender::eColorDepthStencilRenderPass, mId, mImageCount);
+            mOffImage = mg::Allocator->allocImage(ImageConfig()
+                                                          .setExtent(mExtent)
+                                                          .setImageFlags(ImageFlags::eDepthStencil)
+                                                          .setRenderPass(FrameRender::eColorDepthStencilRenderPass)
+                                                          .setImageCount(mImageCount), mId);
 
             ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
         }, mId);
