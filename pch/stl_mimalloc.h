@@ -16,9 +16,6 @@ namespace vot{
     using deque = std::deque<T, mi_stl_allocator<T>>;
 
     template<typename T>
-    using deque = std::deque<T, mi_stl_allocator<T>>;
-
-    template<typename T>
     using list = std::list<T, mi_stl_allocator<T>>;
 
     template<typename Key, typename Comp = std::less<Key>>
@@ -39,6 +36,40 @@ namespace vot{
     using string = std::basic_string<char, std::char_traits<char>, mi_stl_allocator<char>>;
 
     using uint32L = std::initializer_list<uint32_t>;
+
+    template<typename T>
+    struct smart_vector{
+        smart_vector() = default;
+        explicit smart_vector(size_t size){
+            vec.resize(size);
+        }
+
+        operator T() const { return vec.front(); }
+        operator vector<T>() const { return vec; }
+
+        T& operator[](std::size_t index){
+            return vec[index];
+        }
+
+        const T& operator [](std::size_t index) const{
+            return vec[index];
+        }
+
+        auto reserve(std::size_t count) { vec.reserve(count); }
+
+        template<typename ...Args>
+        auto emplace_back(Args&& ...args) { vec.emplace_back(std::forward<Args>(args)...); }
+
+        auto begin() { return vec.begin(); }
+        auto end() { return vec.end(); }
+        auto begin() const { return vec.begin(); }
+        auto end() const { return vec.end(); }
+        auto cbegin() const { return vec.cbegin(); }
+        auto cend() const { return vec.cend(); }
+
+    private:
+        vector<T> vec{};
+    };
 }
 
 

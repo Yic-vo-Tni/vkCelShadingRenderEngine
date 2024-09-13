@@ -6,10 +6,10 @@
 
 namespace yic {
 
-    vkSwapchain::vkSwapchain(const std::string &id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex,
+    vkSwapchain::vkSwapchain(const vot::string &id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex,
                              vk::Format format) :
             mId(id),
-            mWindow(mg::SystemHub.val<ev::hVkRenderContext>().window),
+            mWindow(mg::SystemHub.val<ev::hVkRenderContext>(id).window),
             mInstance(*mg::SystemHub.val<ev::pVkSetupContext>().instance),
             mDevice(*mg::SystemHub.val<ev::pVkSetupContext>().device),
             mPhysicalDevice(*mg::SystemHub.val<ev::pVkSetupContext>().physicalDevice),
@@ -22,21 +22,25 @@ namespace yic {
             mRenderPass(createRenderPass()),
             mFramebuffers(createFrameBuffers()),
             mFences(createFences()){
-        mRenderSession = std::make_unique<RenderSession>(id, queueFamilyIndex, mImageCount);
 
-        EventBus::update(et::vkRenderContext{
-                .swapchain = mSwapchain,
-                .frameEntries = mFrameEntries,
-                .surfaceFormat = mSurfaceFormat,
-                .renderPass = mRenderPass,
-                .framebuffers = mFramebuffers,
+        mg::SystemHub.sto(ev::hVkRenderContext{
+            .swapchain = &mSwapchain,
+            .frameEntries = &mFrameEntries,
+            .surfaceFormat = &mSurfaceFormat,
+            .activeImageIndex = &mImageIndex,
+            .renderPass = &mRenderPass,
+            .framebuffers = &mFramebuffers,
         }, mId);
 
-        mImGui = std::make_unique<vkImGui>(id, graphicsQueue, queueFamilyIndex);
 
-        EventBus::subscribeAuto([&](const et::vkRenderContext& vkRenderContext){
-            mUpdateSize.store(true);
-        }, mId);
+        mRenderSession = std::make_unique<RenderSession>(mId.c_str(), queueFamilyIndex, mImageCount);
+        mImGui = std::make_unique<vkImGui>(mId, graphicsQueue, queueFamilyIndex);
+
+        mg::SystemHub.subscribe([&](const ev::oWindowSizeChange& change){
+            mGraphicsQueue.waitIdle();
+            recreateSwapchain();
+            mCurrentFrame = 0;
+        });
     }
 
     vkSwapchain::~vkSwapchain() {
@@ -76,10 +80,10 @@ namespace yic {
     auto vkSwapchain::createSwapchain(vk::SwapchainKHR oldSwapchain) -> vk::SwapchainKHR {
         auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
         auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
-        auto extent = EventBus::Get::vkRenderContext(mId).extent_v();
+        auto extent = mg::SystemHub.valEvent<ev::oWindowSizeChange>().extent.value();
 
         mExtent = capabilities.currentExtent.width == (uint32_t) - 1 ? extent : capabilities.currentExtent;
-        EventBus::update(et::vkRenderContext{.currentExtent = mExtent}, mId);
+        mg::SystemHub.sto(ev::hVkRenderContext{.currentExtent = &mExtent}, mId);
         auto imageCount = std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount,
                                  capabilities.maxImageCount ? capabilities.maxImageCount : UINT32_MAX);
 
@@ -144,13 +148,6 @@ namespace yic {
     }
 
     auto vkSwapchain::updateEveryFrame() -> void {
-        if (mUpdateSize.load()){
-            mGraphicsQueue.waitIdle();
-            recreateSwapchain();
-            mCurrentFrame = 0;
-            mUpdateSize.store(false);
-        }
-
         if (!acquire())
             throw std::runtime_error("failed to acquire swap chain image");
 
@@ -192,7 +189,6 @@ namespace yic {
             switch (rv.result) {
                 case vk::Result::eSuccess:
                     mImageIndex = rv.value;
-                    EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex}, mId);
                     break;
                 default:
                     mDevice.destroy(semaphore);
@@ -211,7 +207,6 @@ namespace yic {
         switch (rv.result) {
             case vk::Result::eSuccess:
                 mImageIndex = rv.value;
-                EventBus::update(et::vkRenderContext{.activeImageIndex = mImageIndex}, mId);
                 return true;
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR:
@@ -234,9 +229,6 @@ namespace yic {
         setSwapchain(newSwapchain);
         mFrameEntries = createFrameEntries();
         mFramebuffers = createFrameBuffers();
-
-        EventBus::update(et::vkRenderContext{.swapchain = mSwapchain, .frameEntries = mFrameEntries, .framebuffers = mFramebuffers}, mId);
-
     }
 
     auto vkSwapchain::createRenderPass() -> vk::RenderPass {

@@ -15,7 +15,7 @@ namespace yic {
 
     class vkSwapchain : nonCopyable{
     public:
-        explicit vkSwapchain(const std::string& id,
+        explicit vkSwapchain(const vot::string& id,
                              vk::Queue graphicsQueue, const uint32_t& queueFamilyIndex,
                              vk::Format format = vk::Format::eR8G8B8A8Unorm);
         ~vkSwapchain();
@@ -35,7 +35,6 @@ namespace yic {
                 if (mSwapchain)
                     mDevice.destroy(mSwapchain);
                 mSwapchain = swapchainKhr;
-                EventBus::update(et::vkRenderContext{.swapchain = mSwapchain});
             }
         };
         auto recreateSwapchain() -> void;
@@ -51,7 +50,8 @@ namespace yic {
         vk::Queue mGraphicsQueue{};
 
     private:
-        std::string mId;
+        std::string Id;
+        vot::string mId;
         vk::SurfaceFormatKHR mSurfaceFormat;
         vk::Extent2D mExtent{};
         vk::SwapchainKHR mSwapchain{};

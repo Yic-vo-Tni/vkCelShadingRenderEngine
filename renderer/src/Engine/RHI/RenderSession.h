@@ -66,6 +66,7 @@ namespace yic {
     private:
         std::string mId{};
         vk::Device mDevice{};
+        uint32_t* mImageIndex{};
         uint32_t mQueueIndex{UINT32_MAX};
         vk::CommandBuffer mActiveCommandBuffer{};
         vk::CommandPool mCommandPool{};

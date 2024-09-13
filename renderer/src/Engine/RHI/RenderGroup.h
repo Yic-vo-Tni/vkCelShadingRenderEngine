@@ -74,6 +74,11 @@ namespace yic {
             return std::make_shared<RenderGroupBase<PipelineType>>(renderPass);
         }
 
+        std::shared_ptr<RenderGroupBase<PipelineType>> bindDescriptor(std::shared_ptr<Descriptor>& descriptor){
+            descriptor = Descriptor::configure(*this);
+            return this->shared_from_this();
+        }
+
         std::shared_ptr<RenderGroupBase<PipelineType>> build() requires isGraphics<PipelineType> {
             Graphics::createInfo.setLayout(PipelineDesSetLayout::getPipelineLayout());
             Graphics::create();

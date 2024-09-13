@@ -7,10 +7,14 @@
 namespace ui {
 
 
+    RenderWindow::RenderWindow(): Widget("Render"){
+        mLastFrameTime = std::chrono::steady_clock::now();
+        mImageIndex = mg::SystemHub.val<ev::hVkRenderContext>(toolkit::enum_name(RenderPhase::ePrimary)).activeImageIndex;
+    }
+
+
     void RenderWindow::record() {
         calculateFPS();
-
-        auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
         ImVec2 available = ImGui::GetContentRegionAvail();
         auto windowPos = ImGui::GetCursorScreenPos();
@@ -30,7 +34,7 @@ namespace ui {
             mAvailable = ImVec2{2560, 1440};
         }
 
-        ImGuiDescriptorManager::drawImage(enum_name(RenderPhase::ePrimary), ImVec2(available.x, available.y), index);
+        ImGuiDescriptorManager::drawImage(enum_name(RenderPhase::ePrimary), ImVec2(available.x, available.y), *mImageIndex);
 
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         char fps_text[32];
@@ -42,7 +46,6 @@ namespace ui {
         sprintf(size_text, "Available width: %.0f, height: %.0f", available.x, available.y);
         drawList->AddText(ImVec2(windowPos.x + 10.f, windowPos.y + textHeight), IM_COL32_WHITE, size_text);
     }
-
 
     auto RenderWindow::calculateFPS() -> void {
         auto currentFrameTime = std::chrono::steady_clock::now();

@@ -15,11 +15,12 @@ namespace yic {
 
     RenderProcess::RenderProcess(std::string id) : mId(std::move(id)){
         ct = mg::SystemHub.val<ev::pVkSetupContext>();
-        rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
+        rt = mg::SystemHub.val<ev::hVkRenderContext>(toolkit::enum_name(RenderPhase::ePrimary));
 
-        mRenderSession = std::make_unique<RenderSession>(mId, ct.queueFamily->gIndexPrimary(), rt.imageCount_v(), vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+        mImageCount = rt.framebuffers->size();
+        mImageIndex = rt.activeImageIndex;
+        mRenderSession = std::make_unique<RenderSession>(mId, ct.queueFamily->gIndexPrimary(), mImageCount, vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
-        mImageCount = rt.imageCount_v();
         mOffImage = mg::Allocator->allocImage(ImageConfig()
                 .setExtent(mExtent)
                 .setImageFlags(ImageFlags::eDepthStencil)
@@ -27,6 +28,8 @@ namespace yic {
                 .setImageCount(mImageCount), mId);
 
         ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
+
+        renderTargetChange();
     }
 
     RenderProcess::~RenderProcess() = default;
@@ -71,6 +74,20 @@ namespace yic {
         };
     }
 
+    auto RenderProcess::appendRenderPassProcessCommand(const uint8_t &seq, const vkImage_sptr& imageSptr, const yic::RenderProcess::recCommandFn &rec) -> void {
+        mCommandBufRecs[seq] = [this, ptr = imageSptr.get(), rec](vk::CommandBuffer& cmd) {
+
+            mRenderSession->beginRenderPass(RenderSession::passInfo{
+                    FrameRender::eColorDepthStencilRenderPass, ptr->framebuffers,
+                    vk::SubpassContents::eSecondaryCommandBuffers, RenderSession::clearValue::colorDepth
+            });
+
+            rec(cmd);
+
+            mRenderSession->endRenderPass();
+        };
+    }
+
     auto
     RenderProcess::appendProcessCommand(const uint8_t &seq, const yic::RenderProcess::recCommandFn &rec) -> void {
         mCommandBufRecs[seq] = rec;
@@ -79,7 +96,6 @@ namespace yic {
     auto RenderProcess::appendFinalProcessCommand(const uint8_t &seq) -> void {
         mCommandBufRecs.resize(seq + 1);
         mCommandBufRecs[seq] = [=, this](vk::CommandBuffer& cmd){
-            auto index = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
 
             mRenderSession->beginRenderPass(RenderSession::passInfo{
                     FrameRender::eColorDepthStencilRenderPass, mOffImage->framebuffers,
@@ -89,7 +105,7 @@ namespace yic {
             if (!mDescriptor->getDescriptorSets().empty()) {
                 cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
                 cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->getPipelineLayout(), 0,
-                                       mDescriptor->getDescriptorSets()[index], nullptr);
+                                       mDescriptor->getDescriptorSets()[*mImageIndex], nullptr);
                 cmd.draw(3, 1, 0, 0);
             }
 
@@ -114,11 +130,44 @@ namespace yic {
         return cmd;
     }
 
-    auto RenderProcess::prepare() -> void {
-        EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext& uiWidgetContext){
-            mExtent = vk::Extent2D{(uint32_t)uiWidgetContext.viewportSize.value().x, (uint32_t )uiWidgetContext.viewport_height_v()};
+    //auto RenderProcess::prepare() -> void {
+//        EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext& uiWidgetContext){
+//            mExtent = vk::Extent2D{(uint32_t)uiWidgetContext.viewportSize.value().x, (uint32_t )uiWidgetContext.viewport_height_v()};
+//            ct.queueFamily->gPrimary().waitIdle();
+//
+//            mOffImage = mg::Allocator->allocImage(ImageConfig()
+//                                                          .setExtent(mExtent)
+//                                                          .setImageFlags(ImageFlags::eDepthStencil)
+//                                                          .setRenderPass(FrameRender::eColorDepthStencilRenderPass)
+//                                                          .setImageCount(mImageCount), mId);
+//
+//            ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
+//        }, mId);
+
+//    }
+
+//    auto RenderProcess::updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage> &image) -> void {
+//        if (mDyRenderTargetStageImgs.size() <= seq){
+//            mDyRenderTargetStageImgs.resize(seq + 1);
+//        }
+//        mDyRenderTargetStageImgs[seq] = image;
+//        std::vector<std::variant<ImgInfo, BufInfo, AccelInfo>> temp;
+//
+//        for(const auto& img : mDyRenderTargetStageImgs){
+//            if (img != nullptr)
+//                temp.emplace_back(ImgInfo{img});
+//        }
+//        mDescriptor->updateDesSet(mImageCount, temp);
+//    }
+
+    auto RenderProcess::rebuild() -> void {
+        mCommandBufRecs.clear();
+    }
+
+    auto RenderProcess::renderTargetChange() -> void {
+        mg::SystemHub.subscribe([&](const ev::eRenderTargetSizeChange& sizeChange){
+            mExtent = vk::Extent2D{(uint32_t)sizeChange.size.x, (uint32_t )sizeChange.size.y};
             ct.queueFamily->gPrimary().waitIdle();
-            mImageCount = rt.imageCount_v();
 
             mOffImage = mg::Allocator->allocImage(ImageConfig()
                                                           .setExtent(mExtent)
@@ -127,25 +176,25 @@ namespace yic {
                                                           .setImageCount(mImageCount), mId);
 
             ImGuiDescriptorManager::updateImage(mId, mOffImage->imageViews);
-        }, mId);
+        });
     }
 
-    auto RenderProcess::updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage> &image) -> void {
-        if (mDyRenderTargetStageImgs.size() <= seq){
-            mDyRenderTargetStageImgs.resize(seq + 1);
+    auto RenderProcess::updateDescriptorImpl(const uint8_t &seq,
+                                         const std::variant<vkImage_sptr, yic2::Image_sptr> &image) -> void {
+        if (mDynamicRenderTargetStageImages.size() <= seq){
+            mDynamicRenderTargetStageImages.resize(seq + 1);
         }
-        mDyRenderTargetStageImgs[seq] = image;
+        mDynamicRenderTargetStageImages[seq] = image;
         std::vector<std::variant<ImgInfo, BufInfo, AccelInfo>> temp;
 
-        for(const auto& img : mDyRenderTargetStageImgs){
-            if (img != nullptr)
-                temp.emplace_back(ImgInfo{img});
+        for(const auto& stageImage : mDynamicRenderTargetStageImages){
+            std::visit([&](auto &&arg) {
+                if (arg != nullptr)
+                    temp.emplace_back(ImageInfo{arg});
+            }, stageImage);
         }
-        mDescriptor->updateDesSet(rt.imageCount_v(), temp);
-    }
 
-    auto RenderProcess::rebuild() -> void {
-        mCommandBufRecs.clear();
+        mDescriptor->updateDesSet(mImageCount, temp);
     }
 
 } // yic

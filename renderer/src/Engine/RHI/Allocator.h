@@ -14,10 +14,28 @@
 #include "Engine/RHI/Command.h"
 
 using vkBuf_sptr = std::shared_ptr<yic::vkBuffer>;
-using vkBuffer_sptr = std::shared_ptr<yic::vkBuffer>;
+//using vkBuffer_sptr = std::shared_ptr<yic::vkBuffer>;
 using vkImg_sptr = std::shared_ptr<yic::vkImage>;
-using vkImage_sptr = std::shared_ptr<yic::vkImage>;
-using vkAccel_sptr = std::shared_ptr<yic::vkAccel>;
+//using vkImage_sptr = std::shared_ptr<yic::vkImage>;
+//using vkAccel_sptr = std::shared_ptr<yic::vkAccel>;
+
+
+//namespace t {
+//    enum ImageUsageFlagBits {
+//        eTransferSrc = 0x00000001,
+//        eTransferDst = 0x00000002,
+//        eSampled = 0x00000004,
+//    };
+//
+//    using ImageUsageFlags = std::underlying_type_t<ImageUsageFlagBits>;
+//
+//    inline ImageUsageFlags operator|(ImageUsageFlagBits lhs, ImageUsageFlagBits rhs) {
+//        return static_cast<ImageUsageFlags>(
+//                static_cast<std::underlying_type_t<ImageUsageFlagBits>>(lhs) |
+//                static_cast<std::underlying_type_t<ImageUsageFlagBits>>(rhs)
+//        );
+//    }
+//}
 
 template<typename T>
 concept NoBool = (!std::is_same_v<std::decay_t<T>, bool>);
@@ -62,23 +80,15 @@ namespace yic {
             AllocStrategy allocStrategy;
         };
 
-        struct buf{
+        struct BufferHandle{
             VkBuffer buf;
             VmaAllocation vmaAllocation;
-        };
-
-        struct img{
-            VkImage img{};
-            VmaAllocation vmaAllocation{};
-            vk::ImageView imgView;
         };
 
     public:
         vkGet auto make = [](){ return Singleton<Allocator>::get(); };
         Allocator();
         ~Allocator();
-
-//        auto make() -> void;
 
     public:  // new
         auto allocBuffer(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags, MemoryUsage usage = MemoryUsage::eCpuToGpu, const std::string& id = IdGenerator::uniqueId(), bool unmap = false) -> vkBuf_sptr ;
@@ -102,6 +112,7 @@ namespace yic {
 
         auto allocImage(const imgPath& imgPath, std::optional<yic::ImageConfig> config = yic::ImageConfig{0}, std::string id = {}) -> vkImg_sptr;
         auto allocImage(yic::ImageConfig config = yic::ImageConfig{}, const std::string& id = IdGenerator::uniqueId()) -> vkImg_sptr;
+        auto allocImage(yic2::ImageConfig config = yic2::ImageConfig{}, const std::string& id = IdGenerator::uniqueId()) -> yic2::Image_sptr;
 
         auto allocAccel(vk::AccelerationStructureCreateInfoKHR& createInfo) -> vkAccel_sptr;
         auto allocAccel(vk::AccelerationStructureBuildSizesInfoKHR buildSize, vk::AccelerationStructureTypeKHR type) -> vkAccel_sptr ;
@@ -156,17 +167,21 @@ namespace yic {
                     }
                 } else if (au.flags == AllocAuto::eImage) {
                     if (au.imageUsageFlags & vk::ImageUsageFlagBits::eStorage && au.id.empty()) {
-                        *au.imgSptr = allocImage(ImageConfig()
-                                                         .setExtent(au.extent)
-                                                         .setImageFlags(ImageFlags::eStorage)
-                                                         .setUsage(vk::ImageUsageFlagBits::eStorage)
-                                                         .setImageCount(au.imageCount));
+                        if (au.id.empty()) {
+                            *au.imgSptr = allocImage(ImageConfig()
+                                                             .setExtent(au.extent)
+                                                             .setImageFlags(ImageFlags::eStorage)
+                                                             .setUsage(vk::ImageUsageFlagBits::eStorage)
+                                                             .setImageCount(au.imageCount));
+                        } else {
+                            *au.imgSptr = allocImage(ImageConfig()
+                                                             .setExtent(au.extent)
+                                                             .setImageFlags(ImageFlags::eStorage)
+                                                             .setUsage(vk::ImageUsageFlagBits::eStorage)
+                                                             .setImageCount(au.imageCount), au.id);
+                        }
                     } else {
-                        *au.imgSptr = allocImage(ImageConfig()
-                                                         .setExtent(au.extent)
-                                                         .setImageFlags(ImageFlags::eStorage)
-                                                         .setUsage(vk::ImageUsageFlagBits::eStorage)
-                                                         .setImageCount(au.imageCount), au.id);
+
                     }
                 }
                 au.id.clear();
@@ -190,7 +205,7 @@ namespace yic {
                 au.unmap = t;
             } else if constexpr (std::is_same_v<f, MemoryUsage>){
                 au.usage = t;
-            } else if constexpr (std::is_same_v<f, vk::BufferUsageFlags>){
+            } else if constexpr (std::is_same_v<f, vk::BufferUsageFlags> || std::is_same_v<f, vk::BufferUsageFlagBits>){
                 au.bufferUsageFlags = t;
             } else if constexpr (std::is_pointer_v<f>){
                 au.dataPtr = t;
@@ -200,7 +215,7 @@ namespace yic {
                 au.extent = t;
             } else if constexpr (std::is_integral_v<f>) {
                 au.imageCount = t;
-            } else if constexpr (std::is_same_v<f, vk::ImageUsageFlagBits>) {
+            } else if constexpr (std::is_same_v<f, vk::ImageUsageFlagBits> || std::is_same_v<f, vk::ImageUsageFlags>) {
                 au.imageUsageFlags = t;
             } else if constexpr (std::is_same_v<f, std::string>){
                 au.id = t;
@@ -227,113 +242,86 @@ namespace yic {
                 au.imageCount = 1;
             }
         }
-//        template<typename T, typename ...Args>
-//        static void allocBufAuto(T&& t, Args&&...args){
-//            auto& bufAuto = get()->bufAuto;
-//            using f = std::decay_t<T>;
-////            std::cout << "Type of T: " << typeid(T).name() << ", value: \n";
-////            std::cout << to_string(bufAuto.flags) << std::endl;
-//            if constexpr (std::is_same_v<f, vkBuf_sptr>){
-//                if (bufAuto.init == 1){
-//                    *bufAuto.bufSptr = allocBuf(bufAuto.deviceSize, bufAuto.dataPtr, bufAuto.flags, bufAuto.usage, IdGenerator::uniqueId(), bufAuto.unmap);
-//                }
-//                bufAuto.bufSptr = &t;
-//                bufAuto.init = 1;
-//            } else if constexpr (std::is_same_v<f, bool>){
-//                bufAuto.unmap = t;
-//            } else if constexpr (std::is_same_v<f, MemoryUsage>){
-//                bufAuto.usage = t;
-//            } else if constexpr (std::is_same_v<f, vk::BufferUsageFlags>){
-//                bufAuto.flags = t;
-//            } else if constexpr (std::is_pointer_v<f>){
-//                bufAuto.dataPtr = t;
-//            } else if constexpr (std::is_same_v<f, vk::DeviceSize> || std::is_integral_v<f> || std::is_same_v<f, size_t>){
-//                bufAuto.deviceSize = t;
-//            } else {
-//                using ActualType = std::remove_reference_t<T>;
-//                bufAuto.dataPtr = getBufData(t);
-//                bufAuto.deviceSize = t.size() * sizeof(typename ActualType::value_type);
-//            }
-//
-//            if constexpr (sizeof ...(args) > 0){
-//                allocBufAuto(std::forward<Args>(args)...);
-//            } else {
-//                *bufAuto.bufSptr = allocBuf(bufAuto.deviceSize, bufAuto.dataPtr, bufAuto.flags, bufAuto.usage,
-//                                            IdGenerator::uniqueId(), bufAuto.unmap);
-//                bufAuto.bufSptr = nullptr;
-//                bufAuto.unmap = false;
-//                bufAuto.deviceSize = 0;
-//                bufAuto.dataPtr = nullptr;
-//                bufAuto.usage = MemoryUsage::eCpuToGpu;
-//                bufAuto.flags = {};
-//                bufAuto.init = 0;
-//            }
-//        }
-//
-//        template<typename T, typename ...Args>
-//        static void allocImgAuto(T&& t, Args&&...args){
-//            auto& imgAuto = get()->imgAuto;
-//            using f = std::decay_t<T>;
-//
-//            if constexpr (std::is_same_v<f, vkImg_sptr>){
-//                if (imgAuto.init == 1){
-//                    if ((imgAuto.flags & vk::ImageUsageFlagBits::eStorage)){
-//                        *imgAuto.imgSptr = allocImgOffScreen_Storage(imgAuto.extent, imgAuto.imageCount);
-//                    }
-//                }
-//                imgAuto.imgSptr = &t;
-//                imgAuto.init = 1;
-//            } else if constexpr (std::is_same_v<f, vk::Extent2D>){
-//                imgAuto.extent = t;
-//            } else if constexpr (std::is_integral_v<f>){
-//                imgAuto.imageCount = t;
-//            } else if constexpr (std::is_same_v<f, vk::ImageUsageFlagBits>){
-//                imgAuto.flags = t;
-//            }
-//
-//            if constexpr (sizeof ...(args) > 0){
-//                allocImgAuto(std::forward<Args>(args)...);
-//            } else {
-//                if ((imgAuto.flags & vk::ImageUsageFlagBits::eStorage)){
-//                    *imgAuto.imgSptr = allocImgOffScreen_Storage(imgAuto.extent, imgAuto.imageCount);
-//                }
-//
-//                imgAuto.imgSptr = nullptr;
-//                imgAuto.extent = vk::Extent2D{800, 600};
-//                imgAuto.flags = {};
-//                imgAuto.init = {0};
-//                imgAuto.imageCount = {1};
-//            }
-//        }
 
     public:
         auto clear() -> void{
             destroyStagBuf();
             CommandBufferCoordinator::clear();
         }
-        auto getAccelDevAddr(const vkAccel_sptr& as) -> vk::DeviceSize {
-            vk::AccelerationStructureDeviceAddressInfoKHR addrInfo{as->accel};
-            return mDevice.getAccelerationStructureAddressKHR(addrInfo, mDyDispatcher);
-        }
+        auto getAccelAddr(const vkAccel_sptr& as) -> vk::DeviceAddress;
         auto getBufAddr(const vkBuf_sptr& buf) -> vk::DeviceAddress;
-        static auto glmMatToVkTransformMatrix(const glm::mat4& mat = glm::mat4 (1.f)) -> vk::TransformMatrixKHR{
-            vk::TransformMatrixKHR tfMatrix;
-            auto temp = glm::transpose(mat);
-            memcpy(&tfMatrix, &temp, sizeof(vk::TransformMatrixKHR));
-            return tfMatrix;
+
+        template<typename T>
+        auto getDeviceAddress(const T& t) -> vk::DeviceAddress {
+            using type = std::decay_t<T>;
+            if constexpr (std::is_same_v<type, vkBuffer_sptr>){
+                return getBufAddr(t);
+            } else if constexpr (std::is_same_v<type, vkAccel_sptr>){
+                return getAccelAddr(t);
+            }
+        };
+        auto glmMatToVkTransformMatrix(const glm::mat4& mat = glm::mat4 (1.f)) -> vk::TransformMatrixKHR;
+        auto transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) -> void;
+        auto transitionImageLayout(vk::ImageMemoryBarrier barrier,
+                                   const vk::PipelineStageFlags& srcStage,
+                                   const vk::PipelineStageFlags& dstStag) -> void;
+        auto transitionImageLayout(vk::ImageMemoryBarrier barrier,
+                                   const vk::PipelineStageFlags& srcStage,
+                                   const vk::PipelineStageFlags& dstStag,
+                                   vk::CommandBuffer& cmd) -> void;
+        auto copyImageToImage(const vkImage_sptr& srcImage, vk::ImageLayout srcImageLayout,
+                              const vkImage_sptr& dstImage, vk::ImageLayout dstImageLayout,
+                              uint8_t copyImageIndex = 0) -> void;
+        auto copyImageToImage(const vkImage_sptr& srcImage, vk::ImageLayout srcImageLayout,
+                              const vkImage_sptr& dstImage, vk::ImageLayout dstImageLayout,
+                              vk::CommandBuffer& cmd, uint8_t copyImageIndex = 0) -> void;
+        auto copyImageToImage(const yic2::Image_sptr& srcImage, const yic2::Image_sptr& dstImage,
+                              vk::CommandBuffer& cmd, uint8_t copyImageIndex = 0) -> void;
+
+        template<typename ...Args>
+        auto pipelineBarrier2(vk::CommandBuffer& cmd, vk::DependencyInfo info, Args&&...args){
+            auto processArgs = []<typename T>(
+                    vot::vector<vk::ImageMemoryBarrier2>& imageBarriers,
+                             vot::vector<vk::BufferMemoryBarrier2>& bufferBarriers,
+                             vot::vector<vk::MemoryBarrier2>& memoryBarriers,
+                             T&& first){
+                using type = std::decay_t<T>;
+                if constexpr (std::is_same_v<type, vk::ImageMemoryBarrier2>){
+                    imageBarriers.emplace_back(std::forward<T>(first));
+                } else if constexpr (std::is_same_v<type, vk::BufferMemoryBarrier2>){
+                    bufferBarriers.emplace_back(std::forward<T>(first));
+                } else if constexpr (std::is_same_v<type, vk::MemoryBarrier2>){
+                    memoryBarriers.emplace_back(std::forward<T>(first));
+                }
+            };
+
+            vot::vector<vk::ImageMemoryBarrier2> imageBarrier2s;
+            vot::vector<vk::BufferMemoryBarrier2> bufferBarrier2s;
+            vot::vector<vk::MemoryBarrier2> memoryBarrier2s;
+
+            (processArgs(imageBarrier2s, bufferBarrier2s, memoryBarrier2s, std::forward<Args>(args)), ...);
+
+            pipelineBarrier2(imageBarrier2s, bufferBarrier2s, memoryBarrier2s, cmd, info);
         }
+
     private:
-        auto createBuf(const bufCreateInfo& bufCreateInfo) -> buf;
-        auto mapBuf(const buf& buf, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
+        auto pipelineBarrier2(const vot::vector<vk::ImageMemoryBarrier2>& imageMemoryBarrier2,
+                              const vot::vector<vk::BufferMemoryBarrier2>& bufferMemoryBarrier2,
+                              const vot::vector<vk::MemoryBarrier2>& memoryBarrier2, vk::CommandBuffer& cmd,
+                              vk::DependencyInfo dependencyInfo = {}) -> void;
+        auto createBuf(const bufCreateInfo& bufCreateInfo) -> BufferHandle;
+        auto mapBuf(const BufferHandle& buf, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
         inline static auto copyBuf(VkBuffer stagingBuf, VkBuffer destBuf, VkDeviceSize deviceSize, vk::CommandBuffer& cmd) -> void;
 
         inline static auto copyBufToImg(VkBuffer buf, VkImage img, uint32_t w, uint32_t h, vk::CommandBuffer& cmd) -> void;
+
+        auto createImage(const yic2::ImageConfig& config) -> std::pair<VkImage, VmaAllocation>;
+        auto createImageView(const yic2::ImageConfig& config, const vk::Image& image) -> vk::ImageView;
         inline static auto transitionImageLayout(VkImage image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::CommandBuffer& cmd) -> void;
 
         inline static bool hasFlag(vk::Flags< vk::BuildAccelerationStructureFlagBitsKHR> item, vk::Flags< vk::BuildAccelerationStructureFlagBitsKHR> flag) { return (item & flag) == flag; }
     private:
         ev::pVkSetupContext ct{};
-        et::vkRenderContext rt;
 
         vk::Device mDevice;
         vk::DispatchLoaderDynamic mDyDispatcher;
@@ -342,7 +330,7 @@ namespace yic {
 
     private: // staging buf manager
         struct stagBuf{
-            buf stgBuf{};
+            BufferHandle stgBuf{};
             vk::DeviceSize deviceSize{};
         };
 

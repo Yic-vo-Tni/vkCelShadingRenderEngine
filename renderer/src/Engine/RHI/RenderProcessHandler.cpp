@@ -14,6 +14,7 @@ namespace yic {
         auto primary = registerRenderProcess(RenderPhase::ePrimary);
         primary ->acquire() = RenderGroupGraphics ::configure(FrameRender::eColorDepthStencilRenderPass)
                 ->addDesSetLayout_(0, 0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+                ->addDesSetLayout_(0, 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
                 ->addShader_("post_v.vert", vk::ShaderStageFlagBits::eVertex)
                 ->addShader_("post_f.frag", vk::ShaderStageFlagBits::eFragment)
                 ->build();
@@ -28,9 +29,9 @@ namespace yic {
     auto RenderProcessHandler::prepare() -> void {
         sc::globalCamera.computeViewProjMatrix();
 
-        for(const auto& rp : mRenderProcess){
-            rp->prepare();
-        }
+//        for(const auto& rp : mRenderProcess){
+//            rp->prepare();
+//        }
 
         mEcsManager->prepare();
     }
@@ -56,7 +57,7 @@ namespace yic {
 
     auto RenderProcessHandler::registerRenderProcess(RenderPhase phases) -> RenderProcess* {
         auto& rp = mRenderProcess[static_cast<int>(phases)] = std::make_unique<RenderProcess>(enum_name(phases));
-        EventBus::update(et::pRenderProcess{rp.get()}, enum_name(phases));
+        mg::SystemHub.sto(ev::pRenderProcess{rp.get()}, toolkit::enum_name(phases));
         return rp.get();
     }
 

@@ -21,7 +21,7 @@ namespace yic {
         explicit RenderProcess(std::string id);
         ~RenderProcess();
 
-        auto prepare() -> void;
+//        auto prepare() -> void;
         auto process() -> std::optional<vk::CommandBuffer>;
 
         auto appendRenderPassProcessSecondaryCommand(const uint8_t &seq, const std::shared_ptr<vkImage> &imgSptr,
@@ -30,19 +30,32 @@ namespace yic {
                                                      const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendRenderPassProcessCommand(const uint8_t &seq, const std::vector<vk::Framebuffer> &framebuffers,
                                            const yic::RenderProcess::recCommandFn &rec) -> void;
+        auto appendRenderPassProcessCommand(const uint8_t &seq, const vkImage_sptr& imageSptr,
+                                            const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendProcessCommand(const uint8_t &seq, const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendFinalProcessCommand(const uint8_t &seq) -> void;
-        auto updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage>& image) -> void;
+      //  auto updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage>& image) -> void;
+        auto updateDescriptorImpl(const uint8_t &seq, const std::variant<vkImage_sptr, yic2::Image_sptr>& image) -> void;
+
+        template<typename T>
+        auto updateDescriptor(T e, const std::variant<vkImage_sptr, yic2::Image_sptr>& image) -> void{
+            auto seq = static_cast<uint8_t>(e);
+            updateDescriptorImpl(seq, image);
+        }
         auto rebuild() -> void;
 
         auto& acquire() { return mRenderGroupGraphics; };
         auto& descriptor() { return mDescriptor; };
+
     private:
-        ev::pVkSetupContext ct;
-        et::vkRenderContext rt;
+        auto renderTargetChange() -> void;
+    private:
+        ev::pVkSetupContext ct{};
+        ev::hVkRenderContext rt{};
 
         std::string mId;
         uint32_t mImageCount{0};
+        uint32_t* mImageIndex{};
         std::shared_ptr<vkImage> mOffImage;
 
         vk::Extent2D mExtent{2560, 1440};
@@ -52,6 +65,8 @@ namespace yic {
         std::shared_ptr<RenderGroupGraphics> mRenderGroupGraphics;
         std::shared_ptr<Descriptor> mDescriptor;
         vot::vector<std::shared_ptr<vkImage>> mDyRenderTargetStageImgs;
+
+        vot::vector<std::variant<vkImage_sptr, yic2::Image_sptr>> mDynamicRenderTargetStageImages;
     };
 
 } // yic

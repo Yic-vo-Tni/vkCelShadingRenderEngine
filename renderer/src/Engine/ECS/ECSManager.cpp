@@ -12,7 +12,7 @@ namespace sc {
         ecs.component<Model>();
         ecs.component<Selected>();
 
-        yic::EventBus::update(et::eEcs_ptr{&ecs});
+        mg::SystemHub.sto(ev::pEcs{&ecs});
 
         globalCamera.initBuf();
         mModelManager = std::make_unique<ModelManager>(&ecs);
@@ -26,7 +26,7 @@ namespace sc {
     }
 
     auto ECSManager::prepare() -> void {
-        mModelManager->prepare();
+        //mModelManager->prepare();
     }
 
 

@@ -7,12 +7,12 @@
 
 namespace et{
 
-    struct eEcs_ptr{
-        HANA_OPT(eEcs_ptr,
-                 (flecs::world*, ecs));
-
-        RETURN_REF(ecs);
-    };
+//    struct eEcs_ptr{
+//        HANA_OPT(eEcs_ptr,
+//                 (flecs::world*, ecs));
+//
+//        RETURN_REF(ecs);
+//    };
 
     struct modelPath{
         HANA_OPT(modelPath,

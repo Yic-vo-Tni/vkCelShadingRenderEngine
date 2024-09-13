@@ -7,20 +7,19 @@
 namespace yic {
 
     vkWindow::vkWindow(const int &w, const int &h) : mWidth{w}, mHeight{h}, mWindow(createWindow()) {
-        EventBus::update(et::vkRenderContext{
-                ImVec2((float)mWidth, (float)mHeight), vk::Extent2D{(uint32_t)mWidth, (uint32_t)mHeight}, mWindow.get()
-        }, et::vkRenderContext::id::mainRender);
-
-        mg::SystemHub.sto(ev::hVkRenderContext{
-           .size = ImVec2{(float)mWidth, (float)mHeight},
-           .window = mWindow.get()
+        mg::SystemHub.setEvent(ev::oWindowSizeChange{
+                .size = ImVec2((float) mWidth, (float) mHeight),
+                .extent = vk::Extent2D{(uint32_t) mWidth, (uint32_t) mHeight},
         });
 
-        if_debug {
-            EventBus::subscribeAuto([&](const et::vkRenderContext &vkRenderContext) {
-                vkTrance("width: {0}, height: {1}", vkRenderContext.width_v(), vkRenderContext.height_v());
-            }, et::vkRenderContext::id::mainRender);
-        };
+        mg::SystemHub.sto(ev::hVkRenderContext{
+                .window = mWindow.get()
+        }, toolkit::enum_name(RenderPhase::ePrimary));
+
+        mg::SystemHub.subscribe([&](const ev::oWindowSizeChange &change) {
+            vkTrance("width: {0}, height: {1} ", change.extent->width, change.extent->height);
+        });
+
         mTimePerFrame = sf::seconds(1.f / 120.f);
     }
 

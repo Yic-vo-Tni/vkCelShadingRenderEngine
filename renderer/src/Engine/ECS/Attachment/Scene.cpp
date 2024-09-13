@@ -11,7 +11,25 @@
 namespace sc {
 
     SceneManager::SceneManager() {
-        yic::EventBus::valAuto(mDevice, mDyDispatcher);
+        auto ct = mg::SystemHub.val<ev::pVkSetupContext>();
+        mDevice = *ct.device;
+        mDyDispatcher = *ct.dynamicDispatcher;
+        mRenderHandle = mg::SystemHub.val<ev::pRenderProcess>(toolkit::enum_name(RenderPhase::ePrimary)).rp;
+
+        mRTOffImage = mg::Allocator->allocImage(yic2::ImageConfig()
+                .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc)
+                .setExtent(mExtent)
+//                .setFormat(vk::Format::eR32G32B32A32Sfloat)
+                .setDstImageLayout(vk::ImageLayout::eGeneral), "off: rt");
+        mRenderTargetOffImage = mg::Allocator->allocImage(yic2::ImageConfig()
+                .setUsage(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
+                .setExtent(mExtent)
+//                .setFormat(vk::Format::eR32G32B32A32Sfloat)
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "off: rt shader read");
+
+        loadScene();
+        cRTRenderGroup();
+        render();
     }
 
     auto SceneManager::loadScene(const std::string &id) -> void {
@@ -34,9 +52,13 @@ namespace sc {
     }
 
     auto SceneManager::addModel(const Model* model) -> void {
-        mActiveScene->models.emplace_back(model);
-        mActiveScene->blass.emplace_back(cBlas(model));
+        oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, true);
+        mActiveScene->blass.emplace_back(model->as.blas);
+        mActiveScene->vertBufs.emplace_back(model->mesh.vertBuf);
+        mActiveScene->indexBufs.emplace_back(model->mesh.indexBuf);
         cTlas(mActiveScene->blass, mActiveScene->tlas);
+        mRTDescriptor->updateDesSetAuto(mActiveScene->tlas, yic::ImageInfo{{}, mRTOffImage, vk::ImageLayout::eGeneral},
+                                        globalCamera.getVpMatrixBuf(), mActiveScene->vertBufs.front(),mActiveScene->indexBufs.front());
     }
 
     auto SceneManager::updateScene() -> void {
@@ -49,120 +71,195 @@ namespace sc {
 //        });
 //        mActiveScene->models.erase(rem.begin(), rem.end());
 
-        std::vector<size_t> remove;
-        for(size_t i = 0; i < mActiveScene->models.size(); i++){
-            if (id == mActiveScene->models[i]->info.id){
-                remove.emplace_back(i);
-            }
-        }
-
-        for(auto& it : std::ranges::reverse_view(remove)){
-            mActiveScene->models.erase(mActiveScene->models.begin() + static_cast<std::ptrdiff_t>(it));
-            mActiveScene->blass.erase(mActiveScene->blass.begin() + static_cast<std::ptrdiff_t>(it));
-        }
-    }
-
-//    auto SceneManager::cBlas(const Model* model) -> std::shared_ptr<yic::vkAccel> {
-//        auto& m = model->mesh;
-//        INIT_MULTI(vk::DeviceOrHostAddressConstKHR, vertBufAddr{yic::Allocator::getBufAddr(m.vertBuf)},
-//                   indexBufAddr{yic::Allocator::getBufAddr(m.indexBuf)});
-//
-//        auto maxVert = (uint32_t )m.vertices.size();
-//        auto numTri = (uint32_t )m.indices.size() / 3;
-//
-//        auto asGeom = vk::AccelerationStructureGeometryKHR()
-//                .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
-//                .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-//                .setGeometry(vk::AccelerationStructureGeometryDataKHR()
-//                                     .setTriangles(vk::AccelerationStructureGeometryTrianglesDataKHR()
-//                                                           .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-//                                                           .setVertexData(vertBufAddr)
-//                                                           .setVertexStride(sizeof(sc::Vertex))
-//                                                           .setMaxVertex(maxVert)
-//                                                           .setIndexType(vk::IndexType::eUint32)
-//                                                           .setIndexData(indexBufAddr)));
-//        auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
-//                .setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
-//                .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
-//                .setGeometries(asGeom);
-//
-//        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, numTri, mDyDispatcher);
-//
-//        auto blas = yic::Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
-//
-//        auto scratchBuf = yic::Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
-//        auto scratchBufAddr = vk::DeviceOrHostAddressKHR{yic::Allocator::getBufAddr(scratchBuf)};
-//
-//        asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
-//                .setDstAccelerationStructure(blas->accel)
-//                .setScratchData(scratchBufAddr);
-//
-//        auto asBuildRangeInfo = vk::AccelerationStructureBuildRangeInfoKHR()
-//                .setFirstVertex(0)
-//                .setPrimitiveOffset(0)
-//                .setPrimitiveCount(numTri)
-//                .setTransformOffset(0);
-//
-//        yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
-//            cmd.buildAccelerationStructuresKHR(asBuildGeomInfo, &asBuildRangeInfo, mDyDispatcher);
-//            vk::MemoryBarrier barrier{vk::AccessFlagBits::eAccelerationStructureWriteKHR,
-//                                      vk::AccessFlagBits::eAccelerationStructureReadKHR};
-//            cmd.pipelineBarrier(vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-//                                vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-//                                {}, barrier, {}, {});
-//        });
-//
-//        return std::move(blas);
-//    }
-//
-//    auto SceneManager::cTlas(const std::vector<std::shared_ptr<yic::vkAccel>>& blass, std::shared_ptr<yic::vkAccel>& tlas) -> void {
-//        auto tfMat = yic::Allocator::glmMatToVkTransformMatrix();
-//
-//        auto asInst = vk::AccelerationStructureInstanceKHR()
-//                .setTransform(tfMat)
-//                .setInstanceCustomIndex(0)
-//                .setMask(0xFF)
-//                .setInstanceShaderBindingTableRecordOffset(0)
-//                .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
-//                .setAccelerationStructureReference(yic::Allocator::getAccelDevAddr(blass.front()));
-//
-//        auto instBuf = yic::Allocator::allocBufStaging(sizeof(vk::AccelerationStructureInstanceKHR), &asInst,
-//                                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
-//                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
-//
-//        auto asGeom = vk::AccelerationStructureGeometryKHR()
-//                .setGeometryType(vk::GeometryTypeKHR::eInstances)
-//                .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
-//                .setGeometry(vk::AccelerationStructureGeometryDataKHR()
-//                .setInstances(vk::AccelerationStructureGeometryInstancesDataKHR()
-//                .setArrayOfPointers(vk::False)
-//                .setData(yic::Allocator::getBufAddr(instBuf))));
-//        auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
-//                .setType(vk::AccelerationStructureTypeKHR::eTopLevel)
-//                .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
-//                .setGeometries(asGeom);
-//
-//        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, 1, mDyDispatcher);
-//
-//        if (tlas == nullptr){
-//            tlas = yic::Allocator::allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
+//        std::vector<size_t> remove;
+//        for(size_t i = 0; i < mActiveScene->models.size(); i++){
+//            if (id == mActiveScene->models[i]->info.id){
+//                remove.emplace_back(i);
+//            }
 //        }
 //
-//        auto scratchBuf = yic::Allocator::allocBufStaging(asBuildSizeInfo.accelerationStructureSize,
-//                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
-//
-//        asBuildGeomInfo.setMode(tlas->update ? vk::BuildAccelerationStructureModeKHR::eUpdate : vk::BuildAccelerationStructureModeKHR::eBuild)
-//                .setDstAccelerationStructure(tlas->accel)
-//                .setScratchData(vk::DeviceOrHostAddressKHR{yic::Allocator::getBufAddr(scratchBuf)});
-//
-//        auto asBuildRangInfo = vk::AccelerationStructureBuildRangeInfoKHR()
-//                .setPrimitiveCount(1)
-//                .setTransformOffset(0)
-//                .setPrimitiveOffset(0)
-//                .setFirstVertex(0);
-//
-//        yic::CommandBufferCoordinator::buildAccelerationStructuresKHR(asBuildGeomInfo, &asBuildRangInfo);
-//    }
+//        for(auto& it : std::ranges::reverse_view(remove)){
+//            mActiveScene->models.erase(mActiveScene->models.begin() + static_cast<std::ptrdiff_t>(it));
+//            mActiveScene->blass.erase(mActiveScene->blass.begin() + static_cast<std::ptrdiff_t>(it));
+//        }
+    }
+
+    auto SceneManager::cBlas(Model* model) -> void {
+        auto& m = model->mesh;
+        INIT_MULTI(vk::DeviceOrHostAddressConstKHR,
+                   vertBufAddr{mg::Allocator->getDeviceAddress(m.vertBuf)},
+                   indexBufAddr{mg::Allocator->getDeviceAddress(m.indexBuf)});
+
+        auto maxVert = (uint32_t )m.vertices.size();
+        auto numTri = (uint32_t )m.indices.size() / 3;
+
+        auto asGeom = vk::AccelerationStructureGeometryKHR()
+                .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
+                .setGeometryType(vk::GeometryTypeKHR::eTriangles)
+                .setGeometry(vk::AccelerationStructureGeometryDataKHR()
+                                     .setTriangles(vk::AccelerationStructureGeometryTrianglesDataKHR()
+                                                           .setVertexFormat(vk::Format::eR32G32B32Sfloat)
+                                                           .setVertexData(vertBufAddr)
+                                                           .setVertexStride(sizeof(sc::Vertex))
+                                                           .setMaxVertex(maxVert)
+                                                           .setIndexType(vk::IndexType::eUint32)
+                                                           .setIndexData(indexBufAddr)));
+        auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
+                .setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
+                .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
+                .setGeometries(asGeom);
+
+        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, numTri, mDyDispatcher);
+
+        auto& blas = model->as.blas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
+
+        auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+        auto scratchBufAddr = vk::DeviceOrHostAddressKHR{mg::Allocator->getDeviceAddress(scratchBuf)};
+
+        asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
+                .setDstAccelerationStructure(blas->accel)
+                .setScratchData(scratchBufAddr);
+
+        auto asBuildRangeInfo = vk::AccelerationStructureBuildRangeInfoKHR()
+                .setFirstVertex(0)
+                .setPrimitiveOffset(0)
+                .setPrimitiveCount(numTri)
+                .setTransformOffset(0);
+
+        yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+            cmd.buildAccelerationStructuresKHR(asBuildGeomInfo, &asBuildRangeInfo, mDyDispatcher);
+            vk::MemoryBarrier barrier{vk::AccessFlagBits::eAccelerationStructureWriteKHR,
+                                      vk::AccessFlagBits::eAccelerationStructureReadKHR};
+            cmd.pipelineBarrier(vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+                                vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+                                {}, barrier, {}, {});
+        });
+    }
+
+    auto SceneManager::cTlas(const std::vector<std::shared_ptr<yic::vkAccel>>& blass, std::shared_ptr<yic::vkAccel>& tlas) -> void {
+        auto tfMat = mg::Allocator->glmMatToVkTransformMatrix();
+
+        auto asInst = vk::AccelerationStructureInstanceKHR()
+                .setTransform(tfMat)
+                .setInstanceCustomIndex(0)
+                .setMask(0xFF)
+                .setInstanceShaderBindingTableRecordOffset(0)
+                .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
+                .setAccelerationStructureReference(mg::Allocator->getDeviceAddress(blass.front()));
+
+        auto instBuf = mg::Allocator->allocBufferStaging(sizeof(vk::AccelerationStructureInstanceKHR), &asInst,
+                                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
+
+        auto asGeom = vk::AccelerationStructureGeometryKHR()
+                .setGeometryType(vk::GeometryTypeKHR::eInstances)
+                .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
+                .setGeometry(vk::AccelerationStructureGeometryDataKHR()
+                .setInstances(vk::AccelerationStructureGeometryInstancesDataKHR()
+                .setArrayOfPointers(vk::False)
+                .setData(mg::Allocator->getDeviceAddress(instBuf))));
+        auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
+                .setType(vk::AccelerationStructureTypeKHR::eTopLevel)
+                .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
+                .setGeometries(asGeom);
+
+        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, 1, mDyDispatcher);
+
+        if (tlas == nullptr){
+            tlas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
+        } else { tlas->update = true; }
+
+        auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize,
+                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+
+        asBuildGeomInfo.setMode(tlas->update ? vk::BuildAccelerationStructureModeKHR::eUpdate : vk::BuildAccelerationStructureModeKHR::eBuild)
+                .setDstAccelerationStructure(tlas->accel)
+                .setScratchData(vk::DeviceOrHostAddressKHR{mg::Allocator->getDeviceAddress(scratchBuf)});
+
+        auto asBuildRangInfo = vk::AccelerationStructureBuildRangeInfoKHR()
+                .setPrimitiveCount(1)
+                .setTransformOffset(0)
+                .setPrimitiveOffset(0)
+                .setFirstVertex(0);
+
+        yic::CommandBufferCoordinator::buildAccelerationStructuresKHR(asBuildGeomInfo, &asBuildRangInfo);
+    }
+
+    auto SceneManager::cRTRenderGroup() -> void {
+        mRayTracingGroup = yic::RenderGroupRayTracing ::configure()
+                ->addDesSetLayout_(0, 0, vk::DescriptorType::eAccelerationStructureKHR, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->addDesSetLayout_(0, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
+                ->addDesSetLayout_(0, 2, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR)
+                ->addDesSetLayout_(0, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->addDesSetLayout_(0, 4, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->addShader_("b_rt_gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR)
+                ->addShader_("b_rt_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
+                ->addShader_("b_rt_shadow.rmiss", vk::ShaderStageFlagBits::eMissKHR)
+                ->addShader_("b_rt_hit.rchit", vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->bindDescriptor(mRTDescriptor)
+                ->build();
+
+    }
+
+    auto SceneManager::render() -> void {
+       // mRenderHandle->updateDescriptor(PrimaryRenderSeq::eRT, mRenderTargetOffImage);
+
+        mRenderHandle->appendProcessCommand(PrimaryRenderSeq::eRT, [&](vk::CommandBuffer &cmd) {
+            if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {
+                oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, false);
+
+                cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRayTracingGroup->acquire());
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, mRayTracingGroup->getPipelineLayout(), 0,
+                                       mRTDescriptor->getDescriptorSets(), {});
+                cmd.traceRaysKHR(mRayTracingGroup->getRegionRgen(), mRayTracingGroup->getRegionMiss(),
+                                 mRayTracingGroup->getRegionHit(), mRayTracingGroup->getRegionCall(),
+                                 mExtent.width, mExtent.height, 1, mDyDispatcher);
+
+                vk::ImageSubresourceRange subresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+                mg::Allocator->pipelineBarrier2(cmd, {},
+                                                vk::ImageMemoryBarrier2()
+                                                        .setImage(mRTOffImage->images)
+                                                        .setOldLayout(vk::ImageLayout::eGeneral)
+                                                        .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
+                                                        .setSrcAccessMask(vk::AccessFlagBits2::eAccelerationStructureWriteKHR)
+                                                        .setDstAccessMask(vk::AccessFlagBits2::eTransferRead)
+                                                        .setSrcStageMask(vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR)
+                                                        .setDstStageMask(vk::PipelineStageFlagBits2::eTransfer)
+                                                        .setSubresourceRange(subresourceRange),
+                                                vk::ImageMemoryBarrier2()
+                                                        .setImage(mRenderTargetOffImage->images)
+                                                        .setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                                                        .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+                                                        .setSrcAccessMask(vk::AccessFlagBits2::eShaderRead)
+                                                        .setDstAccessMask(vk::AccessFlagBits2::eTransferWrite)
+                                                        .setSrcStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
+                                                        .setDstStageMask(vk::PipelineStageFlagBits2::eTransfer)
+                                                        .setSubresourceRange(subresourceRange));
+                mg::Allocator->copyImageToImage(mRTOffImage, mRenderTargetOffImage, cmd);
+                mg::Allocator->pipelineBarrier2(cmd, {},
+                                                vk::ImageMemoryBarrier2()
+                                                        .setImage(mRTOffImage->images)
+                                                        .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
+                                                        .setNewLayout(vk::ImageLayout::eGeneral)
+                                                        .setSrcAccessMask(vk::AccessFlagBits2::eTransferRead)
+                                                        .setDstAccessMask(vk::AccessFlagBits2::eAccelerationStructureWriteKHR)
+                                                        .setSrcStageMask(vk::PipelineStageFlagBits2::eTransfer)
+                                                        .setDstStageMask(vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR)
+                                                        .setSubresourceRange(subresourceRange),
+                                                vk::ImageMemoryBarrier2()
+                                                        .setImage(mRenderTargetOffImage->images)
+                                                        .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+                                                        .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                                                        .setSrcAccessMask(vk::AccessFlagBits2::eTransferWrite)
+                                                        .setDstAccessMask(vk::AccessFlagBits2::eShaderRead)
+                                                        .setSrcStageMask(vk::PipelineStageFlagBits2::eTransfer)
+                                                        .setDstStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
+                                                        .setSubresourceRange(subresourceRange));
+            }
+        });
+    }
+
 
 
 

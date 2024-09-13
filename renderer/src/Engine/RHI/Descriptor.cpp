@@ -59,18 +59,20 @@ namespace yic {
 
         mWriteDesSets.resize(mIndex + 1);
         for(uint32_t i = 0; auto& bind : mSetLayout.bindings[setIndex]){
-            std::visit([&](auto&& arg){
-                using T = std::decay_t<decltype(arg)>;
+            if (i < infos.size()){
+                std::visit([&](auto&& arg){
+                    using T = std::decay_t<decltype(arg)>;
 
-                if constexpr (std::is_same_v<T, vk::DescriptorBufferInfo>){
-                    mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, bind.descriptorType, {}, arg});
-                } else if constexpr (std::is_same_v<T, vk::DescriptorImageInfo>){
-                    mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, bind.descriptorType, arg});
-                } else if constexpr (std::is_same_v<T, vk::WriteDescriptorSetAccelerationStructureKHR>){
-                    mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, 1, bind.descriptorType, {}, {}, {}, &arg});
-                }
+                    if constexpr (std::is_same_v<T, vk::DescriptorBufferInfo>){
+                        mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, bind.descriptorType, {}, arg});
+                    } else if constexpr (std::is_same_v<T, vk::DescriptorImageInfo>){
+                        mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, bind.descriptorType, arg});
+                    } else if constexpr (std::is_same_v<T, vk::WriteDescriptorSetAccelerationStructureKHR>){
+                        mWriteDesSets[mIndex].push_back(vk::WriteDescriptorSet{mDesSet[mIndex], bind.binding, 0, 1, bind.descriptorType, {}, {}, {}, &arg});
+                    }
 
-            }, infos[i]);
+                }, infos[i]);
+            }
             i++;
         }
 

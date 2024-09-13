@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_ENUM_H
 
 #include "pch.h"
+#include "stl_mimalloc.h"
 
 enum class RenderPhase{
     ePrimary, eCount
@@ -24,6 +25,13 @@ enum class ResFormat{
 template<typename T>
 inline auto enum_name(const T& t) -> std::enable_if_t<std::is_enum<T>::value, std::string>{
     return std::string(magic_enum::enum_name(t));
+}
+
+namespace toolkit {
+    template<typename T>
+    inline auto enum_name(const T &t) -> std::enable_if_t<std::is_enum<T>::value, vot::string> {
+        return vot::string(magic_enum::enum_name(t));
+    }
 }
 
 

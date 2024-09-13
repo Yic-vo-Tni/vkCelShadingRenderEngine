@@ -13,7 +13,6 @@ namespace yic {
 
     Allocator::Allocator() {
         ct = mg::SystemHub.val<ev::pVkSetupContext>();
-        rt = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender);
 
         mDevice = *ct.device;
         mDyDispatcher = *ct.dynamicDispatcher;
@@ -35,11 +34,6 @@ namespace yic {
     Allocator::~Allocator(){
         vmaDestroyAllocator(mVmaAllocator);
     }
-
-
-//    auto Allocator::make() -> void {
-//
-//    }
 
 
     //-------------------------------------------------------------------------------------------------//
@@ -382,10 +376,11 @@ namespace yic {
                 .memoryUsage = MemoryUsage::eGpuOnly,
                 .allocStrategy = AllocStrategy::eDefault,
         };
-        auto buf = createBuf(bufCreateInfo);
-        createInfo.buffer = buf.buf;
+        auto bufferHandle = createBuf(bufCreateInfo);
+        createInfo.buffer = bufferHandle.buf;
         auto as = mDevice.createAccelerationStructureKHR(createInfo, nullptr, mDyDispatcher);
-        return std::make_shared<yic::vkAccel>(buf.buf, buf.vmaAllocation, mVmaAllocator, as, mDevice, mDyDispatcher);
+
+        return std::make_shared<yic::vkAccel>(bufferHandle.buf, bufferHandle.vmaAllocation, mVmaAllocator, as, mDevice, mDyDispatcher);
     }
 
     auto Allocator::allocAccel(vk::AccelerationStructureBuildSizesInfoKHR buildSize,
@@ -399,7 +394,7 @@ namespace yic {
     //-------------------------------------------------------------------------------------------------//
     //-------------------------------------------------------------------------------------------------//
 
-    auto Allocator::createBuf(const bufCreateInfo& bufCreateInfo) -> buf {
+    auto Allocator::createBuf(const bufCreateInfo& bufCreateInfo) -> BufferHandle {
         VkBuffer buf;
         VmaAllocation allocation;
 
@@ -425,7 +420,7 @@ namespace yic {
         cmd.copyBuffer((vk::Buffer) stagingBuf, (vk::Buffer) destBuf, 1, &copy);
     }
 
-    auto Allocator::mapBuf(const yic::Allocator::buf& buf, VkDeviceSize devSize, const void *data, bool unmap)-> void* {
+    auto Allocator::mapBuf(const yic::Allocator::BufferHandle& buf, VkDeviceSize devSize, const void *data, bool unmap)-> void* {
         void* mappedData = nullptr;
 
         try {
@@ -489,7 +484,6 @@ namespace yic {
         }
 
         cmd.pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
-
     }
 
     auto Allocator::resetBuf(Allocator::stagBuf& buf, vk::CommandBuffer& cmd) -> void {
@@ -543,6 +537,269 @@ namespace yic {
         }
 
         return mDevice.getBufferAddress(buf->buffer);
+    }
+
+    auto Allocator::glmMatToVkTransformMatrix(const glm::mat4 &mat) -> vk::TransformMatrixKHR {
+        vk::TransformMatrixKHR tfMatrix;
+        auto temp = glm::transpose(mat);
+        memcpy(&tfMatrix, &temp, sizeof(vk::TransformMatrixKHR));
+        return tfMatrix;
+    }
+
+    auto Allocator::getAccelAddr(const vkAccel_sptr &as) -> vk::DeviceAddress {
+        vk::AccelerationStructureDeviceAddressInfoKHR addrInfo{as->accel};
+        return mDevice.getAccelerationStructureAddressKHR(addrInfo, mDyDispatcher);
+    }
+
+    auto Allocator::transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)-> void {
+        CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer &cmd) {
+            vk::ImageMemoryBarrier barrier{{}, {}, oldLayout, newLayout,
+                                           vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, image,
+                                           vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+            vk::PipelineStageFlags srcStage, dstStage;
+            if (oldLayout == vk::ImageLayout::eUndefined) {
+                barrier.setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
+                        .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+
+                srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
+                dstStage = vk::PipelineStageFlagBits::eTransfer;
+            } else {
+                barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                        .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+
+                srcStage = vk::PipelineStageFlagBits::eTransfer;
+                dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+            }
+
+            cmd.pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
+        });
+    }
+
+    auto Allocator::transitionImageLayout(vk::ImageMemoryBarrier barrier, const vk::PipelineStageFlags &srcStage,
+                                          const vk::PipelineStageFlags &dstStag) -> void{
+        CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+            barrier.setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
+                    .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+                    .setSubresourceRange(vk::ImageSubresourceRange()
+                                                 .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                                 .setBaseMipLevel(0)
+                                                 .setLevelCount(1)
+                                                 .setBaseArrayLayer(0)
+                                                 .setLayerCount(1));
+            cmd.pipelineBarrier(srcStage, dstStag, {}, {}, {}, barrier);
+        });
+    }
+
+    auto Allocator::copyImageToImage(const vkImage_sptr &srcImage, vk::ImageLayout srcImageLayout,
+                                     const vkImage_sptr &dstImage, vk::ImageLayout dstImageLayout,
+                                     uint8_t copyImageIndex) -> void {
+        CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer &cmd) {
+            auto copy = vk::ImageCopy()
+                    .setExtent({static_cast<uint32_t>(srcImage->info_.width),
+                                static_cast<uint32_t>(srcImage->info_.height), 1})
+                    .setSrcSubresource(vk::ImageSubresourceLayers()
+                                               .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                               .setLayerCount(1))
+                    .setDstSubresource(vk::ImageSubresourceLayers()
+                                               .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                               .setLayerCount(1));
+
+            cmd.copyImage(srcImage->images[copyImageIndex], srcImageLayout,
+                          dstImage->images[copyImageIndex], dstImageLayout, copy);
+        });
+    }
+
+    auto Allocator::transitionImageLayout(vk::ImageMemoryBarrier barrier, const vk::PipelineStageFlags &srcStage,
+                                          const vk::PipelineStageFlags &dstStag, vk::CommandBuffer &cmd) -> void {
+        barrier.setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
+                .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+                .setSubresourceRange(vk::ImageSubresourceRange()
+                                             .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                             .setBaseMipLevel(0)
+                                             .setLevelCount(1)
+                                             .setBaseArrayLayer(0)
+                                             .setLayerCount(1));
+        cmd.pipelineBarrier(srcStage, dstStag, {}, {}, {}, barrier);
+    }
+
+    auto Allocator::copyImageToImage(const vkImage_sptr &srcImage, vk::ImageLayout srcImageLayout,
+                                     const vkImage_sptr &dstImage, vk::ImageLayout dstImageLayout,
+                                     vk::CommandBuffer &cmd, uint8_t copyImageIndex) -> void {
+        auto copy = vk::ImageCopy()
+                .setExtent({static_cast<uint32_t>(srcImage->info_.width),
+                            static_cast<uint32_t>(srcImage->info_.height), 1})
+                .setSrcSubresource(vk::ImageSubresourceLayers()
+                                           .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                           .setLayerCount(1))
+                .setDstSubresource(vk::ImageSubresourceLayers()
+                                           .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                           .setLayerCount(1));
+
+        cmd.copyImage(srcImage->images[copyImageIndex], srcImageLayout,
+                      dstImage->images[copyImageIndex], dstImageLayout, copy);
+    }
+
+    auto Allocator::copyImageToImage(const yic2::Image_sptr& srcImage, const yic2::Image_sptr& dstImage,
+                                     vk::CommandBuffer& cmd, uint8_t copyImageIndex) -> void {
+        auto copy = vk::ImageCopy()
+                .setExtent({static_cast<uint32_t>(srcImage->config.extent.width),
+                            static_cast<uint32_t>(srcImage->config.extent.height), 1})
+                .setSrcSubresource(vk::ImageSubresourceLayers()
+                                           .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                           .setLayerCount(1))
+                .setDstSubresource(vk::ImageSubresourceLayers()
+                                           .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                           .setLayerCount(1));
+
+        cmd.copyImage(srcImage->images[copyImageIndex], vk::ImageLayout::eTransferSrcOptimal,
+                      dstImage->images[copyImageIndex], vk::ImageLayout::eTransferDstOptimal, copy);
+    }
+
+    auto Allocator::pipelineBarrier2(const vot::vector<vk::ImageMemoryBarrier2> &imageMemoryBarrier2,
+                                     const vot::vector<vk::BufferMemoryBarrier2> &bufferMemoryBarrier2,
+                                     const vot::vector<vk::MemoryBarrier2> &memoryBarrier2, vk::CommandBuffer& cmd,
+                                     vk::DependencyInfo dependencyInfo) -> void {
+        dependencyInfo.setImageMemoryBarriers(imageMemoryBarrier2)
+                .setBufferMemoryBarriers(bufferMemoryBarrier2)
+                .setMemoryBarriers(memoryBarrier2);
+
+        cmd.pipelineBarrier2(dependencyInfo);
+    }
+
+    auto Allocator::allocImage(yic2::ImageConfig config, const std::string &id) -> yic2::Image_sptr {
+        auto count = config.imageCount;
+        vot::smart_vector<vk::Image> images(count);
+        vot::smart_vector<vk::ImageView> imageViews(count);
+        vot::smart_vector<VmaAllocation> allocations(count);
+
+        for(auto i = 0; i < count; i++){
+            auto [image, vma] = createImage(config);
+            images[i] = image;
+            imageViews[i] = createImageView(config, image);
+            allocations[i] = vma;
+        }
+
+        if (config.currentImageLayout != vk::ImageLayout::eUndefined){
+            CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+                vk::ImageMemoryBarrier barrier{
+                        {}, vk::AccessFlagBits::eNoneKHR | vk::AccessFlagBits::eColorAttachmentWrite,
+                        vk::ImageLayout::eUndefined, config.currentImageLayout,
+                        0, 0, images, {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+                };
+                cmd.pipelineBarrier(vk::PipelineStageFlagBits::eNoneKHR,
+                                    vk::PipelineStageFlagBits::eColorAttachmentOutput, {},
+                                    {}, {}, barrier);
+            });
+        }
+
+        if (config.imageFlags == yic2::ImageFlagBits::eColor){
+            return std::make_shared<yic2::Image>(images, imageViews, allocations, mVmaAllocator, mDevice, config, id);
+        }
+
+
+//        if (config.imageFlags == yic::ImageFlags::eColor){
+//            return std::make_shared<yic::vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
+//        }
+//        if (config.imageFlags == yic::ImageFlags::eStorage){
+//            vk::ImageMemoryBarrier barrier{
+//                    {}, vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eShaderRead, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+//                    0, 0, images[0], {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+//            };
+//            yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
+//                cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {},
+//                                    {}, {}, barrier);
+//            });
+//
+//            return std::make_shared<yic::vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
+//        }
+//        if ((config.imageFlags & (yic::ImageFlags::eDepthStencil | yic::ImageFlags::eColor)) != 0){
+//            auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+//
+//            auto depthFormat = [&] {
+//                for (const auto &f: {vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,
+//                                     vk::Format::eD16UnormS8Uint}) {
+//                    auto formatProp = ct.physicalDevice->getFormatProperties(f);
+//                    if ((formatProp.optimalTilingFeatures & feature) == feature) {
+//                        return f;
+//                    }
+//                }
+//                return vk::Format::eD16UnormS8Uint;
+//            }();
+//
+//            config.setFormat(depthFormat).setUsage(
+//                    vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled).setAspect(
+//                    vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+//            auto [depthImage, depthVma] = createImage();
+//            auto depthImageView = createImageView(depthImage);
+//
+//
+//            if (config.renderPass) {
+//                std::vector<vk::Framebuffer> framebuffers;
+//                for (size_t i = 0; i < images.size(); i++) {
+//                    std::vector<vk::ImageView> views;
+//                    views.emplace_back(imageViews[i]);
+//                    views.emplace_back(depthImageView);
+//
+//                    auto createInfo = vk::FramebufferCreateInfo().setRenderPass(config.renderPass)
+//                            .setWidth(config.extent.width)
+//                            .setHeight(config.extent.height)
+//                            .setLayers(1)
+//                            .setAttachments(views);
+//
+//                    framebuffers.emplace_back(mDevice.createFramebuffer(createInfo));
+//                }
+//
+//                auto img = std::make_shared<yic::vkImage>(images, imageViews, allocations,
+//                                                          depthImage, depthImageView, depthVma,
+//                                                          framebuffers,mDevice, mVmaAllocator, config, id);
+//                return img;
+//            }
+//            auto img = std::make_shared<yic::vkImage>(images, imageViews, allocations, depthImage, depthImageView, depthVma,
+//                                                      mDevice, mVmaAllocator, config, id);
+//            return img;
+//        }
+//
+//        throw std::runtime_error("failed to create off img");
+
+        return {};
+    }
+
+    auto Allocator::createImage(const yic2::ImageConfig &config) -> std::pair<VkImage, VmaAllocation> {
+        vk::ImageCreateInfo imageInfo{
+                {},
+                config.imageType,
+                config.format,
+                config.extent,
+                config.mipLevels,
+                config.arrayLayers,
+                config.sampleCountFlags,
+                config.tiling,
+                config.usage,
+                config.sharingMode
+        };
+
+        VmaAllocationCreateInfo allocInfo{ .usage = VMA_MEMORY_USAGE_GPU_ONLY };
+
+        VkImage image;
+        VmaAllocation allocation;
+
+        vmaCreateImage(mVmaAllocator, &reinterpret_cast<const VkImageCreateInfo&>(imageInfo), &allocInfo, &image, &allocation,
+                       nullptr);
+
+        return std::make_pair(image, allocation);
+    }
+
+    auto Allocator::createImageView(const yic2::ImageConfig& config, const vk::Image &image) -> vk::ImageView {
+        vk::ImageViewCreateInfo imageViewCreateInfo{
+                {},
+                image,
+                config.imageViewType,
+                config.format,
+                config.componentSwizzle,
+                config.imageSubresourceRange
+        };
+
+        return mDevice.createImageView(imageViewCreateInfo);
     }
 
 

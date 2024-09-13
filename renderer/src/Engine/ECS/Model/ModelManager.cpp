@@ -4,6 +4,7 @@
 
 #include "ModelManager.h"
 #include "Engine/ECS/Model/ModelLoader.h"
+#include "Engine/ECS/Attachment/Scene.h"
 
 namespace sc {
 
@@ -20,10 +21,8 @@ namespace sc {
                 ->build()
                 ;
 
-        subscribeModel();
 
         mModelQuery = ecs->query<Model>();
-        mRenderHandle = yic::EventBus::val<et::pRenderProcess>(enum_name(RenderPhase::ePrimary)).pProcess_ref();
 
         mRenderTargetOffImg = mg::Allocator->allocImage(yic::ImageConfig()
                 .setExtent(mExtent)
@@ -31,40 +30,34 @@ namespace sc {
                 .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
                 .setImageCount(3), " enum(PrimaryRenderSeq::Graphics)");
 
-        mRenderHandle->updateDescriptor(static_cast<int>(RenderPhase::ePrimary), mRenderTargetOffImg);
+        rebuild();
+        subscribeModel();
+        render();
+    }
 
-        mRTBuilder = std::make_unique<yic::RTBuilder>();
-        mRTBuilder->cRTPipeAndSBT(globalCamera.getVpMatrixBuf());
+    ModelManager::~ModelManager() = default;
+
+    auto ModelManager::render() -> void {
+        mRenderHandle = mg::SystemHub.val<ev::pRenderProcess>(toolkit::enum_name(RenderPhase::ePrimary)).rp;
+
+       // mRenderHandle->updateDescriptor(PrimaryRenderSeq::eGraphics, mRenderTargetOffImg);
+       mRenderHandle->updateDescriptorImpl(static_cast<int>(PrimaryRenderSeq::eGraphics), mRenderTargetOffImg);
 
         mRenderHandle->appendRenderPassProcessSecondaryCommand(PrimaryRenderSeq::eGraphics, mRenderTargetOffImg, [this](vk::CommandBuffer& cmd){
-            mModelQuery.each([&](flecs::entity e, sc::Model& m){
-                cmd.executeCommands(m.cmd);
+            mModelQuery.each([&](flecs::entity e, sc::Model& model){
+                cmd.executeCommands(model.cmd);
             });
         });
-        mRenderHandle->appendProcessCommand(PrimaryRenderSeq::eRT, [&](vk::CommandBuffer& cmd){
-            mRTBuilder->drawNew(cmd);
-        });
-    }
-
-    ModelManager::~ModelManager() {
-        mRenderGroupGraphics.reset();
-    }
-
-
-    auto ModelManager::prepare() -> void {
-        oneapi::tbb::spin_rw_mutex::scoped_lock lock(mSubscribeModelMutex, false);
-
-        rebuild();
     }
 
     auto ModelManager::subscribeModel() -> void {
-        yic::EventBus::subscribeAuto([&](const et::eResPaths& paths){
-            for(const auto& [res, pts] : paths.paths_v()){
+        mg::SystemHub.subscribe([&](const ev::eResourcePaths& paths){
+            for(const auto& [res, pts] : paths.resourcePaths){
                 auto loadModel = [&](const ResFormat &format) {
                     if (res == format){
                         for(auto& pt : pts){
 
-                            auto model = ModelLoader::Load(pt);
+                            auto model = ModelLoader::Load(pt.c_str());
                             model.info.shaderPts = mRenderGroupGraphics->getShaderPaths();
                             model.des.descriptor = yic::Descriptor::configure(*mRenderGroupGraphics)
                                     ->updateDesSetAuto(globalCamera.getVpMatrixBuf(), model.texs.diffTexs);
@@ -79,11 +72,13 @@ namespace sc {
                                     cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
                                 }
                             });
+                            mg::SceneManager->cBlas(&model);
 
                             oneapi::tbb::spin_rw_mutex::scoped_lock lock(mSubscribeModelMutex, true);
                             ecs->defer_begin();
                             ecs->entity(model.info.id.c_str()).set<Model>(model).add<Selected>();
                             ecs->defer_end();
+                            mg::SceneManager->addModel(&model);
                             vkInfo("add model successfully");
                         }
                     }
@@ -99,24 +94,30 @@ namespace sc {
     }
 
     auto ModelManager::rebuild() -> void {
-        yic::EventBus::subscribeDeferredAuto([&](const et::uiWidgetContext &uiWidgetContext) {
-            mExtent = (vk::Extent2D{(uint32_t) uiWidgetContext.viewportSize.value().x, (uint32_t) uiWidgetContext.viewport_height_v()});
+        mg::SystemHub.subscribe([&](const ev::eRenderTargetSizeChange& sizeChange){
+            oneapi::tbb::spin_rw_mutex::scoped_lock lock(mSubscribeModelMutex, false);
+
+            mExtent.setWidth((uint32_t) sizeChange.size.x)
+                    .setHeight((uint32_t) sizeChange.size.y);
 
             mRenderTargetOffImg = mg::Allocator->allocImage(yic::ImageConfig()
-                                                                    .setExtent(mExtent)
-                                                                    .setImageFlags(yic::ImageFlags::eDepthStencil)
-                                                                    .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
-                                                                    .setImageCount(3), " enum(PrimaryRenderSeq::Graphics)");
+                    .setImageFlags(yic::ImageFlags::eDepthStencil)
+                    .setExtent(mExtent)
+                    .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
+                    .setImageCount(3), "enum(PrimaryRenderSeq::Graphics) rebuild");
 
             mRenderHandle->updateDescriptor(static_cast<int>(RenderPhase::ePrimary), mRenderTargetOffImg);
 
-            mModelQuery.each([&](flecs::entity e, sc::Model &model) {
+            mModelQuery.each([&](flecs::entity e, Model& model){
                 auto& uniqueCmd = model.cmd;
 
                 vk::CommandBufferInheritanceInfo inheritanceInfo{
-                        yic::FrameRender::eColorDepthStencilRenderPass, 0
+                    yic::FrameRender::eColorDepthStencilRenderPass, 0
                 };
-                vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse, &inheritanceInfo};
+
+                vk::CommandBufferBeginInfo beginInfo{
+                    vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse, &inheritanceInfo
+                };
 
                 uniqueCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
                 uniqueCmd.begin(beginInfo);
@@ -139,7 +140,7 @@ namespace sc {
                 }
                 uniqueCmd.end();
             });
-        }, "ModelManager");
+        });
     }
 
 

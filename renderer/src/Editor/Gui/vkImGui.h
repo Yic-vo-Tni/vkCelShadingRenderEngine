@@ -14,7 +14,7 @@ namespace yic {
 
     class vkImGui {
     public:
-        vkImGui(std::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex);
+        vkImGui(vot::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex);
         ~vkImGui();
 
         auto render(vk::CommandBuffer& cmd) -> void;
@@ -23,10 +23,12 @@ namespace yic {
         auto base() -> void;
         auto callback() -> void;
     private:
-        std::string mId{};
+        vot::string mId{};
         uint32_t mQueueIndex{};
         vk::Queue mQueue{};
         GLFWwindow* mWindow{};
+        vk::Extent2D mExtent{};
+        vk::Extent2D* mCurrentExtent{};
         vk::DescriptorPool mDescriptorPool{};
 
         bool mShowDemo{true};

@@ -33,6 +33,11 @@ namespace yic {
         ImgInfo(vk::Sampler sampler, const std::vector<vk::ImageView>& imageViews) : sampler(sampler), imageViews(imageViews){}
         ImgInfo(vk::Sampler sampler, const std::vector<vk::ImageView>& imageViews, vk::ImageLayout imageLayout) : sampler(sampler), imageViews(imageViews), imageLayout(imageLayout){}
         ImgInfo(vk::Sampler sampler, const std::shared_ptr<yic::vkImage>& img, vk::ImageLayout imageLayout) : sampler(sampler), imageViews(img->imageViews), imageLayout(imageLayout){}
+        ImgInfo(vk::Sampler sampler, const std::shared_ptr<yic2::Image>& img, vk::ImageLayout imageLayout) : sampler(sampler), imageLayout(imageLayout){
+            for(auto& v : img->imageViews){
+                imageViews.emplace_back(v);
+            }
+        }
 
         explicit ImgInfo(const std::vector<std::shared_ptr<yic::vkImage>>& imgs){
             for(const auto& img : imgs){
@@ -42,6 +47,10 @@ namespace yic {
         explicit ImgInfo(const std::shared_ptr<yic::vkImage>& img){
             imageViews.insert(imageViews.end(), img->imageViews.begin(), img->imageViews.end());
         }
+        explicit ImgInfo(const yic2::Image_sptr& img){
+            imageViews.insert(imageViews.end(), img->imageViews.begin(), img->imageViews.end());
+        }
+
 
     };
     struct BufInfo{
@@ -95,6 +104,11 @@ namespace yic {
 
         static auto configure(PipelineDesSetLayout& setLayout) -> std::shared_ptr<Descriptor> {
             return std::make_shared<Descriptor>(IdGenerator::uniqueId(), setLayout);
+        }
+
+        template<typename T>
+        static auto configure(std::shared_ptr<T>& setLayout) -> std::shared_ptr<Descriptor>{
+            return std::make_shared<Descriptor>(IdGenerator::uniqueId(), *setLayout);
         }
 
         [[nodiscard]] inline auto& getDescriptorSets() const { return mDesSet;}
@@ -225,6 +239,9 @@ namespace yic {
         std::shared_ptr<PipelineDesSetLayout> mSetLayout;
     };
 
+    using Descriptor_sptr = std::shared_ptr<Descriptor>;
+    using ImageInfo = ImgInfo;
+    using BufferInfo = BufInfo;
 } // yic
 
 namespace Hide{

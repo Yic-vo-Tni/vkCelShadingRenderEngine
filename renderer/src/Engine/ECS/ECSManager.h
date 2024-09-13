@@ -6,8 +6,8 @@
 #define VKCELSHADINGRENDERER_ECSMANAGER_H
 
 #include "Camera/Camera.h"
+#include "Attachment/Scene.h"
 #include "Model/ModelManager.h"
-
 
 namespace sc {
 

@@ -11,13 +11,14 @@ namespace ui {
 
     class RenderWindow : public Widget{
     public:
-        RenderWindow() : Widget("Render"){ mLastFrameTime = std::chrono::steady_clock::now();};
+        RenderWindow() ;
 
         void record() override;
         auto calculateFPS() -> void;
 
     private:
         ImVec2 mAvailable{2560, 1440};
+        uint32_t* mImageIndex;
     private:
         float mFps = 0.f;
         float mFpsTimer = 0.f;

@@ -8,10 +8,10 @@
 
 namespace yic {
 
-    vkImGui::vkImGui(std::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex) :
+    vkImGui::vkImGui(vot::string id, vk::Queue graphicsQueue, const uint32_t &queueFamilyIndex) :
             mId(std::move(id)),
             mQueueIndex(queueFamilyIndex), mQueue(graphicsQueue),
-            mWindow(EventBus::Get::vkRenderContext(mId).window_ref()){
+            mWindow(mg::SystemHub.val<ev::hVkRenderContext>(mId).window){
 
         ImGui::CreateContext();
         auto &io = ImGui::GetIO();
@@ -22,7 +22,7 @@ namespace yic {
         ImGui_ImplGlfw_InitForVulkan(mWindow, false);
 
         auto ct = mg::SystemHub.val<ev::pVkSetupContext>();
-        auto rt = EventBus::Get::vkRenderContext(mId);
+        auto rt = mg::SystemHub.val<ev::hVkRenderContext>(mId);
 
         vk::DescriptorPoolSize poolSize[] = {{vk::DescriptorType::eCombinedImageSampler, 1}};
         auto pool_info = vk::DescriptorPoolCreateInfo().setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
@@ -39,15 +39,17 @@ namespace yic {
                 .QueueFamily = mQueueIndex,
                 .Queue = mQueue,
                 .DescriptorPool = mDescriptorPool,
-                .RenderPass = rt.renderPass_ref(),
-                .MinImageCount = rt.imageCount_v(),
-                .ImageCount = rt.imageCount_v(),
+                .RenderPass = *rt.renderPass,
+                .MinImageCount = static_cast<uint32_t>(rt.framebuffers->size()),
+                .ImageCount = static_cast<uint32_t>(rt.framebuffers->size()),
         };
         ImGui_ImplVulkan_Init(&info);
 
         callback();
 
         ImGui_ImplVulkan_CreateFontsTexture();
+
+        mCurrentExtent = rt.currentExtent;
     }
 
     vkImGui::~vkImGui() {
@@ -75,12 +77,13 @@ namespace yic {
     }
 
     auto vkImGui::base() -> void {
-        EventBus::subscribeDeferredWithFirstExecuteAuto([&](const et::vkRenderContext& ct){
-            ImVec2 imguiWindowSize((float)ct.width_v(), (float)ct.height_v());
+        if (mCurrentExtent->width != mExtent.width || mCurrentExtent->height != mExtent.width) {
+            ImVec2 imguiWindowSize((float) mCurrentExtent->width, (float) mCurrentExtent->height);
             ImVec2 imguiWindowPos(0, 0);
             ImGui::SetNextWindowSize(imguiWindowSize);
             ImGui::SetNextWindowPos(imguiWindowPos);
-        }, et::vkRenderContext::id::mainRender);
+            mExtent = *mCurrentExtent;
+        }
 
         ImGuiStyle &style = ImGui::GetStyle();
         style.Colors[ImGuiCol_WindowBg].w = 0.f;

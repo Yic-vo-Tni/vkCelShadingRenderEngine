@@ -10,26 +10,30 @@
 namespace glfw_callback {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *w, int width, int height) {
-        yic::EventBus::publish(et::vkRenderContext{
-                .size = ImVec2((float)width, (float)height),
+        mg::SystemHub.enqueueLatestEvent(ev::oWindowSizeChange{
+                .size = ImVec2((float) width, (float) height),
                 .extent = vk::Extent2D{(uint32_t) width, (uint32_t) height},
-        }, et::vkRenderContext::id::mainRender);
+        });
     };
 
     inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {
-        mg::SystemHub.publish(et::glKeyInput{key, action, scancode, mods});
+        //mg::SystemHub.publish(et::glKeyInput{key, action, scancode, mods});
+        mg::SystemHub.enqueueEvent(et::glKeyInput{key, action, scancode, mods});
     };
 
     inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {
-        mg::SystemHub.publish(et::glMouseInput{button, action, mods});
+        //mg::SystemHub.publish(et::glMouseInput{button, action, mods});
+        mg::SystemHub.enqueueEvent(et::glMouseInput{button, action, mods});
     };
 
     inline auto setCursorPosCallback = [](GLFWwindow*w, double xpos, double ypos){
-        mg::SystemHub.publish(et::glCursorPosInput{xpos, ypos});
+        //mg::SystemHub.publish(et::glCursorPosInput{xpos, ypos});
+        mg::SystemHub.enqueueEvent(et::glCursorPosInput{xpos, ypos});
     };
 
     inline auto setScrollBack = [](GLFWwindow *w, double xoffset, double yoffset){
-        mg::SystemHub.publish(et::glScrollInput{xoffset, yoffset});
+        //mg::SystemHub.publish(et::glScrollInput{xoffset, yoffset});
+        mg::SystemHub.enqueueEvent(et::glScrollInput{xoffset, yoffset});
     };
 
     inline auto setWindowPosCallback = [](GLFWwindow *w, int xpos, int ypos) {
@@ -45,14 +49,14 @@ namespace glfw_callback {
     };
 
     inline auto dropCallback = [](GLFWwindow *w, int count, const char** paths){
-        std::unordered_map<ResFormat, std::vector<std::string>> resPaths;
+        vot::unordered_map<ResFormat, vot::vector<vot::string >> resourcePaths;
 
-        for(int i = 0; i < count; i++){
-            std::string path(paths[i]);
+        for(auto i = 0; i < count; i++){
+            vot::string path(paths[i]);
 
-            auto add = [&](const std::string& suffix, ResFormat format){
+            auto add = [&](const vot::string& suffix, ResFormat format){
                 if (path.ends_with(suffix)){
-                    resPaths[format].emplace_back(path);
+                    resourcePaths[format].emplace_back(path);
                 }
             };
 
@@ -62,9 +66,8 @@ namespace glfw_callback {
             add(".pmx", ResFormat::ePmx);
         }
 
-        if (!resPaths.empty()){
-            yic::EventBus::publishAsync(et::eResPaths{resPaths});
-        }
+        if (!resourcePaths.empty())
+            mg::SystemHub.publishAsync(ev::eResourcePaths{resourcePaths});
     };
 
 }

@@ -56,6 +56,60 @@ namespace Hide{
             registerEvent<Event>()->publish(event);
         }
 
+        template<class Event>
+        auto publishAsync(Event&& event) -> void{
+            (void)std::async(std::launch::async, [event]{
+                registerEvent<Event>()->publish(event);
+            });
+        }
+
+
+        template<typename Event>
+        auto enqueueEvent(Event&& event) -> void{
+            auto ev = registerEvent<Event>();
+            ev->add(event);
+            eventHandles.push(ev);
+        }
+
+        template<typename Event>
+        auto enqueueLatestEvent(Event&& event) -> void{
+            auto ev = registerEvent<Event>();
+            ev->update(event);
+            std::type_index typeIndex{typeid(event)};
+            if (uniqueTypeSet.find(typeIndex) == uniqueTypeSet.end()){
+                uniqueHandles.push(ev);
+                uniqueTypeSet.insert(typeIndex);
+            }
+        }
+
+        template<typename Event>
+        auto setEvent(Event&& event) -> void{
+            registerEvent<Event>()->update(event);
+        }
+
+        template<typename Event>
+        auto valEvent() -> Event{
+            return registerEvent<Event>()->val();
+        }
+
+        auto process() -> void{
+            while(!eventHandles.empty()){
+                auto handle = eventHandles.front();
+                handle->execute();
+                eventHandles.pop();
+            }
+            while(!uniqueHandles.empty()){
+                auto handle = uniqueHandles.front();
+                handle->executeLatest();
+                uniqueHandles.pop();
+            }
+            uniqueTypeSet.clear();
+        }
+
+        //--------------------------------------------------------------------------------//
+        //--------------------------------------------------------------------------------//
+        //--------------------------------------------------------------------------------//
+
         template<typename T>
         auto sto(const T& instance, const vot::string& id = {}) -> void {
             auto& ent = storages[std::type_index(typeid(T))][id];
@@ -108,7 +162,7 @@ namespace Hide{
         auto updatePart(T& exist, const T& update){
             boost::hana::for_each(boost::hana::keys(exist), [&](auto key){
                auto& oldV = boost::hana::at_key(exist, key);
-               const auto& newV = boost::hana::at_key(exist, key);
+               const auto& newV = boost::hana::at_key(update, key);
 
                using oldT = std::decay_t<decltype(oldV)>;
                using newT = std::decay_t<decltype(newV)>;
@@ -155,6 +209,9 @@ namespace Hide{
         TaskHandle taskHandle;
         oneapi::tbb::task_group eventGroup;
         vot::unordered_map<std::type_index, vot::unordered_map<vot::string, GlobalEntry>> storages;
+        vot::queue<IEventHandle*> eventHandles;
+        vot::queue<IEventHandle*> uniqueHandles;
+        vot::unordered_set<std::type_index> uniqueTypeSet;
     };
 
 
@@ -164,39 +221,6 @@ namespace mg{
     inline auto& SystemHub = Singleton<Hide::SystemHub>::ref();
 }
 
-struct T{
-    HANA_OPT(T,
-             (int, a),
-             (int, b));
 
-    RETURN(a);
-};
-struct U{
-    HANA(U,
-         (int*, a),
-         (int*, b));
-};
-
-inline void x(){
-    mg::SystemHub.subscribe([](const T& t){
-
-    });
-    mg::SystemHub.publish(T{});
-    mg::SystemHub.sto(T{.b = 2});
-    int a = 3;
-    mg::SystemHub.sto(U{.a = &a});
-    auto& b = mg::SystemHub.val<T>();
-    auto c = mg::SystemHub.val<U>().a;
-    a = *c;
-
-    auto p = mg::SystemHub.val<ev::pEcs>().ecs;
-    auto ct = mg::SystemHub.val<ev::pVkSetupContext>().instance;
-    auto q = mg::SystemHub.val<ev::pVkSetupContext>().queueFamily->getPrimaryGraphicsFamilyIndex();
-    int* x;
-    auto& y = x;
-    mg::SystemHub.sto(ev::pVkSetupContext{});
-    auto rt = (*mg::SystemHub.val<ev::hVkRenderContext>().framebuffers)[0];
-
-}
 
 #endif //VKCELSHADINGRENDERER_SYSTEMHUB_H

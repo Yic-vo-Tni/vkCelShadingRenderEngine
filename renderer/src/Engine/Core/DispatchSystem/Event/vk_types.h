@@ -61,48 +61,48 @@ namespace et {
 //    };
 
 
-    struct vkRenderContext {
-        HANA_OPT(vkRenderContext,
-                 (ImVec2, size),
-                 (vk::Extent2D, extent),
-                 (GLFWwindow * , window),
-                 (vk::SwapchainKHR, swapchain),
-                 (vk::Extent2D, currentExtent),
-                 (std::vector<FrameEntry>, frameEntries),
-                 (vk::SurfaceFormatKHR, surfaceFormat),
-                 (uint32_t, activeImageIndex),
-                 (vk::RenderPass, renderPass),
-                 (std::vector<vk::Framebuffer>, framebuffers)
-        //         (vk::CommandBuffer, cmd)
-        );
+//    struct vkRenderContext {
+//        HANA_OPT(vkRenderContext,
+//                 (ImVec2, size),
+//                 (vk::Extent2D, extent),
+//                 (GLFWwindow * , window),
+//                 (vk::SwapchainKHR, swapchain),
+//                 (vk::Extent2D, currentExtent),
+//                 (std::vector<FrameEntry>, frameEntries),
+//                 (vk::SurfaceFormatKHR, surfaceFormat),
+//                 (uint32_t, activeImageIndex),
+//                 (vk::RenderPass, renderPass),
+//                 (std::vector<vk::Framebuffer>, framebuffers)
+//        //         (vk::CommandBuffer, cmd)
+//        );
+//
+//        DEFINE_ID_CONSTS(
+//                mainRender
+//        );
+//
+//        RETURN_REF(window);
+//        RETURN_REF(swapchain);
+//        RETURN_REF(frameEntries);
+//        RETURN_REF(surfaceFormat);
+//        RETURN_REF(renderPass);
+//        RETURN_REF(framebuffers);
+//     //   RETURN_REF(cmd);
+//
+//        RETURN_VALUE(extent);
+//        RETURN_VALUE(currentExtent);
+//        RETURN_VALUE(activeImageIndex);
+//
+//        RETURN_CUSTOM_VALUE(width, size, size->x);
+//        RETURN_CUSTOM_VALUE(height, size, size->y);
+//        RETURN_CUSTOM_VALUE(imageCount, frameEntries, static_cast<uint32_t>(frameEntries->size()));
+//    };
 
-        DEFINE_ID_CONSTS(
-                mainRender
-        );
-
-        RETURN_REF(window);
-        RETURN_REF(swapchain);
-        RETURN_REF(frameEntries);
-        RETURN_REF(surfaceFormat);
-        RETURN_REF(renderPass);
-        RETURN_REF(framebuffers);
-     //   RETURN_REF(cmd);
-
-        RETURN_VALUE(extent);
-        RETURN_VALUE(currentExtent);
-        RETURN_VALUE(activeImageIndex);
-
-        RETURN_CUSTOM_VALUE(width, size, size->x);
-        RETURN_CUSTOM_VALUE(height, size, size->y);
-        RETURN_CUSTOM_VALUE(imageCount, frameEntries, static_cast<uint32_t>(frameEntries->size()));
-    };
-
-    struct vkCommandBuffer{
-        HANA_OPT(vkCommandBuffer,
-                 (vk::CommandBuffer, cmd));
-
-        RETURN_REF(cmd);
-    };
+//    struct vkCommandBuffer{
+//        HANA_OPT(vkCommandBuffer,
+//                 (vk::CommandBuffer, cmd));
+//
+//        RETURN_REF(cmd);
+//    };
 
     struct vkResource {
         HANA_OPT(vkResource,
@@ -127,13 +127,13 @@ namespace et {
 
         CHECK_MEMBER_EXISTS(desc);
     };
-
-    struct pRenderProcess{
-        HANA_OPT(pRenderProcess,
-                 (yic::RenderProcess*, pProcess));
-
-        RETURN_REF(pProcess);
-    };
+//
+//    struct pRenderProcess{
+//        HANA_OPT(pRenderProcess,
+//                 (yic::RenderProcess*, pProcess));
+//
+//        RETURN_REF(pProcess);
+//    };
 
 
 

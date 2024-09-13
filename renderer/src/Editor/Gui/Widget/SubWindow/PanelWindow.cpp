@@ -15,7 +15,7 @@ namespace ui {
 
         std::vector<std::string> shaderPts;
 
-        auto ecs = yic::EventBus::val<et::eEcs_ptr>().ecs_ref();
+        auto ecs = mg::SystemHub.val<ev::pEcs>().ecs;
 
 //        ecs->query<sc::Model::Generic, Selected>().each([&](flecs::entity e, sc::Model::Generic& model, Selected selected){
 //            shaderPts.insert(shaderPts.end(), model.shaderPaths.begin(), model.shaderPaths.end());

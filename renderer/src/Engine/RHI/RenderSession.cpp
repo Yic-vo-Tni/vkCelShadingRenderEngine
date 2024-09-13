@@ -13,7 +13,7 @@ namespace yic {
               mFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit),
               mCommandPool(createCommandPool()),
               mCommandBuffers(createCommandBuffers(CommandBufferCount)){
-
+        mImageIndex = mg::SystemHub.val<ev::hVkRenderContext>(toolkit::enum_name(RenderPhase::ePrimary)).activeImageIndex;
     }
     RenderSession::RenderSession(std::string id, const uint32_t &qIndex, const uint32_t &CommandBufferCount,
                                  vk::CommandBufferUsageFlags flags) : mId(std::move(id)),
@@ -22,7 +22,7 @@ namespace yic {
                                                                      mFlags(flags),
                                                                      mCommandPool(createCommandPool()),
                                                                      mCommandBuffers(createCommandBuffers(CommandBufferCount)){
-
+        mImageIndex = mg::SystemHub.val<ev::hVkRenderContext>(toolkit::enum_name(RenderPhase::ePrimary)).activeImageIndex;
     }
 
     RenderSession::~RenderSession() {
@@ -49,11 +49,8 @@ namespace yic {
     auto RenderSession::beginCommandBuf(vk::Extent2D extent2D) -> vk::CommandBuffer & {
         vk::CommandBufferBeginInfo beginInfo{mFlags};
 
-        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
+        mActiveCommandBuffer = mCommandBuffers[*mImageIndex];
 
-        mActiveCommandBuffer = mCommandBuffers[imageIndex];
-
-        EventBus::update(et::vkCommandBuffer{.cmd = mActiveCommandBuffer}, mId);
         mActiveCommandBuffer.begin(beginInfo);
 
         vk::Viewport viewport{
@@ -79,13 +76,13 @@ namespace yic {
     }
 
     auto RenderSession::beginRenderPass(RenderSession::passInfo info) -> void {
-        auto imageIndex = EventBus::Get::vkRenderContext(et::vkRenderContext::id::mainRender).activeImageIndex_v();
-
         if (!info.extent.has_value()){
             info.extent = mExtent;
         }
-        vk::RenderPassBeginInfo renderPassBeginInfo{info.renderPass, info.framebuffers[imageIndex],
+
+        vk::RenderPassBeginInfo renderPassBeginInfo{info.renderPass, info.framebuffers[*mImageIndex],
                                                     {info.offset2D, info.extent.value()}, info.clearValues};
+
 
         mActiveCommandBuffer.beginRenderPass(renderPassBeginInfo, info.subpassContents);
     }

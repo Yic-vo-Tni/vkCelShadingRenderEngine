@@ -10,19 +10,23 @@
 #include "Engine/RHI/Descriptor.h"
 
 namespace yic{
-    class RenderPrcess;
+    class RenderProcess;
+}
+
+namespace et{
+    struct FrameEntry;
 }
 
 namespace ev {
     template<typename T>
     using opt = std::optional<T>;
 
-    struct FrameEntry {
-        vk::Image image;
-        vk::ImageView imageView;
-        vk::Semaphore readSemaphore;
-        vk::Semaphore writtenSemaphore;
-    };
+//    struct FrameEntry {
+//        vk::Image image;
+//        vk::ImageView imageView;
+//        vk::Semaphore readSemaphore;
+//        vk::Semaphore writtenSemaphore;
+//    };
 
     struct pEcs {
         HANA(pEcs,
@@ -31,7 +35,7 @@ namespace ev {
 
     struct pRenderProcess {
         HANA(pRenderProcess,
-             (yic::RenderPrcess * , rp));
+             (yic::RenderProcess * , rp));
     };
 
     struct pVkSetupContext {
@@ -46,15 +50,29 @@ namespace ev {
 
     struct hVkRenderContext {
         HANA(hVkRenderContext,
-             (opt<ImVec2>, size),
-             (vk::Extent2D * , extent),
              (GLFWwindow * , window),
-             (vk::SwapchainKHR, swapchain),
+             (vk::SwapchainKHR * , swapchain),
              (vk::Extent2D * , currentExtent),
-             (vot::vector<FrameEntry> * , fameEntries),
-             (uint8_t * , activeImgIndex),
+             (std::vector<et::FrameEntry> * , frameEntries),
+             (vk::SurfaceFormatKHR * , surfaceFormat),
+             (uint32_t * , activeImageIndex),
+             (vk::RenderPass * , renderPass),
              (std::vector<vk::Framebuffer> * , framebuffers));
     };
+
+    struct oWindowSizeChange {
+        HANA_OPT(oWindowSizeChange,
+                 (ImVec2, size),
+                 (vk::Extent2D, extent));
+    };
+
+    struct eRenderTargetSizeChange{
+        ImVec2 size;
+    };
+    struct eResourcePaths{
+        vot::unordered_map<ResFormat, vot::vector<vot::string >> resourcePaths;
+    };
+
 
 }
 

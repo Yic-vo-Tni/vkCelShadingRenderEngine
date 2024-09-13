@@ -23,12 +23,7 @@ namespace yic {
 //        cSbt();
 
         mExtent.setWidth(2560).setHeight(1440);
-//        Allocator::allocImgAuto(offRtImg, vk::ImageUsageFlagBits::eStorage, mExtent);
-//        offRtImg = mg::Allocator->allocImage(ImageConfig()
-//                .setExtent(mExtent)
-//                .setImageFlags(ImageFlags::eStorage)
-//                .setUsage(vk::ImageUsageFlagBits::eStorage)
-//                .setImageCount(1), "off: raytracing");
+
         mg::Allocator->allocAuto(offRtImg, vk::ImageUsageFlagBits::eStorage, mExtent, std::string("off: raytracing"));
     }
     RTBuilder::~RTBuilder() {
@@ -284,7 +279,7 @@ namespace yic {
                 .setMask(0xFF)
                 .setInstanceShaderBindingTableRecordOffset(0)
                 .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
-                .setAccelerationStructureReference(mg::Allocator->getAccelDevAddr(blas));
+                .setAccelerationStructureReference(mg::Allocator->getDeviceAddress(blas));
 
         auto instBuf = mg::Allocator->allocBufferStaging(sizeof(vk::AccelerationStructureInstanceKHR), &inst,
                                                   vk::BufferUsageFlagBits::eShaderDeviceAddress |
@@ -311,7 +306,7 @@ namespace yic {
 
         asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
                 .setDstAccelerationStructure(tlas->accel)
-                .setScratchData(vk::DeviceOrHostAddressKHR{mg::Allocator->getBufAddr(scratchBuf)});
+                .setScratchData(vk::DeviceOrHostAddressKHR{mg::Allocator->getDeviceAddress(scratchBuf)});
 
         auto asBuildRangInfo = vk::AccelerationStructureBuildRangeInfoKHR()
                 .setPrimitiveCount(1)
@@ -469,11 +464,12 @@ namespace yic {
                 ->addShader_("b_rt_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
                 ->addShader_("b_rt_shadow.rmiss", vk::ShaderStageFlagBits::eMissKHR)
                 ->addShader_("b_rt_hit.rchit", vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->bindDescriptor(descriptor)
                 ->build()
                 ;
 
-        descriptor = Descriptor::configure(*rayTracingSptr)
-                ->updateDesSetAuto(tlas, ImgInfo{{}, offRtImg, vk::ImageLayout::eGeneral}, bufSptr, mModel.mesh.vertBuf, mModel.mesh.indexBuf);
+        //descriptor = Descriptor::configure(*rayTracingSptr)
+        descriptor->updateDesSetAuto(tlas, ImgInfo{{}, offRtImg, vk::ImageLayout::eGeneral}, bufSptr, mModel.mesh.vertBuf, mModel.mesh.indexBuf);
     }
 
     auto RTBuilder::drawNew(const vk::CommandBuffer &cmd) -> void {
