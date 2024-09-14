@@ -58,7 +58,10 @@ namespace Hide{
 
         template<class Event>
         auto publishAsync(Event&& event) -> void{
-            (void)std::async(std::launch::async, [event]{
+//            (void)std::async(std::launch::async, [event]{
+//                registerEvent<Event>()->publish(event);
+//            });
+            eventGroup.run([ event = std::forward<Event>(event)]{
                 registerEvent<Event>()->publish(event);
             });
         }

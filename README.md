@@ -1,38 +1,106 @@
 # vkCelShadingRenderEngine
 
+## 简述
+- 自学用
+
 ## 内容
 
-- **多线程事件总线**：
-    - 全局变量存储更新提取
-    - 多订阅多发布
-    - 延迟订阅、延迟首次执行
-- **多线程任务总线**：
-    - 可以按枚举值顺序执行
-    - 单个枚举值下多个任务可选并行
-    - 支持任务嵌套
-- **事件处理**：
-    - 可执行撤回操作
-- **shader热重载**：
-    - 修改shader文件，自动编译替换，重建管线
-    - 临时编辑器
-- **模型加载**：
-    - 并行无锁加载，并行数8
-    - 重用stgbuf,采用LRU
-- **渲染管理**：
-    - 实时窗口重建
-    - 渲染独立线程
-- **性能优化**：
-    - 窗口帧率120fps
+### 已做
+- 事件系统
+- 全局线程安全存储接口
+- shader热重载
+- 临时编辑器
+- 自由摄像机
+- 独立渲染线程
+- 模型异步加载
+- 二级命令单次构建重用
+- 单次命令并行提交
+- LRU stg buf
+- 实时硬件光线追踪阴影
+- 窗口帧率120fps
 
-## 构建
+#### 项目前身做过
+- 阴影 shadow map, PCF
+- 色调映射
+- vmd动画加载播放 库：Saba
+- 模型选取（鼠标射线碰撞检测场景AABB）
+- 天空盒
+- 简单体积雾 柏林噪声 库：fastNoiseLite
 
-- 需要Vulkan SDK
-- 需要MinGW，CMake、Git
-- 需要自行下载vma，tbb（版本忘了）= =，imgui v1.90.9-docking, wx v3.2.5，boost的hana、filesystem、preprocessor,
-    - filesystem、tbb、wx需要自行编译，tbb用的是oneapi文件夹的版本
-    - 开始的时候没打算用CMake的FetchContext功能，之前给我留下了不好映像 ：）
-- 其他库会通过CMake的FetchContext功能自动拉取
-    - 编译完自动下载dll
+### 正在做
+#### 首要
+- id buffer 选取模型
+- rt shader封装顺序
+- rt 静态场景单次绘制
+- 重写队列类，配合time line sem并行提交
+
+#### 其次
+- 基础PBR
+- MSAA
+
+#### 逐步前进
+- 大气渲染 参考 https://ebruneton.github.io/precomputed_atmospheric_scattering/
+  - 目标：复刻Matěj Sakmary 的 Atmosphere and Cloud Rendering in Real-time
+
+#### 逐步重构
+- 逐步替换stl内存分配器为mimalloc
+- 逐步替换二进制信号量为 timeline semaphore 扩展
+- 逐步替换使用 dynamic render pass 扩展
+- 逐步替换使用 descriptor index 扩展
+
+### 计划：想做
+- 高级PBR：SSS，IBL等
+- 延迟渲染
+- 项目序列化 json
+- ozz动画
+- 用Bullet
+- 添加音频
+
+### 额外计划：
+- Occlusion Culling
+- 云层渲染，雨滴效果
+
+## 构建 
+- 我用的是win11，mingw 12.0, cmake 3.28
+- 尝试过学习接触avx指令集，需要处理器支持 :)
+- 不自动，FetchContext拉取的首次cmake后编译完还需要再cmake一下自动拉取dll文件 = - =
+
+## 使用的库
+- vulkan sdk
+- glfw
+- assimp
+- boost
+- flecs
+- glm
+- magic_enum
+- mimalloc
+- nfd
+- oneapi::tbb
+- spdlog
+- stb
+- vmd
+- wxWidget
+- sfml
+- imgui
+
+## 使用的vulkan扩展
+- vk_khr_swapchain
+- vk_khr_deffered_hostoperations
+- vk_khr_acceleration_structure
+- vk_khr_buffer_device_address
+- vk_khr_ray_tracing_pipeline
+- vk_khr_synchronization_2
+- vk_khr_spirv_1_4
+- vk_khr_timeline_semaphore
+### 计划用
+- vk_khr_create_renderpass_2
+- vk_nv_framebuffer_mixed_samples
+- vk_khr_dynamic_rendering
+- vk_khr_descriptor_index
+
+## C++ 23
+
+
   
 
 

@@ -7,6 +7,7 @@
 
 #include "Engine/RHI/vkInit.h"
 #include "Engine/Core/vkWindow.h"
+#include "Engine/RHI/TimelineSemaphoreManager.h"
 #include "Engine/RHI/vkSwapchain.h"
 #include "Engine/RHI/vkSemaphore.h"
 #include "Engine/RHI/FrameRender.h"
@@ -21,6 +22,9 @@ namespace yic {
         ~vkRhi();
 
         auto FrameLoop() -> bool;
+    private:
+        template<typename T>
+        auto registerManager(T*& component) { component = T::make(); }
     private:
         sf::Time mStart;
         sf::Time mFrameTime;

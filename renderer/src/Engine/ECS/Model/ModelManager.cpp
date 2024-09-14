@@ -40,8 +40,7 @@ namespace sc {
     auto ModelManager::render() -> void {
         mRenderHandle = mg::SystemHub.val<ev::pRenderProcess>(toolkit::enum_name(RenderPhase::ePrimary)).rp;
 
-       // mRenderHandle->updateDescriptor(PrimaryRenderSeq::eGraphics, mRenderTargetOffImg);
-       mRenderHandle->updateDescriptorImpl(static_cast<int>(PrimaryRenderSeq::eGraphics), mRenderTargetOffImg);
+       mRenderHandle->updateDescriptor(PrimaryRenderSeq::eGraphics, mRenderTargetOffImg);
 
         mRenderHandle->appendRenderPassProcessSecondaryCommand(PrimaryRenderSeq::eGraphics, mRenderTargetOffImg, [this](vk::CommandBuffer& cmd){
             mModelQuery.each([&](flecs::entity e, sc::Model& model){

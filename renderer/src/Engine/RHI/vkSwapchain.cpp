@@ -3,6 +3,7 @@
 //
 
 #include "vkSwapchain.h"
+#include "TimelineSemaphoreManager.h"
 
 namespace yic {
 
@@ -198,6 +199,17 @@ namespace yic {
         }
 
         mCurrentFrame = (mCurrentFrame + 1) % mImageCount;
+
+        ////
+
+//        mg::TimelineSemaphoreManager->signal(TimeLine::eRender_phase_start);
+//        auto submitInfo = vk::SubmitInfo()
+//                .setWaitSemaphores(mFrameEntries[i].readSemaphore)
+//                .setSignalSemaphores(mg::TimelineSemaphoreManager->acquire())
+//                .setCommandBuffers(finalCmds)
+//                .set;
+
+
     }
 
     auto vkSwapchain::acquire() -> bool {

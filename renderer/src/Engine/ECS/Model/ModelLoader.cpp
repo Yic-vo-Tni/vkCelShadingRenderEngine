@@ -103,10 +103,9 @@ namespace sc {
         }
 
         auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-//        mesh.vertBuf = yic::Allocator::allocBufStaging(mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), vk::BufferUsageFlagBits::eVertexBuffer | usage);
-//        mesh.indexBuf = yic::Allocator::allocBufStaging(mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(), vk::BufferUsageFlagBits::eIndexBuffer | usage);
         mesh.vertBuf = mg::Allocator->allocBufferStaging(mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), vk::BufferUsageFlagBits::eVertexBuffer | usage, "model: " + model.info.id + " vert buf");
         mesh.indexBuf = mg::Allocator->allocBufferStaging(mesh.indices.size() * sizeof(uint32_t), mesh.indices.data(), vk::BufferUsageFlagBits::eIndexBuffer | usage, "model: " + model.info.id + " index buf");
+        mesh.meshBufAddress = MeshBufAddress{mg::Allocator->getDeviceAddress(mesh.vertBuf), mg::Allocator->getDeviceAddress(mesh.indexBuf)};
 
         return model;
     }

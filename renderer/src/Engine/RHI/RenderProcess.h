@@ -35,7 +35,6 @@ namespace yic {
         auto appendProcessCommand(const uint8_t &seq, const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendFinalProcessCommand(const uint8_t &seq) -> void;
       //  auto updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage>& image) -> void;
-        auto updateDescriptorImpl(const uint8_t &seq, const std::variant<vkImage_sptr, yic2::Image_sptr>& image) -> void;
 
         template<typename T>
         auto updateDescriptor(T e, const std::variant<vkImage_sptr, yic2::Image_sptr>& image) -> void{
@@ -48,6 +47,7 @@ namespace yic {
         auto& descriptor() { return mDescriptor; };
 
     private:
+        auto updateDescriptorImpl(const uint8_t &seq, const std::variant<vkImage_sptr, yic2::Image_sptr>& image) -> void;
         auto renderTargetChange() -> void;
     private:
         ev::pVkSetupContext ct{};
@@ -68,6 +68,8 @@ namespace yic {
 
         vot::vector<std::variant<vkImage_sptr, yic2::Image_sptr>> mDynamicRenderTargetStageImages;
     };
+
+    using RenderProcessHanlde = RenderProcess*;
 
 } // yic
 

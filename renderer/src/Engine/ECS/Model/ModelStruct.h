@@ -29,10 +29,10 @@ namespace sc{
         glm::vec3 min;
     };
 
-//    struct MeshBufAddress{
-//        uint64_t vertAddr;
-//        uint64_t indexAddr;
-//    };
+    struct MeshBufAddress{
+        uint64_t vertAddr;
+        uint64_t indexAddr;
+    };
 
     struct Info{
         std::string id;
@@ -60,6 +60,7 @@ namespace sc{
         std::vector<SubMesh> subMeshes;
         std::shared_ptr<yic::vkBuffer> vertBuf;
         std::shared_ptr<yic::vkBuffer> indexBuf;
+        MeshBufAddress meshBufAddress;
         AABB aabb;
     };
     struct AccelerationStructures{

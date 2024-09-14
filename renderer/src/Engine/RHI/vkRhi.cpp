@@ -7,27 +7,11 @@
 namespace yic {
 
     vkRhi::vkRhi() {
-//        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelF{vk::True};
-//        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rtF{vk::True};
-//        vk::PhysicalDeviceBufferDeviceAddressFeatures devAddr{vk::True};
-//        auto rayTracingPipeline = vk::PhysicalDeviceRayTracingPipelineFeaturesKHR()
-//                .setRayTracingPipeline(vk::True);
-//        auto accelerationStructure = vk::PhysicalDeviceAccelerationStructureFeaturesKHR()
-//                .setAccelerationStructure(vk::True);
-//        auto bufferDeviceAddress = vk::PhysicalDeviceBufferDeviceAddressFeatures()
-//                .setBufferDeviceAddress(vk::True);
-//        auto shaderAtomicInt64 = vk::PhysicalDeviceShaderAtomicInt64Features()
-//                .setShaderBufferInt64Atomics(vk::True);
-//        auto descriptorIndexing = vk::PhysicalDeviceDescriptorIndexingFeatures()
-//                .setShaderInputAttachmentArrayDynamicIndexing(vk::True)
-//                .setShaderInputAttachmentArrayNonUniformIndexing(vk::True)
-//                .setDescriptorBindingSampledImageUpdateAfterBind(vk::True)
-//                .setDescriptorBindingVariableDescriptorCount(vk::True)
-//                .setDescriptorBindingPartiallyBound(vk::True);
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeaturesKhr{vk::True};
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeaturesKhr{vk::True};
         vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeaturesKhr{vk::True};
         vk::PhysicalDeviceSynchronization2FeaturesKHR synchronization2FeaturesKhr{vk::True};
+        vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeaturesKhr{vk::True};
 
         vkWindow::get(1920, 1080);
         vkInit::get(std::make_shared<vkInitCreateInfo>()
@@ -58,7 +42,7 @@ namespace yic {
 //                            ->addPhysicalExtensions(VK_KHR_video_queue)
 //                            ->addPhysicalExtensions(VK_KHR_video_decode_queue)
 //                                    // other
-//                            ->addPhysicalExtensions(VK_KHR_timeline_semaphore)
+                            ->addPhysicalExtensions(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, &timelineSemaphoreFeaturesKhr)
                             ->addPhysicalExtensions(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, &synchronization2FeaturesKhr)
 
                             ->setQueuesPriority(std::vector<float>{1.f, 0.9f})
@@ -66,13 +50,14 @@ namespace yic {
 
         EventBus::update(et::ResolutionRatio{vk::Extent2D{2560, 1440}});
 
-        mg::Allocator = Allocator::make();
+        registerManager(mg::Allocator);
+        registerManager(mg::TimelineSemaphoreManager);
         {
             auto qf = mg::SystemHub.val<ev::pVkSetupContext>().queueFamily;
             mSwapchain = std::make_unique<vkSwapchain>(toolkit::enum_name(RenderPhase::ePrimary), qf->gPrimary(), qf->gIndexPrimary());
             mRenderProcessHandler = std::make_unique<RenderProcessHandler>();
         }
-        mg::SceneManager = sc::SceneManager::make();
+        registerManager(mg::SceneManager);
 
     }
 
@@ -81,6 +66,7 @@ namespace yic {
         mg::SystemHub.val<ev::pVkSetupContext>().device->waitIdle();
 
         mg::Allocator->clear();
+        mg::TimelineSemaphoreManager->clear();
         mRenderProcessHandler->clear();
         ImGuiDescriptorManager::clear();
         EventBus::destroy<et::vkResource>();

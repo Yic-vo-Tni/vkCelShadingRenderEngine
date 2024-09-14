@@ -23,8 +23,9 @@ namespace sc {
         std::shared_ptr<yic::vkAccel> tlas;
         std::shared_ptr<yic::Descriptor> rtDesSet;
         std::vector<yic::vkAccel_sptr> blass;
-        std::vector<yic::vkBuffer_sptr> vertBufs;
-        std::vector<yic::vkBuffer_sptr> indexBufs;
+        vot::vector<sc::MeshBufAddress> meshBufferAddresses;
+        yic::vkBuffer_sptr  meshBufferAddressBuffer;
+        bool update = false;
     };
 
     class SceneManager{
@@ -42,7 +43,7 @@ namespace sc {
         auto cBlas(Model* model) -> void;
         auto getActiveScene() { return mActiveScene; }
     private:
-        auto cTlas(const std::vector<std::shared_ptr<yic::vkAccel>>& blass, std::shared_ptr<yic::vkAccel>& tlas) -> void;
+        auto buildTLAS() -> void;
         auto cRTRenderGroup() -> void;
         auto render() -> void;
     private:
@@ -52,17 +53,16 @@ namespace sc {
         uint8_t mSceneCount{0};
         Scene* mActiveScene{};
         vk::Extent2D mExtent{2560, 1440};
-        yic::RenderProcess* mRenderHandle;
+//        yic::RenderProcess* mRenderHandle;
+        yic::RenderProcessHanlde mRenderHandle;
         yic::RenderGroupRayTracing_sptr mRayTracingGroup;
         yic::Descriptor_sptr mRTDescriptor;
-//        yic::vkImage_sptr mRTOffImage;
-//        yic::vkImage_sptr mRenderTargetOffImage;
         yic2::Image_sptr mRTOffImage;
         yic2::Image_sptr mRenderTargetOffImage;
 
-
         std::unordered_map<std::string, Scene> mScenes;
         oneapi::tbb::spin_rw_mutex mRwMutex;
+
     };
 
 } // sc

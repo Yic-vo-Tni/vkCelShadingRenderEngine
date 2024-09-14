@@ -19,12 +19,10 @@ namespace sc {
         mRTOffImage = mg::Allocator->allocImage(yic2::ImageConfig()
                 .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc)
                 .setExtent(mExtent)
-//                .setFormat(vk::Format::eR32G32B32A32Sfloat)
                 .setDstImageLayout(vk::ImageLayout::eGeneral), "off: rt");
         mRenderTargetOffImage = mg::Allocator->allocImage(yic2::ImageConfig()
                 .setUsage(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
                 .setExtent(mExtent)
-//                .setFormat(vk::Format::eR32G32B32A32Sfloat)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "off: rt shader read");
 
         loadScene();
@@ -54,11 +52,16 @@ namespace sc {
     auto SceneManager::addModel(const Model* model) -> void {
         oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, true);
         mActiveScene->blass.emplace_back(model->as.blas);
-        mActiveScene->vertBufs.emplace_back(model->mesh.vertBuf);
-        mActiveScene->indexBufs.emplace_back(model->mesh.indexBuf);
-        cTlas(mActiveScene->blass, mActiveScene->tlas);
+        mActiveScene->meshBufferAddresses.emplace_back(model->mesh.meshBufAddress);
+        mActiveScene->update = false;
+        buildTLAS();
+        mDevice.waitIdle();
+        auto &bufAddr = mActiveScene->meshBufferAddressBuffer = mg::Allocator->allocBufferStaging(
+                mActiveScene->meshBufferAddresses.size() * sizeof(sc::MeshBufAddress),
+                mActiveScene->meshBufferAddresses.data(), vk::BufferUsageFlagBits::eStorageBuffer,
+                "mesh buffer address");
         mRTDescriptor->updateDesSetAuto(mActiveScene->tlas, yic::ImageInfo{{}, mRTOffImage, vk::ImageLayout::eGeneral},
-                                        globalCamera.getVpMatrixBuf(), mActiveScene->vertBufs.front(),mActiveScene->indexBufs.front());
+                                        globalCamera.getVpMatrixBuf(), bufAddr);
     }
 
     auto SceneManager::updateScene() -> void {
@@ -113,7 +116,7 @@ namespace sc {
 
         auto& blas = model->as.blas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eBottomLevel);
 
-        auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+        auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, "blas scratch buf");
         auto scratchBufAddr = vk::DeviceOrHostAddressKHR{mg::Allocator->getDeviceAddress(scratchBuf)};
 
         asBuildGeomInfo.setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
@@ -136,20 +139,23 @@ namespace sc {
         });
     }
 
-    auto SceneManager::cTlas(const std::vector<std::shared_ptr<yic::vkAccel>>& blass, std::shared_ptr<yic::vkAccel>& tlas) -> void {
+    auto SceneManager::buildTLAS() -> void {
         auto tfMat = mg::Allocator->glmMatToVkTransformMatrix();
+        auto& blass = mActiveScene->blass;
 
-        auto asInst = vk::AccelerationStructureInstanceKHR()
-                .setTransform(tfMat)
-                .setInstanceCustomIndex(0)
-                .setMask(0xFF)
-                .setInstanceShaderBindingTableRecordOffset(0)
-                .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
-                .setAccelerationStructureReference(mg::Allocator->getDeviceAddress(blass.front()));
+        vot::vector<vk::AccelerationStructureInstanceKHR> asInsts(blass.size());
+        for(auto i = 0; i < blass.size(); i++){
+            asInsts[i].setTransform(tfMat)
+                    .setInstanceCustomIndex(0)
+                    .setMask(0xff)
+                    .setInstanceShaderBindingTableRecordOffset(0)
+                    .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
+                    .setAccelerationStructureReference(mg::Allocator->getDeviceAddress(blass[i]));
+        }
 
-        auto instBuf = mg::Allocator->allocBufferStaging(sizeof(vk::AccelerationStructureInstanceKHR), &asInst,
-                                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                                                  vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
+        auto instBuf = mg::Allocator->allocBufferStaging(sizeof(vk::AccelerationStructureInstanceKHR) * blass.size(), asInsts.data(),
+                                                         vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                                                         vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR, "tlas insts buf");
 
         auto asGeom = vk::AccelerationStructureGeometryKHR()
                 .setGeometryType(vk::GeometryTypeKHR::eInstances)
@@ -157,27 +163,26 @@ namespace sc {
                 .setGeometry(vk::AccelerationStructureGeometryDataKHR()
                 .setInstances(vk::AccelerationStructureGeometryInstancesDataKHR()
                 .setArrayOfPointers(vk::False)
-                .setData(mg::Allocator->getDeviceAddress(instBuf))));
+                .setData(mg::Allocator->getBufAddr(instBuf))));
         auto asBuildGeomInfo = vk::AccelerationStructureBuildGeometryInfoKHR()
                 .setType(vk::AccelerationStructureTypeKHR::eTopLevel)
                 .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
                 .setGeometries(asGeom);
 
-        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, 1, mDyDispatcher);
+        auto asBuildSizeInfo = mDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, asBuildGeomInfo, blass.size(), mDyDispatcher);
 
-        if (tlas == nullptr){
-            tlas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
-        } else { tlas->update = true; }
+        auto& tlas = mActiveScene->tlas = mg::Allocator->allocAccel(asBuildSizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel);
 
         auto scratchBuf = mg::Allocator->allocBufferStaging(asBuildSizeInfo.accelerationStructureSize,
-                                                     vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+                                                            vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, "tlas scratch buf");
 
-        asBuildGeomInfo.setMode(tlas->update ? vk::BuildAccelerationStructureModeKHR::eUpdate : vk::BuildAccelerationStructureModeKHR::eBuild)
+        asBuildGeomInfo.setMode(mActiveScene->update ? vk::BuildAccelerationStructureModeKHR::eUpdate
+                                                     : vk::BuildAccelerationStructureModeKHR::eBuild)
                 .setDstAccelerationStructure(tlas->accel)
                 .setScratchData(vk::DeviceOrHostAddressKHR{mg::Allocator->getDeviceAddress(scratchBuf)});
 
         auto asBuildRangInfo = vk::AccelerationStructureBuildRangeInfoKHR()
-                .setPrimitiveCount(1)
+                .setPrimitiveCount(blass.size())
                 .setTransformOffset(0)
                 .setPrimitiveOffset(0)
                 .setFirstVertex(0);
@@ -191,20 +196,18 @@ namespace sc {
                 ->addDesSetLayout_(0, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
                 ->addDesSetLayout_(0, 2, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR)
                 ->addDesSetLayout_(0, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR)
-                ->addDesSetLayout_(0, 4, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR)
                 ->addShader_("b_rt_gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR)
-                ->addShader_("b_rt_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
                 ->addShader_("b_rt_shadow.rmiss", vk::ShaderStageFlagBits::eMissKHR)
-                ->addShader_("b_rt_hit.rchit", vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->addShader_("b_rt_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
+                ->addShader_("b_rt_hit_buffer_ref.rchit", vk::ShaderStageFlagBits::eClosestHitKHR)
                 ->bindDescriptor(mRTDescriptor)
                 ->build();
-
     }
 
     auto SceneManager::render() -> void {
-       // mRenderHandle->updateDescriptor(PrimaryRenderSeq::eRT, mRenderTargetOffImage);
+        mRenderHandle->updateDescriptor(PrimaryRenderSeq::eRT, mRenderTargetOffImage);
 
-        mRenderHandle->appendProcessCommand(PrimaryRenderSeq::eRT, [&](vk::CommandBuffer &cmd) {
+        mRenderHandle->appendProcessCommand(PrimaryRenderSeq::eRT, [&](vk::CommandBuffer &cmd, vk::ImageSubresourceRange subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}) {
             if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {
                 oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, false);
 
@@ -214,8 +217,6 @@ namespace sc {
                 cmd.traceRaysKHR(mRayTracingGroup->getRegionRgen(), mRayTracingGroup->getRegionMiss(),
                                  mRayTracingGroup->getRegionHit(), mRayTracingGroup->getRegionCall(),
                                  mExtent.width, mExtent.height, 1, mDyDispatcher);
-
-                vk::ImageSubresourceRange subresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
                 mg::Allocator->pipelineBarrier2(cmd, {},
                                                 vk::ImageMemoryBarrier2()
