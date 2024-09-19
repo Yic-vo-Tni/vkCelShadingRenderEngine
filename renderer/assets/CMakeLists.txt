@@ -14,21 +14,18 @@ file(GLOB_RECURSE shaders
         "${src}/*.rmiss"
 )
 
+#foreach (shader ${shaders})
+#    get_filename_component(shader_name ${shader} NAME_WE)
+#    execute_process(COMMAND ${glsl} ${shader} --target-env=vulkan1.3 -o ${spv}/${shader_name}.spv)
+#endforeach ()
+
+
 foreach (shader ${shaders})
     get_filename_component(shader_name ${shader} NAME_WE)
-    execute_process(COMMAND ${glsl} ${shader} --target-env=vulkan1.3 -o ${spv}/${shader_name}.spv)
-endforeach ()
+    get_filename_component(shader_path ${shader} DIRECTORY)
+    file(RELATIVE_PATH shader_rel_path ${src} ${shader_path})
+    set(output_path "${spv}/${shader_rel_path}")
+    file(MAKE_DIRECTORY ${output_path})
 
-#foreach(shader ${shaders})
-#    get_filename_component(shader_name ${shader} NAME_WE)
-#    set(output_spv "${spv}/${shader_name}.spv")
-#    add_custom_command(
-#            OUTPUT ${output_spv}
-#            COMMAND ${CMAKE_COMMAND} -Dsrc=${shader} -Ddst=${output_spv} -P ${CMAKE_SOURCE_DIR}/CheckShader.cmake
-#            COMMAND ${glsl} ${shader} --target-env=vulkan1.3 -o ${output_spv}
-#            DEPENDS ${shader}
-#            COMMENT "Potentially recompiling ${shader_name}"
-#    )
-#endforeach()
-#
-#add_custom_target(shaders ALL DEPENDS ${output_spv})
+    execute_process(COMMAND ${glsl} ${shader} --target-env=vulkan1.3 -o ${output_path}/${shader_name}.spv)
+endforeach ()

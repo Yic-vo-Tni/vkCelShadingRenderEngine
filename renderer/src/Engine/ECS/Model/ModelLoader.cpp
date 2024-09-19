@@ -110,7 +110,7 @@ namespace sc {
         return model;
     }
 
-    auto ModelLoader::processMeshCenter(const aiScene *scene, sc::Model &model) -> aiVector3D {
+    auto ModelLoader::processMeshCenter(const aiScene *scene, sc::Model &model) -> glm::vec3 {
         auto min = _mm256_set1_ps(FLT_MAX);
         auto max = _mm256_set1_ps(FLT_MIN);
 
@@ -132,16 +132,31 @@ namespace sc {
         _mm256_storeu_ps(finalMin, min);
         _mm256_storeu_ps(finalMax, max);
 
-        model.mesh.aabb = {
-                {finalMax[4], finalMax[3], finalMax[2]},
-                {finalMin[4], finalMin[3], finalMin[2]}
+        auto aabb = AABB{
+                {finalMax[1], finalMax[2], finalMax[3]},
+                {finalMin[1], finalMin[2], finalMin[3]}
         };
 
-        return {
+        auto center = glm::vec3{
                 (finalMin[1] + finalMax[1]) / 2.f,
                 (finalMin[2] + finalMax[2]) / 2.f,
                 (finalMin[3] + finalMax[3]) / 2.f,
         };
+
+        model.mesh.aabb = {
+//                {finalMax[1], finalMax[2], finalMax[3]},
+//                {finalMin[1], finalMin[2], finalMin[3]}
+            aabb.max - center,
+            aabb.min - center
+        };
+
+        return center;
+//
+//        return {
+//                (finalMin[1] + finalMax[1]) / 2.f,
+//                (finalMin[2] + finalMax[2]) / 2.f,
+//                (finalMin[3] + finalMax[3]) / 2.f,
+//        };
     }
 
 } // sc

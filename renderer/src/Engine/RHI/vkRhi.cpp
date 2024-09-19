@@ -29,7 +29,7 @@ namespace yic {
                             ->addPhysicalExtensions(VK_KHR_SPIRV_1_4_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME)
-//                            ->addPhysicalExtensions(VK_EXT_subpass_merge_feedback)
+//                            ->addPhysicalExtensions(VK_EXT_subpass_merge_feedback) // no support
                             ->addPhysicalExtensions(VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
                                     // render
@@ -75,7 +75,7 @@ namespace yic {
     bool vkRhi::FrameLoop() {
         beginFrame();
 
-//        ShaderHotReLoader::executeShaderTask();
+        ShaderHotReLoader::executeShaderTask();
         mg::SystemHub.process();
         mRenderProcessHandler->prepare();
         mSwapchain->updateEveryFrame();

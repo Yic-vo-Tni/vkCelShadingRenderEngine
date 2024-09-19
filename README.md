@@ -30,9 +30,9 @@
 ### 正在做
 #### 首要
 - id buffer 选取模型
-- rt shader封装顺序
 - rt 静态场景单次绘制
 - 重写队列类，配合time line sem并行提交
+- 重写descriptor类
 
 #### 其次
 - 基础PBR
@@ -56,7 +56,7 @@
 - 用Bullet
 - 添加音频
 
-### 额外计划：
+#### 额外计划：
 - Occlusion Culling
 - 云层渲染，雨滴效果
 

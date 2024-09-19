@@ -51,9 +51,18 @@ namespace yic{
         static auto convertToSpvPath(const std::string& shaderPath) -> std::string {
             std::filesystem::path path(shaderPath);
 
-            std::string fileName = path.filename().replace_extension(".spv").string();
-            std::filesystem::path spvPath = path.parent_path().parent_path() / "shaders_spvs" / fileName;
-            auto preferredPath = spvPath.make_preferred().string();
+            std::filesystem::path newPath;
+
+            for(const auto& part : path){
+                if (part == "shaders"){
+                    newPath /= "shaders_spvs";
+                } else {
+                    newPath /= part;
+                }
+            }
+
+            newPath.replace_extension(".spv");
+            auto preferredPath = newPath.make_preferred().string();
             std::ranges::replace(preferredPath, '\\', '/');
 
             return preferredPath;
@@ -75,6 +84,7 @@ namespace yic{
                             vkTrance("File updated: " + it->first);
                             compileShaders();
                             ShaderHotReLoader::recordShaderUpdatePath(convertToSpvPath(it->first));
+                            mg::SystemHub.publish(ev::eModelCommandRebuild{});
                         }
                         ++it;
                     }

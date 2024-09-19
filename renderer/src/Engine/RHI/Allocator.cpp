@@ -9,6 +9,8 @@
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
 
+#include "Engine/RHI/FrameRender.h"
+
 namespace yic {
 
     Allocator::Allocator() {
@@ -696,42 +698,42 @@ namespace yic {
             return std::make_shared<yic2::Image>(images, imageViews, allocations, mVmaAllocator, mDevice, config, id);
         }
 
+        if (config.imageFlags == yic2::ImageFlagBits::eDepthStencil){
+            auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
 
-//        if (config.imageFlags == yic::ImageFlags::eColor){
-//            return std::make_shared<yic::vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
-//        }
-//        if (config.imageFlags == yic::ImageFlags::eStorage){
-//            vk::ImageMemoryBarrier barrier{
-//                    {}, vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eShaderRead, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-//                    0, 0, images[0], {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
-//            };
-//            yic::CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
-//                cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {},
-//                                    {}, {}, barrier);
-//            });
-//
-//            return std::make_shared<yic::vkImage>(images, imageViews, mDevice, allocations, mVmaAllocator, config, id);
-//        }
-//        if ((config.imageFlags & (yic::ImageFlags::eDepthStencil | yic::ImageFlags::eColor)) != 0){
-//            auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
-//
-//            auto depthFormat = [&] {
-//                for (const auto &f: {vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,
-//                                     vk::Format::eD16UnormS8Uint}) {
-//                    auto formatProp = ct.physicalDevice->getFormatProperties(f);
-//                    if ((formatProp.optimalTilingFeatures & feature) == feature) {
-//                        return f;
-//                    }
-//                }
-//                return vk::Format::eD16UnormS8Uint;
-//            }();
-//
-//            config.setFormat(depthFormat).setUsage(
-//                    vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled).setAspect(
-//                    vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
-//            auto [depthImage, depthVma] = createImage();
-//            auto depthImageView = createImageView(depthImage);
-//
+            auto depthFormat = [&]{
+                for(const auto& f : {vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint, vk::Format::eD16UnormS8Uint}){
+                    auto formatProp = ct.physicalDevice->getFormatProperties(f);
+                    if ((formatProp.optimalTilingFeatures & feature) == feature)
+                        return f;
+                }
+                return vk::Format::eD16UnormS8Uint;
+            }();
+
+            config.setFormat(depthFormat)
+                    .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
+                    .setAspect(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+            auto [depthImage, depthVma] = createImage(config);
+            auto depthImageView = createImageView(config, depthImage);
+
+            vot::smart_vector<vk::Framebuffer> framebuffers(config.imageCount);
+            for(size_t i = 0; i < images.size(); i++){
+                vot::vector<vk::ImageView> views;
+                views.emplace_back(imageViews[i]);
+                views.emplace_back(depthImageView);
+
+                auto createInfo = vk::FramebufferCreateInfo().setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
+                        .setWidth(config.extent.width)
+                        .setHeight(config.extent.height)
+                        .setLayers(1)
+                        .setAttachments(views);
+
+                framebuffers[i] = mDevice.createFramebuffer(createInfo);
+            }
+            return std::make_shared<yic2::Image>(images, imageViews, allocations, mVmaAllocator, depthImage, depthImageView, depthVma, framebuffers, mDevice, config, id);
+        }
+
+
 //
 //            if (config.renderPass) {
 //                std::vector<vk::Framebuffer> framebuffers;

@@ -24,16 +24,13 @@ namespace sc {
         auto render() -> void;
     private:
         const flecs::world *ecs;
-        vkImg_sptr mRenderTargetOffImg;
         vk::Extent2D mExtent{2560, 1440};
         oneapi::tbb::spin_rw_mutex mSubscribeModelMutex;
         flecs::query<Model> mModelQuery;
-        yic::RenderProcess* mRenderHandle{};
-        std::shared_ptr<yic::RenderGroupGraphics> mRenderGroupGraphics;
-
-
-        ///t
-        //std::unique_ptr<yic::RTBuilder> mRTBuilder;
+        vkImg_sptr mRenderTargetOffImg;
+//        yic2::Image_sptr mRenderTargetOffImage{};
+        yic::RenderProcessHanlde mRenderHandle{};
+        yic::RenderGroupGraphics_sptr mRenderGroupGraphics{};
     };
 
 } // sc

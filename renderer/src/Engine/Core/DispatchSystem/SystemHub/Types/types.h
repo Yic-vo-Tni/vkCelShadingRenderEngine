@@ -72,6 +72,7 @@ namespace ev {
     struct eResourcePaths{
         vot::unordered_map<ResFormat, vot::vector<vot::string >> resourcePaths;
     };
+    struct eModelCommandRebuild{};
 
 
 }

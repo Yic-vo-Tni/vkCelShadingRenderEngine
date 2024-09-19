@@ -121,6 +121,10 @@ namespace yic {
 
         auto& cmd = mRenderSession->beginCommandBuf(mExtent);
 
+        for(const auto& fn : mCommandBufRecsPrepose){
+            fn(cmd);
+        }
+
         for(const auto& fn : mCommandBufRecs){
             fn(cmd);
         }
@@ -195,6 +199,21 @@ namespace yic {
         }
 
         mDescriptor->updateDesSet(mImageCount, temp);
+    }
+
+    auto RenderProcess::appendRenderPassProcessCommandPrepose(const yic2::Image_sptr &imageSptr,
+                                                              const yic::RenderProcess::recCommandFn &rec) -> void {
+        mCommandBufRecsPrepose.emplace_back() = [this, ptr = imageSptr.get(), rec](vk::CommandBuffer& cmd) {
+
+            mRenderSession->beginRenderPass(RenderSession::passInfo{
+                    FrameRender::eColorDepthStencilRenderPass, std::vector<vk::Framebuffer>(ptr->framebuffers.begin(), ptr->framebuffers.end()),
+                    vk::SubpassContents::eInline, RenderSession::clearValue::colorDepth
+            });
+
+            rec(cmd);
+
+            mRenderSession->endRenderPass();
+        };
     }
 
 } // yic

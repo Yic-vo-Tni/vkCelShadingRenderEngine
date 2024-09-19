@@ -16,8 +16,8 @@ namespace sc {
                 ->addAttributeDescription_(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(sc::Vertex, pos))
                 ->addAttributeDescription_(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, nor))
                 ->addAttributeDescription_(2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv))
-                ->addShader_("model_v.vert", vk::ShaderStageFlagBits::eVertex)
-                ->addShader_("model_f.frag", vk::ShaderStageFlagBits::eFragment)
+                ->addShader_("Basic/basic_v.vert", vk::ShaderStageFlagBits::eVertex)
+                ->addShader_("Basic/basic_f.frag", vk::ShaderStageFlagBits::eFragment)
                 ->build()
                 ;
 
@@ -29,6 +29,11 @@ namespace sc {
                 .setImageFlags(yic::ImageFlags::eDepthStencil)
                 .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
                 .setImageCount(3), " enum(PrimaryRenderSeq::Graphics)");
+//        mRenderTargetOffImage = mg::Allocator->allocImage(yic2::ImageConfig()
+//                .setExtent(mExtent)
+//                .setFlags(yic2::ImageFlagBits::eDepthStencil)
+//                .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
+//                .setImageCount(3), "enum(PrimaryRenderSeq::Graphics)");
 
         rebuild();
         subscribeModel();
@@ -93,29 +98,17 @@ namespace sc {
     }
 
     auto ModelManager::rebuild() -> void {
-        mg::SystemHub.subscribe([&](const ev::eRenderTargetSizeChange& sizeChange){
-            oneapi::tbb::spin_rw_mutex::scoped_lock lock(mSubscribeModelMutex, false);
-
-            mExtent.setWidth((uint32_t) sizeChange.size.x)
-                    .setHeight((uint32_t) sizeChange.size.y);
-
-            mRenderTargetOffImg = mg::Allocator->allocImage(yic::ImageConfig()
-                    .setImageFlags(yic::ImageFlags::eDepthStencil)
-                    .setExtent(mExtent)
-                    .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
-                    .setImageCount(3), "enum(PrimaryRenderSeq::Graphics) rebuild");
-
-            mRenderHandle->updateDescriptor(static_cast<int>(RenderPhase::ePrimary), mRenderTargetOffImg);
-
+        mg::SystemHub.subscribe([&](const ev::eModelCommandRebuild& modelCommandRebuild){
             mModelQuery.each([&](flecs::entity e, Model& model){
+                mg::SystemHub.val<ev::pVkSetupContext>().device->waitIdle();
                 auto& uniqueCmd = model.cmd;
 
                 vk::CommandBufferInheritanceInfo inheritanceInfo{
-                    yic::FrameRender::eColorDepthStencilRenderPass, 0
+                        yic::FrameRender::eColorDepthStencilRenderPass, 0
                 };
 
                 vk::CommandBufferBeginInfo beginInfo{
-                    vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse, &inheritanceInfo
+                        vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse, &inheritanceInfo
                 };
 
                 uniqueCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
@@ -139,6 +132,23 @@ namespace sc {
                 }
                 uniqueCmd.end();
             });
+        });
+
+        mg::SystemHub.subscribe([&](const ev::eRenderTargetSizeChange& sizeChange){
+            oneapi::tbb::spin_rw_mutex::scoped_lock lock(mSubscribeModelMutex, false);
+
+            mExtent.setWidth((uint32_t) sizeChange.size.x)
+                    .setHeight((uint32_t) sizeChange.size.y);
+
+            mRenderTargetOffImg = mg::Allocator->allocImage(yic::ImageConfig()
+                    .setImageFlags(yic::ImageFlags::eDepthStencil)
+                    .setExtent(mExtent)
+                    .setRenderPass(yic::FrameRender::eColorDepthStencilRenderPass)
+                    .setImageCount(3), "enum(PrimaryRenderSeq::Graphics) rebuild");
+
+            mRenderHandle->updateDescriptor(static_cast<int>(RenderPhase::ePrimary), mRenderTargetOffImg);
+
+            mg::SystemHub.publish(ev::eModelCommandRebuild{});
         });
     }
 

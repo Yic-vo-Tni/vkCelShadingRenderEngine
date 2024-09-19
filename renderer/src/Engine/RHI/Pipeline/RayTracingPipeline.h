@@ -55,7 +55,7 @@ namespace yic {
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtShaderGroups;
-        std::unordered_map<std::string, ShaderModule> shaderModules{};
+//        std::unordered_map<std::string, ShaderModule> shaderModules{};
 
         std::shared_ptr<vkBuffer> sbtBuf{};
         uint8_t rgenCount{0}, missCount{0}, hitCount{0}, callCount{0};
@@ -63,9 +63,10 @@ namespace yic {
 
         std::vector<std::string> mShaderPaths;
 
-
-        //
         std::shared_ptr<vkBuffer> rgenSbt, rmissSbt, rchitSbt;
+
+
+        vot::vector<std::pair<std::string, ShaderModule>> shaderModules{};
     };
 
 } // yic

@@ -28,7 +28,7 @@ namespace sc {
 
     private:
         static auto process(const aiScene *scene, const std::filesystem::path &modelDirPath) -> Model;
-        static auto processMeshCenter(const aiScene *scene, Model &model) -> aiVector3D;
+        static auto processMeshCenter(const aiScene *scene, Model &model) -> glm::vec3;
     };
 
 } // sc

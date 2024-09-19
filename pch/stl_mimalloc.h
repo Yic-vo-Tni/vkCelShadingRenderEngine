@@ -66,6 +66,7 @@ namespace vot{
         auto end() const { return vec.end(); }
         auto cbegin() const { return vec.cbegin(); }
         auto cend() const { return vec.cend(); }
+        auto size() const { return vec.size(); }
 
     private:
         vector<T> vec{};

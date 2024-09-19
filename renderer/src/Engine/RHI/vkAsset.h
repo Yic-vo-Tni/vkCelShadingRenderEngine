@@ -239,6 +239,16 @@ namespace yic2{
               mDevice(device), config(config), Identifiable(id){
             counter++;
         };
+        Image(const vot::smart_vector<vk::Image>& images, const vot::smart_vector<vk::ImageView>& imageViews,
+              const vot::smart_vector<VmaAllocation>& vmaAlloc, VmaAllocator& vmaAllocator,
+              const vk::Image& depthImage, const vk::ImageView& depthImageView,
+              const VmaAllocation& depthVmaAlloc, const vot::smart_vector<vk::Framebuffer>& framebuffers,
+              const vk::Device& device, ImageConfig config, const std::string& id)
+                : images(images), imageViews(imageViews), vmaAllocations(vmaAlloc), vmaAllocator(vmaAllocator),
+                  depthImage(depthImage), depthImageView(depthImageView), depthVmaAllocation(depthVmaAlloc),
+                  framebuffers(framebuffers), mDevice(device), config(config), Identifiable(id) {
+            counter++;
+        };
 
         ~Image() override {
             for (auto &fb : framebuffers) {

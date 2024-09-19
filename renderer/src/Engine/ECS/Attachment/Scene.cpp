@@ -25,6 +25,8 @@ namespace sc {
                 .setExtent(mExtent)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "off: rt shader read");
 
+        mDirectionLightShadowMap = std::make_unique<ShadowMap>();
+
         loadScene();
         cRTRenderGroup();
         render();
@@ -56,6 +58,7 @@ namespace sc {
         mActiveScene->update = false;
         buildTLAS();
         mDevice.waitIdle();
+        mActiveScene->aabb = {model->mesh.aabb.min, model->mesh.aabb.max};
         auto &bufAddr = mActiveScene->meshBufferAddressBuffer = mg::Allocator->allocBufferStaging(
                 mActiveScene->meshBufferAddresses.size() * sizeof(sc::MeshBufAddress),
                 mActiveScene->meshBufferAddresses.data(), vk::BufferUsageFlagBits::eStorageBuffer,
@@ -196,16 +199,24 @@ namespace sc {
                 ->addDesSetLayout_(0, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
                 ->addDesSetLayout_(0, 2, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR)
                 ->addDesSetLayout_(0, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR)
-                ->addShader_("b_rt_gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR)
-                ->addShader_("b_rt_shadow.rmiss", vk::ShaderStageFlagBits::eMissKHR)
-                ->addShader_("b_rt_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
-                ->addShader_("b_rt_hit_buffer_ref.rchit", vk::ShaderStageFlagBits::eClosestHitKHR)
+                ->addDesSetLayout_(0, 4, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
+                ->addShader_("RT/gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR)
+                ->addShader_("RT/miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
+                ->addShader_("RT/shadow_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR)
+                ->addShader_("RT/hit.rchit", vk::ShaderStageFlagBits::eClosestHitKHR)
                 ->bindDescriptor(mRTDescriptor)
                 ->build();
     }
 
     auto SceneManager::render() -> void {
         mRenderHandle->updateDescriptor(PrimaryRenderSeq::eRT, mRenderTargetOffImage);
+
+        mRenderHandle->appendRenderPassProcessCommandPrepose(mDirectionLightShadowMap->mShadowMap, [&](vk::CommandBuffer& cmd){
+            if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {
+                oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, false);
+                mDirectionLightShadowMap->render(cmd, mActiveScene->aabb, {7.f, 3.f, 2.f});
+            }
+        });
 
         mRenderHandle->appendProcessCommand(PrimaryRenderSeq::eRT, [&](vk::CommandBuffer &cmd, vk::ImageSubresourceRange subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}) {
             if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {

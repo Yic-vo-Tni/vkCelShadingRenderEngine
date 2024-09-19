@@ -10,6 +10,7 @@
 #include "Engine/RHI/vkAsset.h"
 #include "Engine/ECS/Model/ModelStruct.h"
 #include "Engine/ECS/Camera/Camera.h"
+#include "ShadowMap.h"
 #include "Engine/RHI/Descriptor.h"
 #include "Engine/RHI/RenderGroup.h"
 #include "Engine/RHI/RenderProcess.h"
@@ -25,6 +26,7 @@ namespace sc {
         std::vector<yic::vkAccel_sptr> blass;
         vot::vector<sc::MeshBufAddress> meshBufferAddresses;
         yic::vkBuffer_sptr  meshBufferAddressBuffer;
+        vot::aabb aabb;
         bool update = false;
     };
 
@@ -53,12 +55,12 @@ namespace sc {
         uint8_t mSceneCount{0};
         Scene* mActiveScene{};
         vk::Extent2D mExtent{2560, 1440};
-//        yic::RenderProcess* mRenderHandle;
         yic::RenderProcessHanlde mRenderHandle;
         yic::RenderGroupRayTracing_sptr mRayTracingGroup;
         yic::Descriptor_sptr mRTDescriptor;
         yic2::Image_sptr mRTOffImage;
         yic2::Image_sptr mRenderTargetOffImage;
+        ShadowMap_uptr mDirectionLightShadowMap;
 
         std::unordered_map<std::string, Scene> mScenes;
         oneapi::tbb::spin_rw_mutex mRwMutex;

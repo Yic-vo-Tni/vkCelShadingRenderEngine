@@ -32,6 +32,8 @@ namespace yic {
                                            const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendRenderPassProcessCommand(const uint8_t &seq, const vkImage_sptr& imageSptr,
                                             const yic::RenderProcess::recCommandFn &rec) -> void;
+        auto appendRenderPassProcessCommandPrepose(const yic2::Image_sptr &imageSptr,
+                                            const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendProcessCommand(const uint8_t &seq, const yic::RenderProcess::recCommandFn &rec) -> void;
         auto appendFinalProcessCommand(const uint8_t &seq) -> void;
       //  auto updateDescriptor(const uint8_t &seq, const std::shared_ptr<vkImage>& image) -> void;
@@ -61,7 +63,8 @@ namespace yic {
         vk::Extent2D mExtent{2560, 1440};
         std::unique_ptr<RenderSession> mRenderSession;
 
-        vot::vector<recCommandFn > mCommandBufRecs;
+        vot::vector<recCommandFn> mCommandBufRecsPrepose;
+        vot::vector<recCommandFn> mCommandBufRecs;
         std::shared_ptr<RenderGroupGraphics> mRenderGroupGraphics;
         std::shared_ptr<Descriptor> mDescriptor;
         vot::vector<std::shared_ptr<vkImage>> mDyRenderTargetStageImgs;
