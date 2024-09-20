@@ -68,11 +68,13 @@ namespace sc {
 
                             model.cmd = yic::CommandBufferCoordinator::cmdDrawSecond(yic::FrameRender::eColorDepthStencilRenderPass, mExtent, [&](vk::CommandBuffer& cmd){
                                 cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
-                                for(const auto& subMesh : model.mesh.subMeshes){
-                                    cmd.bindVertexBuffers(0, model.mesh.vertBuf->buffer, {0});
-                                    cmd.bindIndexBuffer(model.mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
-                                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->getPipelineLayout(), 0,
-                                                           model.des.descriptor->getDescriptorSets()[subMesh.texIndex], nullptr);
+                                cmd.bindVertexBuffers(0, model.mesh.vertBuf->buffer, {0});
+                                cmd.bindIndexBuffer(model.mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
+                                for (const auto &subMesh: model.mesh.subMeshes) {
+                                    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                                           mRenderGroupGraphics->getPipelineLayout(), 0,
+                                                           model.des.descriptor->getDescriptorSets()[subMesh.texIndex],
+                                                           nullptr);
                                     cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
                                 }
                             });
@@ -122,9 +124,9 @@ namespace sc {
                 uniqueCmd.setViewport(0, viewport);
                 uniqueCmd.setScissor(0, scissor);
                 uniqueCmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mRenderGroupGraphics->acquire());
+                uniqueCmd.bindVertexBuffers(0, model.mesh.vertBuf->buffer, {0});
+                uniqueCmd.bindIndexBuffer(model.mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
                 for (const auto &subMesh: model.mesh.subMeshes) {
-                    uniqueCmd.bindVertexBuffers(0, model.mesh.vertBuf->buffer, {0});
-                    uniqueCmd.bindIndexBuffer(model.mesh.indexBuf->buffer, 0, vk::IndexType::eUint32);
                     uniqueCmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                                  mRenderGroupGraphics->getPipelineLayout(), 0,
                                                  model.des.descriptor->getDescriptorSets()[subMesh.texIndex], nullptr);

@@ -47,6 +47,8 @@ namespace vot{
         operator T() const { return vec.front(); }
         operator vector<T>() const { return vec; }
 
+        operator std::vector<T>() const { return std::vector<T>(begin(), end()); }
+
         T& operator[](std::size_t index){
             return vec[index];
         }
@@ -68,9 +70,11 @@ namespace vot{
         auto cend() const { return vec.cend(); }
         auto size() const { return vec.size(); }
 
+        auto toStdVector() const { return std::vector<T>(begin(), end());}
     private:
         vector<T> vec{};
     };
+
 }
 
 

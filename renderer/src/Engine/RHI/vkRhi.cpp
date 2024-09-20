@@ -12,6 +12,7 @@ namespace yic {
         vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeaturesKhr{vk::True};
         vk::PhysicalDeviceSynchronization2FeaturesKHR synchronization2FeaturesKhr{vk::True};
         vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeaturesKhr{vk::True};
+        vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKhr{vk::True};
 
         vkWindow::get(1920, 1080);
         vkInit::get(std::make_shared<vkInitCreateInfo>()
@@ -28,10 +29,9 @@ namespace yic {
                             ->addPhysicalExtensions(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_SPIRV_1_4_EXTENSION_NAME)
                             ->addPhysicalExtensions(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME)
-                            ->addPhysicalExtensions(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME)
-//                            ->addPhysicalExtensions(VK_EXT_subpass_merge_feedback) // no support
                             ->addPhysicalExtensions(VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME)
-                            ->addPhysicalExtensions(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+                            ->addPhysicalExtensions(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME)
+                            ->addPhysicalExtensions(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, &dynamicRenderingFeaturesKhr)
                                     // render
 //                            ->addPhysicalExtensions(VK_EXT_mesh_shader)
 //                            ->addPhysicalExtensions(VK_EXT_robustness2)
@@ -44,6 +44,7 @@ namespace yic {
 //                                    // other
                             ->addPhysicalExtensions(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, &timelineSemaphoreFeaturesKhr)
                             ->addPhysicalExtensions(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, &synchronization2FeaturesKhr)
+//                            ->addPhysicalExtensions(VK_EXT_subpass_merge_feedback) // no support
 
                             ->setQueuesPriority(std::vector<float>{1.f, 0.9f})
         );

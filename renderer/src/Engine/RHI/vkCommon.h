@@ -361,6 +361,7 @@ namespace yic2{
         eColor = 1 << 0,
         eDepth = 1 << 1,
         eDepthStencil = 1 << 2,
+        eDynamicRender = 1 << 3,
     };
 
     using ImageFlags = std::underlying_type_t<ImageFlagBits>;

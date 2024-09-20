@@ -8,6 +8,14 @@
 #include "pch.h"
 
 namespace vot{
+    struct Resolutions {
+        static constexpr inline vk::Extent2D eHDExtent{1280, 720};
+        static constexpr inline vk::Extent2D eFullHDExtent{1920, 1080};
+        static constexpr inline vk::Extent2D eQHDExtent{2560, 1440};
+        static constexpr inline vk::Extent2D e4UHDExtent{3840, 2160};
+        static constexpr inline vk::Extent2D e8UHDExtent{7680, 4320};
+    };
+
     struct aabb{
         glm::vec3 min;
         glm::vec3 max;

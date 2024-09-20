@@ -206,7 +206,7 @@ namespace yic {
         mCommandBufRecsPrepose.emplace_back() = [this, ptr = imageSptr.get(), rec](vk::CommandBuffer& cmd) {
 
             mRenderSession->beginRenderPass(RenderSession::passInfo{
-                    FrameRender::eColorDepthStencilRenderPass, std::vector<vk::Framebuffer>(ptr->framebuffers.begin(), ptr->framebuffers.end()),
+                    FrameRender::eColorDepthStencilRenderPass, ptr->framebuffers,
                     vk::SubpassContents::eInline, RenderSession::clearValue::colorDepth
             });
 
@@ -217,3 +217,42 @@ namespace yic {
     }
 
 } // yic
+
+
+namespace yic2{
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -5,6 +5,8 @@
 #ifndef VKCELSHADINGRENDERER_DEFINE_H
 #define VKCELSHADINGRENDERER_DEFINE_H
 
+#include "pch.h"
+
 #define Lambda_y(lambda) lambda()
 
 #define Rvk_y(des) return vkCreate(des)
@@ -32,5 +34,7 @@
 
 #define INIT_MULTI(TYPE, ...) \
     TYPE __VA_ARGS__
+
+
 
 #endif //VKCELSHADINGRENDERER_DEFINE_H

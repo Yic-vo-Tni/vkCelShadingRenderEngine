@@ -681,16 +681,22 @@ namespace yic {
             allocations[i] = vma;
         }
 
+        if ((config.imageFlags & yic2::ImageFlagBits::eDynamicRender) != 0){
+            config.currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        }
+
         if (config.currentImageLayout != vk::ImageLayout::eUndefined){
             CommandBufferCoordinator::cmdDrawPrimary([&](vk::CommandBuffer& cmd){
-                vk::ImageMemoryBarrier barrier{
-                        {}, vk::AccessFlagBits::eNoneKHR | vk::AccessFlagBits::eColorAttachmentWrite,
-                        vk::ImageLayout::eUndefined, config.currentImageLayout,
-                        0, 0, images, {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
-                };
-                cmd.pipelineBarrier(vk::PipelineStageFlagBits::eNoneKHR,
-                                    vk::PipelineStageFlagBits::eColorAttachmentOutput, {},
-                                    {}, {}, barrier);
+                for (auto image: images) {
+                    vk::ImageMemoryBarrier barrier{
+                            {}, vk::AccessFlagBits::eNoneKHR | vk::AccessFlagBits::eColorAttachmentWrite,
+                            vk::ImageLayout::eUndefined, config.currentImageLayout,
+                            0, 0, image, {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+                    };
+                    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eNoneKHR,
+                                        vk::PipelineStageFlagBits::eColorAttachmentOutput, {},
+                                        {}, {}, barrier);
+                }
             });
         }
 
@@ -698,7 +704,7 @@ namespace yic {
             return std::make_shared<yic2::Image>(images, imageViews, allocations, mVmaAllocator, mDevice, config, id);
         }
 
-        if (config.imageFlags == yic2::ImageFlagBits::eDepthStencil){
+        if ((config.imageFlags & yic2::ImageFlagBits::eDepthStencil) != 0){
             auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
 
             auto depthFormat = [&]{
@@ -715,6 +721,10 @@ namespace yic {
                     .setAspect(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
             auto [depthImage, depthVma] = createImage(config);
             auto depthImageView = createImageView(config, depthImage);
+
+            if ((config.imageFlags & yic2::ImageFlagBits::eDynamicRender) != 0){
+                return std::make_shared<yic2::Image>(images, imageViews, allocations, mVmaAllocator, depthImage, depthImageView, depthVma, mDevice, config, id);
+            }
 
             vot::smart_vector<vk::Framebuffer> framebuffers(config.imageCount);
             for(size_t i = 0; i < images.size(); i++){

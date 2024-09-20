@@ -234,21 +234,18 @@ namespace yic2{
 
         Image(const vot::smart_vector<vk::Image>& images, const vot::smart_vector<vk::ImageView>& imageViews,
               const vot::smart_vector<VmaAllocation>& vmaAlloc, VmaAllocator& vmaAllocator,
-              const vk::Device& device, ImageConfig config, const std::string& id)
-              : images(images), imageViews(imageViews), vmaAllocations(vmaAlloc), vmaAllocator(vmaAllocator),
-              mDevice(device), config(config), Identifiable(id){
-            counter++;
-        };
+              const vk::Device& device, ImageConfig config, const std::string& id);
+
+        Image(const vot::smart_vector<vk::Image>& images, const vot::smart_vector<vk::ImageView>& imageViews,
+              const vot::smart_vector<VmaAllocation>& vmaAlloc, VmaAllocator& vmaAllocator,
+              const vk::Image& depthImage, const vk::ImageView& depthImageView, const VmaAllocation& depthVmaAlloc,
+              const vk::Device& device, ImageConfig config, const std::string& id);
+
         Image(const vot::smart_vector<vk::Image>& images, const vot::smart_vector<vk::ImageView>& imageViews,
               const vot::smart_vector<VmaAllocation>& vmaAlloc, VmaAllocator& vmaAllocator,
               const vk::Image& depthImage, const vk::ImageView& depthImageView,
               const VmaAllocation& depthVmaAlloc, const vot::smart_vector<vk::Framebuffer>& framebuffers,
-              const vk::Device& device, ImageConfig config, const std::string& id)
-                : images(images), imageViews(imageViews), vmaAllocations(vmaAlloc), vmaAllocator(vmaAllocator),
-                  depthImage(depthImage), depthImageView(depthImageView), depthVmaAllocation(depthVmaAlloc),
-                  framebuffers(framebuffers), mDevice(device), config(config), Identifiable(id) {
-            counter++;
-        };
+              const vk::Device& device, ImageConfig config, const std::string& id);
 
         ~Image() override {
             for (auto &fb : framebuffers) {
@@ -273,93 +270,18 @@ namespace yic2{
             vkInfo("img: ------- {0}", id);
         }
 
-//
-//        vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews,
-//                vk::Device dev, const std::vector<VmaAllocation> &alloc,
-//                VmaAllocator &allocatorRef, ImageConfig config, const std::string &id)
-//                : images(imgs), imageViews(imgViews),
-//                  mDevice(dev), vmaAllocation(alloc),
-//                  mAllocator(allocatorRef), Identifiable(id) {
-//            info_.imageCount = imgs.size();
-//            info_.width = config.extent.width;
-//            info_.height = config.extent.height;
-//
-//            vkInfo("img: + {0}", id);
-//        }
-//        vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews, const std::vector<VmaAllocation> &alloc,
-//                const vk::Image& depthImg, const vk::ImageView& depthImgViews, const VmaAllocation& depthAlloc,
-//                vk::Device dev, VmaAllocator &allocatorRef, ImageConfig config, const std::string &id)
-//                : images(imgs), imageViews(imgViews), vmaAllocation(alloc),
-//                  depthImage(depthImg), depthImageView(depthImgViews), depthVmaAllocation(depthAlloc),
-//                  mDevice(dev), mAllocator(allocatorRef), Identifiable(id) {
-//            info_.imageCount = imgs.size();
-//            info_.width = config.extent.width;
-//            info_.height = config.extent.height;
-//
-//            vkInfo("img: + {0}", id);
-//        }
-//        vkImage(const std::vector<vk::Image> &imgs, const std::vector<vk::ImageView> &imgViews, const std::vector<VmaAllocation> &alloc,
-//                const vk::Image& depthImg, const vk::ImageView& depthImgViews, const VmaAllocation& depthAlloc,
-//                const std::vector<vk::Framebuffer>& framebuffers,
-//                vk::Device dev, VmaAllocator &allocatorRef, ImageConfig config, const std::string &id)
-//                : images(imgs), imageViews(imgViews), vmaAllocation(alloc),
-//                  depthImage(depthImg), depthImageView(depthImgViews), depthVmaAllocation(depthAlloc),
-//                  framebuffers(framebuffers),
-//                  mDevice(dev), mAllocator(allocatorRef), Identifiable(id) {
-//            info_.imageCount = imgs.size();
-//            info_.width = config.extent.width;
-//            info_.height = config.extent.height;
-//
-//            vkInfo("img: + {0}", id);
-//        }
-//
-//        ~vkImage() override{
-//            for(auto& fb : framebuffers){
-//                if (fb){
-//                    mDevice.destroy(fb);
-//                }
-//            }
-//
-//            if (depthImage) {
-//                mDevice.destroy(depthImage);
-//                mDevice.destroy(depthImageView);
-//                vmaFreeMemory(mAllocator, depthVmaAllocation);
-//            }
-//
-//            for(auto i = info_.imageCount; i-- > 0;){
-//                mDevice.destroy(images[i]);
-//                mDevice.destroy(imageViews[i]);
-//                vmaFreeMemory(mAllocator, vmaAllocation[i]);
-//            }
-//
-//            vkInfo("img: ------- {0}", id);
-//        }
-//
-//        vkImage(const vkImage &) = delete;
-//        vkImage &operator=(const vkImage &) = delete;
-//
-//
-//        vkImage(vkImage &&other) noexcept
-//                : images(std::move(other.images)), imageViews(std::move(other.imageViews)), vmaAllocation(std::move(other.vmaAllocation)),
-//                  depthImage(std::exchange(other.depthImage, VK_NULL_HANDLE)),
-//                  depthImageView(std::exchange(other.depthImageView, VK_NULL_HANDLE)),
-//                  depthVmaAllocation(std::exchange(other.depthVmaAllocation, {})),
-//                  framebuffers(std::move(other.framebuffers)),
-//                  mDevice(other.mDevice), mAllocator(other.mAllocator), info_(other.info_),
-//                  Identifiable(other.id) {
-//            other.info_ = {};
-//        }
-//
-//        vkImage &operator=(vkImage &&other) noexcept {
-//            if (this != &other) {
-//                this->~vkImage();
-//                new (this) vkImage(std::move(other));
-//            }
-//            return *this;
-//        }
-
+    public:
+        auto beginRendering(vk::CommandBuffer& cmd, vk::Rect2D rect2D = vk::Rect2D{{0, 0}, vot::Resolutions::eQHDExtent}) -> void;
+        auto endRendering(vk::CommandBuffer& cmd) -> void;
+        auto dynamicRendering(vk::CommandBuffer& cmd, const std::function<void()>& fn) -> void;
+        auto dynamicRendering(vk::CommandBuffer& cmd, vk::Rect2D rect2D, const std::function<void()>& fn) -> void;
+//        auto dynamicRendering(vk::CommandBuffer& cmd, const std::function<void()>& fn) -> void;
+    private:
+        auto init() -> void;
     protected:
+        uint32_t* mIndex{};
         vk::Device mDevice{};
+        vk::DispatchLoaderDynamic mDynamicDispatcher{};
     };
 
     using Image_sptr = std::shared_ptr<Image>;

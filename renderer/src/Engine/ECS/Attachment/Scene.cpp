@@ -211,16 +211,16 @@ namespace sc {
     auto SceneManager::render() -> void {
         mRenderHandle->updateDescriptor(PrimaryRenderSeq::eRT, mRenderTargetOffImage);
 
-        mRenderHandle->appendRenderPassProcessCommandPrepose(mDirectionLightShadowMap->mShadowMap, [&](vk::CommandBuffer& cmd){
-            if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {
-                oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, false);
-                mDirectionLightShadowMap->render(cmd, mActiveScene->aabb, {7.f, 3.f, 2.f});
-            }
-        });
+//        mRenderHandle->appendRenderPassProcessCommandPrepose(mDirectionLightShadowMap->mShadowMap, [&](vk::CommandBuffer& cmd){
+//            if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {
+//                oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, false);
+//            }
+//        });
 
         mRenderHandle->appendProcessCommand(PrimaryRenderSeq::eRT, [&](vk::CommandBuffer &cmd, vk::ImageSubresourceRange subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}) {
             if (mActiveScene != nullptr && mActiveScene->tlas != nullptr) {
                 oneapi::tbb::spin_rw_mutex::scoped_lock lock(mRwMutex, false);
+                mDirectionLightShadowMap->render(cmd, mActiveScene->aabb, {7.f, 3.f, 2.f});
 
                 cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRayTracingGroup->acquire());
                 cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, mRayTracingGroup->getPipelineLayout(), 0,

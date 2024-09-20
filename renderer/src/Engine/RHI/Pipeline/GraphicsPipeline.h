@@ -127,6 +127,15 @@ namespace yic {
             createShaderStage();
             createInfo.setStages(shaderStages);
 
+            if (!mRenderPass){
+                vk::Format format = vk::Format::eR8G8B8A8Unorm;
+                auto renderingInfo = vk::PipelineRenderingCreateInfo()
+                        .setColorAttachmentFormats(format)
+                        .setDepthAttachmentFormat(vk::Format::eD32SfloatS8Uint)
+                        .setStencilAttachmentFormat(vk::Format::eD32SfloatS8Uint);
+                createInfo.pNext = &renderingInfo;
+            }
+
             mPipeline = vkCreate("create graphics pipeline") = [&]{
                 return mDevice.createGraphicsPipeline({}, createInfo).value;
             };

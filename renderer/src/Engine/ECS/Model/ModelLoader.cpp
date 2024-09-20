@@ -144,19 +144,11 @@ namespace sc {
         };
 
         model.mesh.aabb = {
-//                {finalMax[1], finalMax[2], finalMax[3]},
-//                {finalMin[1], finalMin[2], finalMin[3]}
             aabb.max - center,
             aabb.min - center
         };
 
         return center;
-//
-//        return {
-//                (finalMin[1] + finalMax[1]) / 2.f,
-//                (finalMin[2] + finalMax[2]) / 2.f,
-//                (finalMin[3] + finalMax[3]) / 2.f,
-//        };
     }
 
 } // sc

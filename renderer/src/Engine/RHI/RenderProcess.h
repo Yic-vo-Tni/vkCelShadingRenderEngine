@@ -76,4 +76,44 @@ namespace yic {
 
 } // yic
 
+
+namespace yic2{
+    class RenderProcess{
+
+    };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif //VKCELSHADINGRENDERER_RENDERPORCESST_H
