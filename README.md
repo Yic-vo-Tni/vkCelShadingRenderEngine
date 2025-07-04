@@ -1,10 +1,16 @@
 # vkCelShadingRenderEngine
 
 ## 简述
-- 自主学习Vulkan用，欢迎各位指正、指点(*╹▽╹*)
-- **main**分支: **legacy**分支重写版，没办法组织的太烂了。因为水平有限，目前只能在Clang下运行，
-MSVC有CRT问题，MinGW部分库编译不通。
-- **legacy**分支: https://github.com/Yic-vo-Tni/vkCelShadingRenderer 的重写版，没办法那个更烂= =。
+- 本仓库内容均为个人自学/工程实践的记录，主要为学习和自用，欢迎任何建议和交流反馈！
+- 自主学习Vulkan用，欢迎各位指正、指点 (*╹▽╹*)
+- **main** 分支：对 **legacy** 分支的重写（没办法组织的太烂了）。因为水平有限，目前只能在 Clang 下运行，MSVC 有 CRT 问题，MinGW 部分库编译不通。
+- **legacy** 分支：对 [vkCelShadingRenderer](https://github.com/Yic-vo-Tni/vkCelShadingRenderer) 的重写版，原来那个更烂 = =。
+
+## Description *(Translation by ChatGPT / My English is not good)*
+- This repository is a personal record of self-learning and engineering practice, mainly for learning and personal use. Any suggestions or feedback are welcome!
+- Mainly used for exploring and learning Vulkan by myself. All comments and advice are appreciated. (╹▽╹)
+- **main branch**: A rewritten version of the legacy branch (the previous version was poorly organized). Due to limited experience, it currently only works under Clang; there are CRT issues with MSVC and some libraries fail to compile under MinGW.
+- **legacy branch**: A rewritten version of [vkCelShadingRenderer](https://github.com/Yic-vo-Tni/vkCelShadingRenderer). (Unfortunately, that version was even worse = =)
 
 ## 学习记录
 - 因为对 Vulkan 感兴趣，属于直接硬学Vulkan，C++ 只是在项目推进中按需学习，整体代码水平有限，请多包涵。
@@ -12,6 +18,14 @@ MSVC有CRT问题，MinGW部分库编译不通。
 - **了解**: 仅在项目中简单尝试、实践demo
 - **计划**: 已有思路未实现，或未来计划学习
 - **程度**: 根据对应栏目打勾，简要说明实际掌握或应用的具体深度
+
+- I started learning Vulkan out of personal interest, and focused directly on it; C++ was learned as needed throughout project development. My overall coding proficiency is limited—please forgive any shortcomings.
+- **Applied**: Actually implemented and used in project features
+- **Familiar**: Only tried or experimented with in simple demos
+- **Planned**: Have ideas but not yet implemented, or plan to learn in the future
+- **Proficiency**: Marked accordingly, briefly describing the actual level of mastery or usage
+
+> (English translation by ChatGPT. Please refer to the Chinese version if anything is unclear!)
 
 ### 00、项目内容
 | 事项/内容                       |  实现   |  进行   | 计划 | 备注/进展说明                           |
