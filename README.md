@@ -19,6 +19,7 @@
 - **计划**: 已有思路未实现，或未来计划学习
 - **程度**: 根据对应栏目打勾，简要说明实际掌握或应用的具体深度
 
+## Learn Record
 - I started learning Vulkan out of personal interest, and focused directly on it; C++ was learned as needed throughout project development. My overall coding proficiency is limited—please forgive any shortcomings.
 - **Applied**: Actually implemented and used in project features
 - **Familiar**: Only tried or experimented with in simple demos
