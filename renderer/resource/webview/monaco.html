@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Monaco Shader Editor</title>
+    <style>
+        /* 让编辑器填满整个窗口 */
+        html, body, #container {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+    <!-- 1) 引入 Monaco Loader -->
+    <!--    <script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>-->
+    <script src="min/vs/loader.js"></script>
+    <!--    <script src="https://unpkg.com/monaco-editor@latest/min/vs/basic-languages/glsl/glsl.js"></script>-->
+    <script>
+        let editor;
+        // 2) 页面加载后，初始化 Monaco
+        window.onload = function() {
+
+            // listFiles('H:/VkCelShadingRenderer/renderer/resource/shaders')
+            //     .then(json => JSON.parse(json))
+            //     .then(files => {
+            //         const ul = document.getElementById('fileList');
+            //         files.forEach(path => {
+            //             const name = path.split(/[\\/]/).pop();
+            //             const li = document.createElement('li');
+            //             li.textContent = name;
+            //             li.onclick = () => {
+            //                 currentPath = path;
+            //                 openFile(path).then(txt => {
+            //                     editor.setValue(txt);
+            //                     editor.focus();
+            //                 });
+            //             };
+            //             ul.appendChild(li);
+            //         });
+            //     })
+            //     .catch(console.error);
+
+            //require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@latest/min/vs' } });
+            require.config({ paths: { vs: 'min/vs' } });
+            // require(['vs/editor/editor.main'], function() {
+            //     editor = monaco.editor.create(
+            //         document.getElementById('container'),
+            //         {
+            //             value: '',                // 初始值先留空
+            //            // language: 'cpp',         // 你现在是写着色器
+            //             theme: 'vs-dark',
+            //             automaticLayout: true     // 窗口尺寸变动时自动重排
+            //         }
+            //     );
+            require(['vs/editor/editor.main'], function(monaco) {
+                monaco.languages.register({ id: 'myglsl' });
+
+                // 2) 定义 Monarch 语法高亮规则
+                monaco.languages.setMonarchTokensProvider('myglsl', {
+                    // 只识别这几个关键字，后面可扩展
+                    keywords: [
+                        'layout','uniform','in','out','void','vec2','vec3','vec4','float','int',
+                        // '#version', '#extension', '#include',
+                        'GL_GOOGLE_include_directive', 'GL_EXT_shader_explicit_arithmetic_types_int64'
+                    ],
+                    operators: [
+                        '=','\\+','-','\\*','/','%','<','>','==','!=','<=','>='
+                    ],
+                    // 简单的 tokenizer
+                    tokenizer: {
+                        root: [
+                            // 注释
+                            [/(\/\/.*$)/, 'comment'],
+                            // 关键字
+                            [/\b(layout|uniform|in|out|void|vec[234]|float|int)\b/, 'keyword'],
+                            // 数字
+                            [/\b[0-9]+(\.[0-9]+)?\b/, 'number'],
+                            // 字符串
+                            [/".*?"/, 'string'],
+                            // 运算符
+                            [/[=+\-*/%<>!]+/, 'operator'],
+                            // 标识符
+                            [/[a-zA-Z_]\w*/, 'identifier'],
+                            // 空格
+                            [/[ \t\r\n]+/, ''],
+
+                            [/(#(?:version|extension|include))/, "keyword.directive"],
+                        ]
+                    }
+                });
+
+                monaco.languages.registerCompletionItemProvider('myglsl', {
+                    // 你也可以加 triggerCharacters:['.'] 或 [' '], 这里让 Ctrl+Space 调起
+                    provideCompletionItems: function(model, position) {
+                        const text = model.getValue();    // 整个文档文本
+                        const wordRegex = /\b([a-zA-Z_]\w*)\b/g;
+                        const vars = new Set();
+                        let match;
+                        while ((match = wordRegex.exec(text))) {
+                            const name = match[1];
+                            // 排除关键字、数字、内置函数等，如果需要
+                            if (!['layout','uniform','in','out','void','vec2','vec3','vec4','float','int'].includes(name)) {
+                                vars.add(name);
+                            }
+                        }
+
+                        // 把所有发现的“变量”生成 suggestions
+                        const suggestions = Array.from(vars).map(name => ({
+                            label: name,
+                            kind: monaco.languages.CompletionItemKind.Variable,
+                            insertText: name,
+                            detail: '变量'
+                        }));
+
+                        return { suggestions };
+                    }
+                });
+
+                // 3) 设定语言配置（括号匹配等可选）
+                monaco.languages.setLanguageConfiguration('myglsl', {
+                    brackets: [['{','}'], ['[',']'], ['(',')']],
+                    autoClosingPairs: [
+                        { open: '{', close: '}' },
+                        { open: '[', close: ']' },
+                        { open: '(', close: ')' },
+                        { open: '"', close: '"' }
+                    ]
+                });
+
+                monaco.editor.defineTheme('myDark', {
+                    base: 'vs-dark',    // 继承自 vs-dark
+                    inherit: true,      // 继承基础主题配置
+                    rules: [
+                        { token: 'keyword.directive', foreground: 'CC7832' },  // 暖橘
+                        { token: 'keyword',           foreground: 'A9B7C6' },  // 淡灰
+                        { token: 'keyword.type',      foreground: 'FFC66D' },  // 柔黄
+                        { token: 'comment',           foreground: '808080' },  // 中灰
+                        { token: 'number',            foreground: '6897BB' },  // 柔蓝
+                        { token: 'string',            foreground: '6A8759' },  // 柔绿
+                        { token: 'identifier',        foreground: 'A9B7C6' },  // 变量同灰
+                        { token: 'operator',          foreground: 'A9B7C6' },  // 运算符同灰
+                    ],
+                    colors: {
+                        'editor.foreground': '#A9B7C6',    // 默认文字
+                        'editor.background': '#2B2B2B',    // 背景色
+                        'editorLineNumber.foreground': '#606366', // 行号
+                        'editorCursor.foreground': '#FFFFFF',     // 光标
+                        'editor.selectionBackground': '#214283',  // 选中区域
+                        'editor.inactiveSelectionBackground': '#21428380',
+                        'editor.lineHighlightBackground': '#323232', // 当前行高亮
+                        'editorIndentGuide.background': '#404040',   // 缩进线
+                        'editorIndentGuide.activeBackground': '#707070',
+                    }
+                });
+
+                const keys = [
+                    'version',
+                    'include',
+                    'void main()',
+
+                    //
+                    'const',
+                    //
+                    'vec2',
+                    'vec3',
+                    'vec4',
+                    'mat3',
+                    'mat4',
+                    'ive4',
+
+                    //
+                    'set',
+                    'binding',
+                    'std140',
+                    'std430',
+                    'uniform',
+                    'readonly',
+                    'buffer',
+                    'accelerationStructureEXT',
+                    'image2D',
+                    'rayPayloadEXT',
+                    'gl_LaunchIDEXT',
+                    'gl_LaunchSizeEXT',
+                    '',
+
+                    ///ex
+                    'GL_GOOGLE_include_directive',
+                    'GL_EXT_shader_explicit_arithmetic_types_int64',
+                    'GL_EXT_ray_tracing',
+
+
+                ]
+
+                monaco.languages.registerCompletionItemProvider('myglsl', {
+                    provideCompletionItems: function(model, position) {
+                        const suggestions = [
+                            {
+                                label: 'layout',
+                                kind: monaco.languages.CompletionItemKind.Keyword,
+                                insertText: 'layout(${1:location} = ${2:0}) ${3:in} ${4};',
+                                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                                documentation: 'layout 关键字示例'
+                            },
+                            {
+                                label: 'traceRayEXT',
+                                kind: monaco.languages.CompletionItemKind.Keyword,
+                                insertText: 'traceRayEXT(${1: tlas},\n' +
+                                    '                ${2:gl_RayFlagsOpaqueEXT},\n' +
+                                    '                ${3:0xFF},\n' +
+                                    '                ${4:0},\n' +
+                                    '                ${5:0},\n' +
+                                    '                ${6:0},\n' +
+                                    '                ${7:},\n' +
+                                    '                ${8:0.01f},\n' +
+                                    '                ${9:},\n' +
+                                    '                ${10:10000.f},\n' +
+                                    '                ${11:0});',
+                                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                                documentation: ''
+                            },
+                        ];
+
+                        suggestions.push({
+                            label: 'extension',
+                            kind: monaco.languages.CompletionItemKind.Keyword,
+                            insertText: 'extension ${1:NAME} : ${2:require};',
+                            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        })
+
+                        keys.forEach(name => {
+                            suggestions.push({
+                                label: name,
+                                kind: monaco.languages.CompletionItemKind.Constant,
+                                insertText: name,
+                                documentation: '${name}'
+                            })
+                        })
+
+                        return { suggestions };
+                    }
+                });
+
+                // 5) 创建编辑器
+                editor = monaco.editor.create(
+                    document.getElementById('container'),
+                    {
+                        value: '',
+                        language: 'myglsl',
+                        // theme: 'vs-dark',
+                        theme: 'myDark',
+                        automaticLayout: true
+                    }
+                );
+
+                document.addEventListener('keydown', function(e) {
+                    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                        e.preventDefault();               // 阻止 WebView 的默认“保存页面”
+                        const content = editor.getValue();
+                        if (typeof saveFile === 'function') {
+                            saveFile(content);
+                        }
+                    }
+                });
+
+                // 3) Monaco 初始化完，调用 C++ 暴露的 pageLoaded()
+                if (typeof pageLoaded === 'function') pageLoaded();
+            });
+        };
+
+        function showMessage(msg) {
+            if (editor) {
+                editor.setValue(msg);
+                editor.focus();
+            }
+        }
+
+    </script>
+</head>
+<body>
+<!-- Monaco 的挂载点 -->
+<div id="container"></div>
+</body>
+</html>
+
+
+
+
+
+
+

@@ -1,0 +1,61 @@
+# ===================== 编译产物（平台无关） =====================
+/cmake-build-*/
+**/cmake-build-*/
+build/
+**/build/
+/out/
+/bin/
+lib/
+obj/
+
+# ===================== 编译输出（平台相关） =====================
+*.exe                       # Windows 可执行文件
+*.dll                       # Windows 动态链接库
+*.lib                       # Windows 静态库
+*.pdb                       # Windows 调试信息
+*.a                         # Linux/macOS 静态库
+*.so                        # Linux 共享库
+*.dylib                     # macOS 动态库
+*.o                         # 编译目标文件
+*.obj                       # Windows 目标文件
+*.lo                        # libtool 编译目标
+
+# ===================== 预编译头和缓存 =====================
+*.gch                       # GCC/Clang 预编译头
+*.pch                       # MSVC 预编译头
+*.ipch                      # IntelliSense 缓存
+*.tlog
+*.lastbuildstate
+*.idb
+*.db
+*.ilk
+*.cache
+
+# ===================== 第三方库/依赖源码 =====================
+external/
+third_party/
+renderer/third/
+# ===================== IDE 配置 =====================
+.vscode/
+.idea/
+*.code-workspace
+*.sln
+*.vcxproj*
+CMakeSettings.json
+
+# ===================== 临时文件、日志、系统垃圾 =====================
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.old
+
+# ===================== Git 子模块缓存（如果你用了 submodule） =====================
+.gitmodules
+.gitmodules/*
+.git/config
+
