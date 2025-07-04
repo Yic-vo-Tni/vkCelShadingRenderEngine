@@ -1,0 +1,11 @@
+#ifdef NDEBUG
+#define shader_path "@r_shader_path@"
+#define spv_path "@r_spv_path@"
+#define imgui_ini_path "@imgui_ini_path@"
+#define webview_path "@webview_path@"
+#else
+#define shader_path "@shader_path@"
+#define spv_path "@spv_path@"
+#define imgui_ini_path "@imgui_ini_path@"
+#define webview_path "@webview_path@"
+#endif
