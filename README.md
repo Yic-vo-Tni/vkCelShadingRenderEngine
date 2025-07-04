@@ -8,7 +8,7 @@ MSVC有CRT问题，MinGW部分库编译不通。
 
 ## 内容（≈ 学习记录）
 - 因为对 Vulkan 感兴趣，属于直接硬学Vulkan，C++ 只是在项目推进中按需学习，整体代码水平有限，请多包涵。
-- **应用**: 已在项目实际功能中使实现并使用
+- **应用**: 已在项目实际功能中实现并使用
 - **了解**: 仅在项目中简单尝试、实践demo
 - **计划**: 已有思路未实现，或未来计划学习
 - **程度**: 根据对应栏目打勾，简要说明实际掌握或应用的具体深度
@@ -101,42 +101,6 @@ MSVC有CRT问题，MinGW部分库编译不通。
 | 内存对齐/性能/映射         | ✔️   |      |      | Buffer分配/对齐优化      |
 | Shader优化（分支/unroll等）| ✔️   |      |      | 着色器代码调优           |
 | Vulkan与OpenGL/DirectX对比 |      | ✔️   |      | API接口/原理差异         |
-
-
-
-| 细分点                                   | 熟练  | 用过  | 接触  | 了解  | 说明/举例                  |
-| ------------------------------------- | --- | --- | --- | --- | ---------------------- |
-| Vulkan基础(Instance/Device/Surface等)    | ✔️  |     |     |     | 工程全部自封装                |
-| vk-hpp语法/自动析构                         | ✔️  |     |     |     | 资源全RAII，接口友好           |
-| Queue/CommandPool/CommandBuffer       | ✔️  |     |     |     | 多线程绘制、命令复用             |
-| Physical/LogicalDevice管理              | ✔️  |     |     |     | 多GPU/功能分区了解            |
-| Buffer/Image/内存管理                     | ✔️  |     |     |     | 统一Allocator封装、生命周期安全   |
-| Buffer/View/Map/Unmap                 | ✔️  |     |     |     | 动态数据传输、同步/解同步          |
-| Image/View/切换/布局转换                    | ✔️  |     |     |     | 各阶段自动Layout切换          |
-| DescriptorSet/Pool/Layouts            | ✔️  |     |     |     | 多描述符池分配/自动更新           |
-| PushConstant/UniformBuffer            | ✔️  |     |     |     | 小型数据（如变换矩阵）推送          |
-| Pipeline/PipelineLayout/ShaderStage   | ✔️  |     |     |     | 多管线配置，灵活切换             |
-| RenderPass/Subpass/Attachment         | ✔️  |     |     |     | 多渲染目标、前后处理             |
-| Framebuffer/动态重建                      | ✔️  |     |     |     | 窗口resize，交换链失效重建       |
-| 多帧同步/Semaphores/Fences                | ✔️  |     |     |     | 多帧管线自动同步/资源切换          |
-| 着色器模块/动态热重载                           |     | ✔️  |     |     | ShaderEditor/热更新       |
-| RayTracing扩展（KHR）                     |     | ✔️  |     |     | 光追Pipeline，TLAS/BLAS构建 |
-| VK_KHR_dynamic_rendering              |     | ✔️  |     |     | RenderPass2CI适配动态渲染    |
-| AccelerationStructure管理               |     | ✔️  |     |     | 动态创建/释放/上传             |
-| MultiQueue/多队列支持                      |     |     | ✔️  |     | 了解多队列调度机制，未主流程用        |
-| Swapchain重建                           | ✔️  |     |     |     | 窗口resize自动销毁重建         |
-| 多采样抗锯齿/MSAA                           |     | ✔️  |     |     | 后处理支持，shader参数管理       |
-| Sampler/采样/纹理过滤                       | ✔️  |     |     |     | 各种材质/纹理动态绑定            |
-| 动态描述符（bindless）                       |     | ✔️  |     |     | 多资源并行上传                |
-| Shader编译/调试/反编译                       |     | ✔️  |     |     | 热编译，反编译Spirv调试         |
-| ValidationLayer/调试扩展                  |     | ✔️  |     |     | VUID定位，性能分析警告          |
-| 性能分析/调优                               |     |     | ✔️  |     | GPU Profile，未深度分析      |
-| Vulkan扩展（MeshShader/DescriptorBuffer） |     |     | ✔️  |     | 文档/源码学习，未主流程应用         |
-| 多平台API抽象                              |     |     |     | ✔️  | DX12/Metal对比分析         |
-| DeviceGroup/多GPU                      |     |     |     | ✔️  | 了解概念，未工程用              |
-| Vulkan与OpenGL/DirectX/Metal对比         |     |     | ✔️  |     | 原理、接口差异学习              |
-| Shader优化（分支/loop/unroll）              |     | ✔️  |     |     | 着色器代码调优经验              |
-| 内存对齐/性能/映射                            |     | ✔️  |     |     | Buffer分配、对齐优化          |
 
 ### 三、渲染/引擎系统/图形学
 
