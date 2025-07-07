@@ -28,10 +28,8 @@ namespace sc {
         yic::renderLibrary-> RT_Main->drawRendering(cmd, [&] {
             cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
             .bindPipeline_(yic::renderLibrary->GP_Basic)
-            //.bindDescriptorSets_(yic::renderLibrary->GP_Basic, camera_comp(ecs)->DS);
             .bindDescriptorSets_(yic::renderLibrary->GP_Basic, ecs.get<sc::Camera>(GLOBAL::camera).DS);
 
-            //ecs.query<const vot::RenderVisibleTag, const vot::RenderComponent>().each([&](flecs::entity_view e, const vot::RenderVisibleTag, const vot::RenderComponent& rc){
             ecs.view<const vot::RenderVisibleTag, const vot::RenderComponent>().each([&](entt::entity e, const vot::RenderComponent& rc){
                 if (!ecs.all_of<vot::MMDTag>(e)){
                 //if (!e.has<vot::MMDTag>()){
@@ -51,11 +49,9 @@ namespace sc {
             });
 
             cmd.bindPipeline_(yic::renderLibrary->GP_Basic_PMX)
-            //.bindDescriptorSets_(yic::renderLibrary->GP_Basic_PMX, camera_comp(ecs)->DS);
             .bindDescriptorSets_(yic::renderLibrary->GP_Basic_PMX, ecs.get<sc::Camera>(GLOBAL::camera).DS);
 
             ecs.view<const vot::RenderVisibleTag, const vot::MMDTag, const vot::RenderComponent>().each([&](entt::entity e, const vot::RenderComponent& rc){
-            //ecs.query<const vot::RenderVisibleTag, const vot::MMDTag, const vot::RenderComponent>().each([&](flecs::entity_view e, const vot::RenderVisibleTag, const vot::MMDTag, const vot::RenderComponent& rc){
                 auto combMat = rc.baseMat * rc.zmoMat;
                 cmd.bindVertexBuffers(rc.vertexBuffer);
                 cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
