@@ -25,7 +25,6 @@ namespace sc {
         auto handleCameraMovement(auto& cameraEntity) -> void;
         static auto calFnTimeConsuming(const std::function<void()>& fn) -> void;
     private:
-//        flecs::world ecs;
         entt::registry ecs;
 
         ev::pVkSetupContext ct{};

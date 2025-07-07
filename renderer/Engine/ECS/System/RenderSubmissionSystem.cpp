@@ -14,7 +14,6 @@
 namespace sc {
 
     RenderSubmissionSystem::RenderSubmissionSystem(entt::registry& registry) : ecs{registry}{
-    //RenderSubmissionSystem::RenderSubmissionSystem(flecs::world &ecs) : ecs{ecs}{
         ct = yic::systemHub.val<ev::pVkSetupContext>();
         rt = yic::systemHub.val<ev::pVkRenderContext>();
 

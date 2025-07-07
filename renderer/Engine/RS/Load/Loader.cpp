@@ -73,16 +73,7 @@ namespace rs {
                     ecs.emplace<vot::AnimationComponent>(e, animationComponent);
                     ecs.emplace<vot::RayTracingComponent>(e, rayTracingComponent);
 
-
-
-//                    auto& e = ecs.entity(basicInfoComponent.name.data())
-//                            .set(basicInfoComponent)
-//                            .set(vertexDataComponent)
-//                            .set(renderComponent)
-//                            .set(animationComponent)
-//                            .set(rayTracingComponent);
                     if (vertexDataComponent.isMMD)
-                        //e.add<vot::MMDTag>();
                         ecs.emplace<vot::MMDTag>(e);
 
                     {
@@ -104,11 +95,8 @@ namespace rs {
                 _doneA.wait(false);
             }
 
-            //auto e = ecs.entity(GLOBAL::pickON.c_str());
-
             yic::sceneSystem->reloadTlas();
 
-           // e.add<vot::RenderVisibleTag>();
             ecs.emplace<vot::RenderVisibleTag>(e);
         });
     }

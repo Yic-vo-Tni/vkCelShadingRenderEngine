@@ -57,18 +57,12 @@ namespace hide {
             registerEvent<Event>()->publishPolling(event);
         }
 
-//        template<typename Event>
-//        auto publish_(Event&& event) -> void{
-//            registerEvent<Event>()->publish_(event);
-//        }
-
         template<class Event>
         auto publishAsync(Event&& event) -> void{
             eventGroup.run([ event = std::forward<Event>(event)]{
                 registerEvent<Event>()->publish(event);
             });
         }
-
 
 
         template<typename Event>
@@ -101,18 +95,12 @@ namespace hide {
 
         auto process() -> void{
             while(!eventHandles.empty()){
-//                auto handle = eventHandles.front();
-//                handle->execute();
-//                eventHandles.pop();
                 IEventHandle* handle;
                 while(eventHandles.try_pop(handle)){
                     handle->execute();
                 }
             }
             while(!uniqueHandles.empty()){
-//                auto handle = uniqueHandles.front();
-//                handle->executeLatest();
-//                uniqueHandles.pop();
                 IEventHandle* handle;
                 while(eventHandles.try_pop(handle)){
                     handle->executeLatest();
