@@ -48,7 +48,7 @@ void main() {
     vec3 nor = normalize(applyBoneTransform(vec4(inNor, 1.f))).xyz;
     pos = camera.viewProj * M * pos;
 //    vec4 pos = camera.viewProj * M * vec4(inPos, 1.f);
-    outPos = inPos;
+    outPos = (M * pos).xyz;
     outNor = inNor;
     outUV = inUv;
     gl_Position = pos;

@@ -91,6 +91,7 @@ namespace sc {
         yic::renderLibrary->RT_Volumetric_Overcast_Clouds->drawRendering(cmd, [&]{
            cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
            .bindPipeline_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds)
+           .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, ecs.get<sc::Camera>(GLOBAL::camera).DS)
            .pushConstants(yic::renderLibrary->GP_Volumetric_Overcast_Clouds.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (float), &iTime);
            cmd.draw(3, 1, 0, 0);
         });
@@ -98,6 +99,7 @@ namespace sc {
         // 3
         yic::renderLibrary->RT_Post->drawRendering(cmd, [&]{
             cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
+            .bindDescriptorSets_(yic::renderLibrary->GP_Post, ecs.get<sc::Camera>(GLOBAL::camera).DS)
             .bindPipeline_(yic::renderLibrary->GP_Post)
             .bindDescriptorSets_(yic::renderLibrary->GP_Post, *rt.activeImageIndex)
             .draw(3, 1, 0, 0);

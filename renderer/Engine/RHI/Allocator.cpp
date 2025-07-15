@@ -259,7 +259,7 @@ namespace rhi {
     }
 
     auto Allocator::allocImage(vot::ImageCI config, const vot::string& id) -> vot::Image_sptr {
-        auto c = config.imageCount;
+        auto c = config.imageCount * config.colorAttachmentCount;
         vot::smart_vector<vk::Image> images(c);
         vot::smart_vector<vk::ImageView> imageViews(c);
         vot::smart_vector<VmaAllocation> allocations(c);

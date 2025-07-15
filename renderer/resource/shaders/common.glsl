@@ -5,6 +5,8 @@ struct CameraMatrixUniform{
     mat4 viewProj;
     mat4 viewInverse;
     mat4 projInverse;
+    vec4 pos_pad;
+    vec4 front_pad;
 };
 
 struct ObjDesc{

@@ -10,7 +10,7 @@
 
 namespace sc {
 
-#define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eRaygenKHR)
+#define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR)
 
     RenderLibrary::RenderLibrary() {
         frameImageCount = yic::systemHub.val<ev::pVkRenderContext>().frameEntries->size();
@@ -22,6 +22,8 @@ namespace sc {
     RenderLibrary::~RenderLibrary() = default;
 
     auto RenderLibrary::buildPipelines() -> void {
+        auto format = yic::systemHub.val<ev::pVkRenderContext>().surfaceFormat->format;
+
         GP_Basic.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
@@ -30,6 +32,7 @@ namespace sc {
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
 
             .setRenderPass2CI(vot::RenderPass2CI()
+            .setColorAttachmentFormats({format, format})
             .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
@@ -43,17 +46,18 @@ namespace sc {
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Basic/model.vert"))
 
+            .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
+            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeBlendAttachment()}))
+
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/model.frag")));
 
-        GP_Basic_PMX.combinePipelineLibrary(vot::PipelineLibrary()
+        GP_Basic_PMX.combinePipelineLibrary(GP_Basic.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
-
-            .setRenderPass2CI(vot::RenderPass2CI()
-            .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
             .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
@@ -67,11 +71,15 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/pmx.frag")));
 
-        GP_Volumetric_Overcast_Clouds.combinePipelineLibrary(GP_Basic.acquirePipelineLibrary()
+        GP_Volumetric_Overcast_Clouds.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+            .SET0
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(float)}))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI())
+
+            .setRenderPass2CI(vot::RenderPass2CI()
+            .setRenderingDepth(vk::True))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Atmosphere/volumetric_overcast_clouds.vert"))
@@ -79,12 +87,13 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Atmosphere/volumetric_overcast_clouds.frag")));
 
-        GP_Post.combinePipelineLibrary(GP_Basic.acquirePipelineLibrary()
+        GP_Post.combinePipelineLibrary(GP_Volumetric_Overcast_Clouds.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
-            .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
+            .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI())
 
@@ -112,6 +121,7 @@ namespace sc {
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
+                .setColorAttachmentCount(2)
                 .setExtent(vot::Resolutions::eQHDExtent)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Main RT Image");
 
@@ -144,8 +154,10 @@ namespace sc {
             vot::DescriptorLayout2 layout{};
 
             for(auto i = 0u; i < frameImageCount; i++){
+                auto base = RT_Main->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d {
-                        RT_Main->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_Main->imageInfo(base, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Overcast_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_RayTracing->imageInfo(),
                 });
@@ -158,77 +170,3 @@ namespace sc {
 } // sc
 
 
-
-
-//        DS_GP_Post = rhi::Descriptor::make_shared()->combine(yic::renderLibrary->GP_Post.acquirePipelineLibrary())
-//                ->updateDescriptorSets([&]() {
-//                    rhi::DescriptorLayout layout{};
-//
-//                    for(auto i = 0; i < frameImageCount; i++){
-//                        layout.emplace(rhi::DescriptorLayout ::_1d {
-//                                yic::renderLibrary->RT_Main->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-//                                yic::renderLibrary->RT_RayTracing->imageInfo(),
-//                        });
-//                    }
-//
-//                    return layout;
-//                });
-
-//        RP_Shadow.addShader("RT/gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
-//            .addShader("RT/miss.rmiss", vk::ShaderStageFlagBits::eMissKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
-//            .addShader("RT/shadow_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
-//            .addShader("RT/hit.rchit", vk::ShaderStageFlagBits::eClosestHitKHR, vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup, vot::RTShaderRole::eClosestHit)
-//
-//            .build(vot::PipelineDescriptorSetLayoutCI()
-//            .addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eAccelerationStructureKHR, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
-//            .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
-//            .addDescriptorSetLayoutBinding(0, 2, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eRaygenKHR)
-//            .addDescriptorSetLayoutBinding(0, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR));
-
-//        GP_Basic.combinePipelineLibrary(vot::PipelineLibrary()
-//            .setPipelineDescriptorSetLayoutCI(vot::PipelineDescriptorSetLayoutCI()
-//            .addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex)
-//            .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
-//            .addDescriptorSetLayoutBinding(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex))
-//
-//            .setRenderPass2CI(vot::RenderPass2CI()
-//            .setRenderingDepth(vk::True))
-//
-//            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-//            .addVertexInputBindingDescription(0, sizeof(vot::Vertex), vk::VertexInputRate::eVertex)
-//            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))
-//            .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, nor))
-//            .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::Vertex, uv))
-//            .addVertexInputAttributeDescription(3, 0, vk::Format::eR32G32B32A32Sint, offsetof(vot::Vertex, boneIds))
-//            .addVertexInputAttributeDescription(4, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(vot::Vertex, boneWeight)))
-//
-//            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-//            .setShaderPath("Basic/model.vert"))
-//
-//            .setFragmentShaderCI(vot::FragmentShaderCI()
-//            .setShaderPath("Basic/model.frag")));
-
-//        GP_Outline.combinePipelineLibrary(vot::PipelineLibrary()
-//                                                  .setPipelineDescriptorSetLayoutCI(vot::PipelineDescriptorSetLayoutCI()
-//                                                  .addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex)
-//                                                  .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
-//
-//                                                  .setRenderPass2CI(vot::RenderPass2CI()
-//                                                  .setRenderingDepth(vk::True))
-//
-//                                                  .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-//                                                  .setPrimitiveTopology(vk::PrimitiveTopology::eTriangleListWithAdjacency)
-//                                                  .addVertexInputBindingDescription(0, sizeof(vot::Vertex), vk::VertexInputRate::eVertex)
-//                                                  .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))
-//                                                  .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, nor))
-//                                                  .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::Vertex, uv)))
-//
-//                                                  .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-//                                                  .setDepthBiasEnable(vk::True)
-//                                                  .setDepthBiasConstantFactor(1.f)
-//                                                  .setDepthBiasSlopeFactor(1.f)
-//                                                  .setShaderPath("Basic/outline.vert")
-//                                                  .setGeomShaderPath("Basic/outline.geom"))
-//
-//                                                  .setFragmentShaderCI(vot::FragmentShaderCI()
-//                                                  .setShaderPath("Basic/outline.frag")));

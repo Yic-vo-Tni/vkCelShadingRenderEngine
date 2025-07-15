@@ -31,6 +31,31 @@ namespace rhi {
                                                       colorFlags};
             return att;
         };
+        static vk::PipelineColorBlendAttachmentState makeBlendAttachment(
+                std::optional<vk::ColorComponentFlags> colorFlags = std::nullopt,
+                std::optional<vk::Bool32> blendEnable = std::nullopt,
+                std::optional<vk::BlendFactor> srcColorBF = std::nullopt,
+                std::optional<vk::BlendFactor> dstColorBF = std::nullopt,
+                std::optional<vk::BlendOp> colorBlendOp = std::nullopt,
+                std::optional<vk::BlendFactor> srcAlphaBF = std::nullopt,
+                std::optional<vk::BlendFactor> dstAlphaBF = std::nullopt,
+                std::optional<vk::BlendOp> alphaBlendOp = std::nullopt
+        ){
+            vk::PipelineColorBlendAttachmentState att{};
+            att.setColorWriteMask(colorFlags.value_or(
+                    vk::ColorComponentFlagBits::eR |
+                    vk::ColorComponentFlagBits::eG |
+                    vk::ColorComponentFlagBits::eB |
+                    vk::ColorComponentFlagBits::eA));
+            att.setBlendEnable(blendEnable.value_or(VK_TRUE));
+            att.setSrcColorBlendFactor(srcColorBF.value_or(vk::BlendFactor::eSrcAlpha));
+            att.setDstColorBlendFactor(dstColorBF.value_or(vk::BlendFactor::eOneMinusSrcAlpha));
+            att.setColorBlendOp(colorBlendOp.value_or(vk::BlendOp::eAdd));
+            att.setSrcAlphaBlendFactor(srcAlphaBF.value_or(vk::BlendFactor::eSrcAlpha));
+            att.setDstAlphaBlendFactor(dstAlphaBF.value_or(vk::BlendFactor::eOneMinusSrcAlpha));
+            att.setAlphaBlendOp(alphaBlendOp.value_or(vk::BlendOp::eAdd));
+            return att;
+        }
 //        auto acquirePipelineLibrary() { return mPipelineLibrary; }
         auto acquirePipelineLibrary() { return mPipelineLibrary; }
 

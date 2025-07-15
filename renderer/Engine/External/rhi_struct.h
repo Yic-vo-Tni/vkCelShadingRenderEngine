@@ -331,7 +331,10 @@ struct DescriptorHandle{
         auto& setGeomShaderPath(vot::string pt) { geomShaderPt = std::move(pt); return *this; }
     };
     struct FragmentOutputInterfaceCI{
-        std::initializer_list<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+//        std::initializer_list<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+        vot::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+
+        auto& setColorBlendAttachmentStates(const vot::vector<vk::PipelineColorBlendAttachmentState>& blendAttachmentStates) { colorBlendAttachmentStates = blendAttachmentStates; return *this;}
     };
     struct FragmentShaderCI{
         vot::string shaderPt;
@@ -370,8 +373,8 @@ struct DescriptorHandle{
         vk::Format depthAttachmentFormat_dynamicRenderingEx = vk::Format::eD32SfloatS8Uint;
         vk::Format stencilAttachmentFormat_dynamicRenderingEx = vk::Format::eD32SfloatS8Uint;
 
-        auto& setColorAttachmentFormats(vk::Format format) { colorAttachmentFormats_dynamicRenderingEx.push_back(format); return *this; }
-
+        //auto& setColorAttachmentFormats(vk::Format format) { colorAttachmentFormats_dynamicRenderingEx.push_back(format); return *this; }
+        auto& setColorAttachmentFormats(const vot::vector<vk::Format>& formats) { colorAttachmentFormats_dynamicRenderingEx = formats; return *this; }
 
         auto& setAttachmentDescription2(const vot::vector<vk::AttachmentDescription2>& attachDesc2s) { attachmentDescription2s = attachDesc2s; return *this; }
         auto& setSubpassDependency2(const vot::vector<vk::SubpassDependency2>& subpassDep2s) { subpassDependency2s = subpassDep2s; return *this; }
@@ -442,6 +445,7 @@ struct DescriptorHandle{
         //imageFlags imageFlags = eColor;
         imageFlags imageFlags = eDefault;
         uint8_t imageCount = 1;
+        uint8_t colorAttachmentCount = 1;
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::Format format = vk::Format::eR8G8B8A8Unorm;
         vk::Extent3D extent = {2560, 1440, 1};
@@ -498,6 +502,7 @@ struct DescriptorHandle{
         ImageCI& setSharingMode(vk::SharingMode mode) { sharingMode = mode; return *this; }
         ImageCI& setAspect(vk::ImageAspectFlags flags){ imageSubresourceRange.aspectMask = flags; return *this;}
         ImageCI& setImageCount(uint8_t count){ imageCount = count; return *this; }
+        ImageCI& setColorAttachmentCount(uint8_t count){ colorAttachmentCount = count; return *this; }
         ImageCI& setDstImageLayout(vk::ImageLayout imageLayout){ currentImageLayout = imageLayout; return *this; }
         ImageCI& setDstDepthImageLayout(vk::ImageLayout imageLayout){ currentDepthImageLayout = imageLayout; return *this;}
         ImageCI& updateColorToImGui(vot::uiWidget widget) { uiWidget = widget; return *this; }

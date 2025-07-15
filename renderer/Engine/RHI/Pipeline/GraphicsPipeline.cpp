@@ -157,7 +157,8 @@ namespace rhi {
         auto libraryInfo = vk::GraphicsPipelineLibraryCreateInfoEXT()
                 .setFlags(vk::GraphicsPipelineLibraryFlagBitsEXT::eFragmentOutputInterface);
 
-        auto colorBlendAttach = empty(libraryCI.colorBlendAttachmentStates) ? std::initializer_list<vk::PipelineColorBlendAttachmentState>{makePipelineColorBlendAttachments()} : libraryCI.colorBlendAttachmentStates;
+        //auto colorBlendAttach = empty(libraryCI.colorBlendAttachmentStates) ? std::initializer_list<vk::PipelineColorBlendAttachmentState>{makePipelineColorBlendAttachments()} : libraryCI.colorBlendAttachmentStates;
+        auto colorBlendAttach = libraryCI.colorBlendAttachmentStates.empty() ? std::initializer_list<vk::PipelineColorBlendAttachmentState>{makePipelineColorBlendAttachments()} : libraryCI.colorBlendAttachmentStates;
         auto colorBlendState = vk::PipelineColorBlendStateCreateInfo()
                 .setAttachments(colorBlendAttach)
                 .setLogicOpEnable({});
@@ -172,7 +173,7 @@ namespace rhi {
 //
 //        auto info = pipelineLibrary.renderPass2CI.pipelineRenderingCreateInfo.value_or(renderingInfo);
         if (mPipelineLibrary.renderPass2CI.colorAttachmentFormats_dynamicRenderingEx.empty())
-            mPipelineLibrary.renderPass2CI.setColorAttachmentFormats(yic::systemHub.val<ev::pVkRenderContext>().surfaceFormat->format);
+            mPipelineLibrary.renderPass2CI.setColorAttachmentFormats({yic::systemHub.val<ev::pVkRenderContext>().surfaceFormat->format});
         auto info = mPipelineLibrary.renderPass2CI.getPipelineRenderingCreateInfo();
 
        // auto info = pipelineLibrary.renderPass2CI.pipelineRenderingCI.value_or(renderingInfo);

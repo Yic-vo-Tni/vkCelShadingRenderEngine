@@ -13,6 +13,8 @@ namespace sc {
         glm::mat4 vp;
         glm::mat4 vInverse;
         glm::mat4 pInverse;
+        glm::vec4 pos_pad;
+        glm::vec4 front_pad;
     };
 
     class Camera {
@@ -78,6 +80,8 @@ namespace sc {
 
             //mVp = mProj * mView;
             mVpMatrix.vp = mProj * mView;
+            mVpMatrix.pos_pad = glm::vec4(position.x, position.y, position.z, 0.f);
+            mVpMatrix.front_pad = glm::vec4(cameraFront.x, cameraFront.y, cameraFront.z, 0.f);
             if (buf){
                 buf->update(mVpMatrix);
             } else {

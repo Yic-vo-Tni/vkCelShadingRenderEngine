@@ -1,11 +1,13 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "../common.glsl"
+
 layout(location = 0) out vec4 outColor;
 
-// 你可以用uniform替换下面两个全局常量，下面这样方便单步调试
-//uniform float iTime;
-//uniform vec2 iResolution;
-//const float iTime = 0;
+layout(set = 0, binding = 0) uniform GlobalUniforms { CameraMatrixUniform camera; } ;
 layout(push_constant) uniform PushConstants{ float iTime;};
 const vec2 iResolution = vec2(2560, 1440);
 
@@ -26,7 +28,7 @@ struct volume_sampler_t {
 
 // 参数
 const float PI = 3.14159265359;
-const int cld_march_steps = 50;
+const int cld_march_steps = 128;
 //50
 const float cld_coverage = 0.4;
 //0.3125
@@ -122,7 +124,8 @@ vec4 render_clouds(ray_t eye, float time) {
     vec3 projection = eye.direction / eye.direction.y;
     vec3 iter = projection * march_step;
     float cutoff = dot(eye.direction, vec3(0, 1, 0));
-    volume_sampler_t cloud = begin_volume(eye.origin + projection * 100.0, cld_absorb_coeff);
+    //volume_sampler_t cloud = begin_volume(eye.origin + projection * 100.0, cld_absorb_coeff);
+     volume_sampler_t cloud = begin_volume(eye.origin + projection * 300.0, cld_absorb_coeff);
 
     for (int i = 0; i < steps; i++) {
         cloud.height = (cloud.pos.y - cloud.origin.y) / cld_thick;
@@ -157,19 +160,32 @@ void main() {
     vec2 fragCoord = gl_FragCoord.xy;
     vec2 res = iResolution;
     vec2 aspect_ratio = vec2(res.x / res.y, 1);
-    vec3 eye = vec3(0.f, 0.f, 25.f);//
+ //   vec3 eye = vec3(0.f, 0.f, 25.f);//
     // 0.f, 1.f, 0.f
-    vec3 look_at = vec3(0.f, 0.f, 25.f) + vec3(0.f, 0.f, -1.f);
+ //   vec3 look_at = vec3(0.f, 0.f, 25.f) + vec3(0.f, 0.f, -1.f);
     //0.f, 1.6f, -1.f
+    vec3 eye = camera.pos_pad.xyz;
+    vec3 look_at = camera.pos_pad.xyz + camera.front_pad.xyz;
     float FOV = 1.f;
     // 1.f
     vec2 point_ndc = fragCoord / res;
     point_ndc.y = 1.f - point_ndc.y;
-    vec3 point_cam = vec3((2.0 * point_ndc - 1.0) * aspect_ratio * FOV, -1.0);
+   // vec3 point_cam = vec3((2.0 * point_ndc - 1.0) * aspect_ratio * FOV, -1.0);
+    vec3 point_cam = vec3((1.0 - 2.0 * point_ndc.x) * aspect_ratio.x * FOV, (2.0 * point_ndc.y - 1.0) * aspect_ratio.y * FOV, -1.0);
+
     ray_t ray = get_primary_ray(point_cam, eye, look_at);
 
+    float t = -ray.origin.y / ray.direction.y;
+    bool hitGround = (ray.direction.y < -0.0001) && (t > 0.f);
+
     vec3 color;
-    if (point_ndc.y < 0.45) {
+//    if (point_ndc.y < 0.45) {
+//        vec3 ground_color = vec3(0.42, 0.32, 0.18);
+//        color = ground_color;
+//    } else {
+//        color = render(ray, point_cam, time);
+//    }
+    if (hitGround) {
         vec3 ground_color = vec3(0.42, 0.32, 0.18);
         color = ground_color;
     } else {
@@ -177,9 +193,6 @@ void main() {
     }
 
     outColor = vec4(linear_to_srgb(color), 1.0);
-
-//    vec3 color = render(ray, point_cam, time);
-//    outColor = vec4(linear_to_srgb(color), 1.0);
 }
 
 
