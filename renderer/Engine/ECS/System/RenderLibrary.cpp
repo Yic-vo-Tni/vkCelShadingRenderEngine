@@ -71,6 +71,31 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/pmx.frag")));
 
+        GP_ShadowMap_Basic.combinePipelineLibrary(vot::PipelineLibrary()
+            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof (glm::mat4 )}))
+
+            .setRenderPass2CI(vot::RenderPass2CI()
+            .setRenderingDepth(vk::True))
+
+            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
+            .addVertexInputBindingDescription(0, sizeof(vot::Vertex), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos)))
+
+            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+            .setShaderPath("ShadowMap/DirectionLight.vert"))
+
+            .setFragmentShaderCI(vot::FragmentShaderCI()
+            .setShaderPath("ShadowMap/DirectionLight.frag")));
+
+        GP_ShadowMap_PMX.combinePipelineLibrary(GP_ShadowMap_Basic.acquirePipelineLibrary()
+            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof (glm::mat4 )})) //
+
+            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
+            .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))));
+
         GP_Volumetric_Overcast_Clouds.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
@@ -117,27 +142,37 @@ namespace sc {
     }
 
     auto RenderLibrary::buildRenderTarget() -> void {
+        auto RT_RESOLUTION = vot::Resolutions::eQHDExtent;
+
         RT_Main = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
-                .setColorAttachmentCount(2)
-                .setExtent(vot::Resolutions::eQHDExtent)
+                .setColorAttachmentCount(2) // albedo pos
+                .setExtent(RT_RESOLUTION)
+                .setDstDepthImageLayout(vk::ImageLayout::eRenderingLocalReadKHR)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Main RT Image");
+
+        RT_ShadowMap = yic::allocator->allocImage(vot::ImageCI()
+                .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
+                .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+                .updateColorToImGui(vot::uiWidget::eViewWidget)
+                .setImageCount(frameImageCount)
+                .setExtent(RT_RESOLUTION)
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Shadow RT Image");
 
         RT_RayTracing = yic::allocator->allocImage(vot::ImageCI()
                 .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
                 .setImageCount(1)
-                .setExtent(vot::Resolutions::eQHDExtent)
+                .setExtent(RT_RESOLUTION)
                 .setFormat(vk::Format::eR8G8B8A8Unorm)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RayTracing RT Image");
 
-        RT_Volumetric_Overcast_Clouds = yic::allocator->allocImage(vot::ImageCI()
+        RT_Volumetric_Clouds = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
-//                .updateColorToImGui(vot::uiWidget::eViewWidget)
                 .setImageCount(frameImageCount)
-                .setExtent(vot::Resolutions::eQHDExtent)
+                .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Volumetric overcast clouds RT Image");
 
         RT_Post = yic::allocator->allocImage(vot::ImageCI()
@@ -145,7 +180,7 @@ namespace sc {
                 .updateColorToImGui(vot::uiWidget::eRenderWidget)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
-                .setExtent(vot::Resolutions::eQHDExtent)
+                .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Post RT Image");
     }
 
@@ -158,7 +193,7 @@ namespace sc {
                 layout.emplace(vot::DescriptorLayout2::_1d {
                         RT_Main->imageInfo(base, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_Volumetric_Overcast_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_RayTracing->imageInfo(),
                 });
             }

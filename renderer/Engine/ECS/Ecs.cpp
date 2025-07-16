@@ -71,6 +71,9 @@ namespace sc {
         auto& cam = ecs.emplace<sc::Camera>(GLOBAL::camera);
         cam.computeViewProjMatrix();
 
+        GLOBAL::sunLight = ecs.create();
+        auto& sun = ecs.emplace<vot::DirectionLightComponent>(GLOBAL::sunLight);
+
         cam.DS = yic::desSystem->allocUpdateDescriptorSets([&]{
             return vot::DescriptorLayout2{ cam.vpBufferInfo() };
         }, yic::renderLibrary->GP_Basic, 0, 1);

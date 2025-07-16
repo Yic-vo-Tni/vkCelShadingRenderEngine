@@ -309,10 +309,30 @@ namespace rhi {
             }();
 
             config.setFormat(depthFormat)
-                    .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
+                    .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransferDst)
                     .setAspect(vk::ImageAspectFlagBits::eDepth);
             auto [depthImage, depthVma] = createImage(config);
             auto depthImageView = createImageView(config, depthImage);
+
+            if (config.currentDepthImageLayout != vk::ImageLayout::eDepthStencilAttachmentOptimal){
+                yic::command->drawOneTimeSubmit([&](vot::CommandBuffer& cmd){
+                   // for(auto& image : images){
+                        vk::ImageMemoryBarrier barrier1{{}, vk::AccessFlagBits::eTransferWrite,
+                                                        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+                                                        0, 0, depthImage, {vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1}};
+                        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, barrier1);
+                  //      cmd.clearColorImage(depthImage, vk::ImageLayout::eTransferDstOptimal, config.clearColorValue, vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+                    vk::ClearDepthStencilValue clearValue{1.0f, 0};
+                    vk::ImageSubresourceRange subRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1};
+                    cmd.clearDepthStencilImage(depthImage, vk::ImageLayout::eTransferDstOptimal, clearValue, subRange);
+
+                    vk::ImageMemoryBarrier barrier{vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eColorAttachmentWrite,
+                                                       vk::ImageLayout::eTransferDstOptimal, config.currentDepthImageLayout,
+                                                       0, 0, depthImage, {vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1}};
+                        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {}, barrier);
+                    //}
+                });
+            }
 
             return std::make_shared<vot::Image>(images, imageViews, allocations, depthImage, depthImageView, depthVma, mVmaAllocator, config, id);
         }

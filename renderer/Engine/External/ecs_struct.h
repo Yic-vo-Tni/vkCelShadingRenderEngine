@@ -7,17 +7,14 @@
 
 #include "pch.h"
 
-//namespace rhi{ class Descriptor; }
-//using MeshDescriptor = rhi::Descriptor;
-
 namespace vot::inline sc{
 
-//    struct ecs_pipeline{
-//        inline static constexpr char ePrepose[] = "prepose";
-//        inline static constexpr char eRender[] = "render";
-//
-//        inline static flecs::entity prepose;
-//    };
+struct DirectionLightComponent {
+    std::string name;
+    glm::vec3 direction;
+    glm::vec3 color;
+    float intensity = 1.0f;
+};
 
 }
 

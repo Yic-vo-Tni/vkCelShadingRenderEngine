@@ -72,9 +72,33 @@ float fbm_clouds(vec3 pos, float lacunarity, float init_gain, float gain) {
 }
 
 vec3 render_sky_color(vec3 eye_dir) {
-    vec3 sun_color = vec3(1.0, 0.7, 0.55);
-    float sun_amount = max(dot(eye_dir, normalize(vec3(0, 0, -1))), 0.0);
-    vec3 sky = mix(vec3(0.0, 0.1, 0.4), vec3(0.3, 0.6, 0.8), 1.0 - eye_dir.y);
+    //    vec3 sun_color = vec3(1.0, 0.7, 0.55);
+    //    float sun_amount = max(dot(eye_dir, normalize(vec3(0, 0, -1))), 0.0);
+    vec3 sun_color = vec3(1.0, 0.55, 0.18);
+    float sun_amount = max(dot(eye_dir, normalize(vec3(7.f, 3.f, 2.f))), 0.0);
+    //    vec3 sky = mix(vec3(0.0, 0.1, 0.4), vec3(0.3, 0.6, 0.8), 1.0 - eye_dir.y);
+
+    // 动态sunset权重，太阳越低越偏橙
+    vec3 sun_dir = normalize(vec3(7.f, 3.f, 2.f));
+    float sunset_factor = clamp(1.0 - sun_dir.y, 0.0, 1.0);
+    float sunset_weight = mix(0.0, 0.7, pow(sunset_factor, 1.5));
+
+    // 天顶、地平线颜色
+    vec3 sky_top = mix(vec3(0.0, 0.1, 0.4), sun_color, sunset_weight);
+    vec3 sky_horizon = mix(vec3(0.3, 0.6, 0.8), sun_color, sunset_weight);
+
+    // 天空渐变
+    vec3 sky = mix(sky_top, sky_horizon, 1.0 - eye_dir.y);
+
+    // 太阳辉光
+    sky += sun_color * min(pow(sun_amount, 1500.0) * 5.0, 1.0);
+    sky += sun_color * min(pow(sun_amount, 10.0) * 0.6, 1.0);
+
+    // 云颜色也可以整体mix偏橙色
+    vec3 cloud_color = mix(vec3(1.0, 1.0, 1.0), sun_color, sunset_weight * 0.7);
+    // 然后混合到sky
+    sky = mix(sky, cloud_color, 0.5f);
+
     sky += sun_color * min(pow(sun_amount, 1500.0) * 5.0, 1.0);
     sky += sun_color * min(pow(sun_amount, 10.0) * 0.6, 1.0);
     return sky;
@@ -89,20 +113,36 @@ float density_func(vec3 pos, float h, float time) {
     return dens;
 }
 
+
+
 float illuminate_volume(volume_sampler_t cloud) {
     return exp(cloud.height) / 1.95;
 }
+
+//void integrate_volume(
+//inout volume_sampler_t vol,
+//      vec3 V,
+//      vec3 L,
+//      float density,
+//      float dt)
+//{
+//    float T_i = exp(-vol.coeff_absorb * density * dt);
+//    vol.T *= T_i;
+//    vol.C += vol.T * illuminate_volume(vol) * density * dt;
+//    vol.alpha += (1.0 - T_i) * (1.0 - vol.alpha);
+//}
 
 void integrate_volume(
 inout volume_sampler_t vol,
       vec3 V,
       vec3 L,
       float density,
-      float dt)
+      float dt,
+    vec3 tint_color)
 {
     float T_i = exp(-vol.coeff_absorb * density * dt);
     vol.T *= T_i;
-    vol.C += vol.T * illuminate_volume(vol) * density * dt;
+    vol.C += vol.T * illuminate_volume(vol) * density * dt * tint_color;
     vol.alpha += (1.0 - T_i) * (1.0 - vol.alpha);
 }
 
@@ -130,7 +170,15 @@ vec4 render_clouds(ray_t eye, float time) {
     for (int i = 0; i < steps; i++) {
         cloud.height = (cloud.pos.y - cloud.origin.y) / cld_thick;
         float dens = density_func(cloud.pos, cloud.height, time);
-        integrate_volume(cloud, eye.direction, normalize(vec3(0, 0, -1)), dens, march_step);
+
+        const vec3 sun_color = vec3(1.0, 0.55, 0.18);
+        const vec3 sun_dir = normalize(vec3(7.0, 3.0, 2.0));
+        const float sunset_factor = clamp(1.0 - sun_dir.y, 0.0, 1.0);
+        const float sunset_weight = mix(0.0, 0.7, pow(sunset_factor, 1.5));
+        vec3 tint_color = mix(vec3(1.0), sun_color, sunset_weight * 0.7);
+
+        integrate_volume(cloud, eye.direction, normalize(vec3(0, 0, -1)), dens, march_step, tint_color);
+        //integrate_volume(cloud, eye.direction, normalize(vec3(0, 0, -1)), dens, march_step);
         cloud.pos += iter;
         if (cloud.alpha > 0.999) break;
     }
@@ -175,8 +223,8 @@ void main() {
 
     ray_t ray = get_primary_ray(point_cam, eye, look_at);
 
-    float t = -ray.origin.y / ray.direction.y;
-    bool hitGround = (ray.direction.y < -0.0001) && (t > 0.f);
+//    float t = -ray.origin.y / ray.direction.y;
+//    bool hitGround = (ray.direction.y < -0.0001) && (t > 0.f);
 
     vec3 color;
 //    if (point_ndc.y < 0.45) {
@@ -185,12 +233,12 @@ void main() {
 //    } else {
 //        color = render(ray, point_cam, time);
 //    }
-    if (hitGround) {
-        vec3 ground_color = vec3(0.42, 0.32, 0.18);
-        color = ground_color;
-    } else {
+//    if (hitGround) {
+//        vec3 ground_color = vec3(0.42, 0.32, 0.18);
+//        color = ground_color;
+//    } else {
         color = render(ray, point_cam, time);
-    }
+//    }
 
     outColor = vec4(linear_to_srgb(color), 1.0);
 }

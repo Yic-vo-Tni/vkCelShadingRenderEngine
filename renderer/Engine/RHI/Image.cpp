@@ -57,15 +57,6 @@ auto Image::beginRendering(vot::CommandBuffer &cmd, vk::Rect2D rect2D) -> void {
     (images.size() / config.colorAttachmentCount) < *index ? activeIndex = 0 : activeIndex = *index;
     vot::vector<vk::ImageMemoryBarrier2> imageMemoryBarrier2s;
     if (config.currentImageLayout != vk::ImageLayout::eColorAttachmentOptimal && config.currentImageLayout != vk::ImageLayout::eRenderingLocalReadKHR) {
-//        imageMemoryBarrier2s.emplace_back(vk::ImageMemoryBarrier2()
-//                                                  .setImage(images[activeIndex])
-//                                                  .setOldLayout(config.currentImageLayout)
-//                                                  .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
-//                                                  .setSrcAccessMask(vk::AccessFlagBits2::eShaderRead)
-//                                                  .setDstAccessMask(vk::AccessFlagBits2::eColorAttachmentWrite)
-//                                                  .setSrcStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
-//                                                  .setDstStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput)
-//                                                  .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
         for(auto i = 0; i < config.colorAttachmentCount; i++){
             imageMemoryBarrier2s.emplace_back(vk::ImageMemoryBarrier2()
                                                       .setImage(images[activeIndex + i])
@@ -101,20 +92,12 @@ auto Image::beginRendering(vot::CommandBuffer &cmd, vk::Rect2D rect2D) -> void {
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue(vk::ClearColorValue{0.f, 0.f, 0.f, 0.f});
     }
-//    yic::logger->info(colorAttachments.size());
-//    auto colorAttach = vk::RenderingAttachmentInfo()
-//            .setImageView(imageViews[activeIndex])
-//            .setImageLayout(vk::ImageLayout::eRenderingLocalReadKHR)
-//            .setLoadOp(vk::AttachmentLoadOp::eClear)
-//            .setStoreOp(vk::AttachmentStoreOp::eStore)
-//            .setClearValue(vk::ClearColorValue{0.f, 0.f, 0.f, 0.f});
 
     auto renderingInfo = vk::RenderingInfo()
        //     .setFlags(vk::RenderingFlagBits::eContentsSecondaryCommandBuffers)
             .setRenderArea(rect2D)
             .setLayerCount(1)
             .setColorAttachments(colorAttachments);
-//            .setColorAttachments(colorAttach);
 
     if ((config.imageFlags & vot::imageFlagBits::eDepthStencil) != 0){
         auto depthStencilAttach = vk::RenderingAttachmentInfo()
@@ -136,15 +119,6 @@ auto Image::endRendering(vot::CommandBuffer &cmd) -> void {
 
     vot::vector<vk::ImageMemoryBarrier2> imageMemoryBarrier2s;
     if (config.currentImageLayout != vk::ImageLayout::eColorAttachmentOptimal && config.currentImageLayout != vk::ImageLayout::eRenderingLocalReadKHR) {
-//        imageMemoryBarrier2s.emplace_back(vk::ImageMemoryBarrier2()
-//                                                  .setImage(images[activeIndex])
-//                                                  .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
-//                                                  .setNewLayout(config.currentImageLayout)
-//                                                  .setSrcAccessMask(vk::AccessFlagBits2::eColorAttachmentWrite)
-//                                                  .setDstAccessMask(vk::AccessFlagBits2::eShaderRead)
-//                                                  .setSrcStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput)
-//                                                  .setDstStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
-//                                                  .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
         for(auto i = 0; i < config.colorAttachmentCount; i++){
             imageMemoryBarrier2s.emplace_back(vk::ImageMemoryBarrier2()
                                                       .setImage(images[activeIndex + i])
@@ -183,6 +157,7 @@ auto Image::drawRendering(vot::CommandBuffer &cmd, const std::function<void()> &
 
 auto Image::drawRender(vot::CommandBuffer &cmd, const vot::ImageDrawCI& ci, const std::function<void()> &fn)  -> void {
     activeIndex = (*index >= (images.size() / config.colorAttachmentCount)) ? 0 : *index;
+    //未添加多color attachment ↓，如需要 需修改
     yic::allocator->pipelineBarrier2(cmd, {},
                                      vk::ImageMemoryBarrier2()
                                              .setImage(images[activeIndex])

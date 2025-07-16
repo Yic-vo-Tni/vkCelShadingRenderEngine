@@ -14,6 +14,7 @@ namespace GLOBAL{
     inline vot::string pickON{};
     inline float fps;
     inline entt::entity camera;
+    inline entt::entity sunLight;
 }
 
 #endif //VKCELSHADINGRENDERER_GLOBAL_H
