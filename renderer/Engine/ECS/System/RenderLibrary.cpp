@@ -32,7 +32,7 @@ namespace sc {
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
 
             .setRenderPass2CI(vot::RenderPass2CI()
-            .setColorAttachmentFormats({format, format})
+            .setColorAttachmentFormats({vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat})
             .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
@@ -48,6 +48,7 @@ namespace sc {
 
             .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
             .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeBlendAttachment(),
                                             rhi::GraphicsPipeline::makeBlendAttachment()}))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
@@ -134,7 +135,13 @@ namespace sc {
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
-            .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
+            .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 5, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 6, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
+
+            .setRenderPass2CI(vot::RenderPass2CI()
+            .setColorAttachmentFormats({vk::Format::eR16G16B16A16Sfloat})
+            .setRenderingDepth(vk::True))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Common/screen_triangle.vert"))
@@ -162,7 +169,8 @@ namespace sc {
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
-                .setColorAttachmentCount(2) // albedo pos
+                .setFormat(vk::Format::eR16G16B16A16Sfloat)
+                .setColorAttachmentCount(3) // albedo pos nor
                 .setExtent(RT_RESOLUTION)
                 .setDstDepthImageLayout(vk::ImageLayout::eRenderingLocalReadKHR)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Main RT Image");
@@ -200,6 +208,7 @@ namespace sc {
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .updateColorToImGui(vot::uiWidget::eRenderWidget)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+                .setFormat(vk::Format::eR16G16B16A16Sfloat)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Post RT Image");
@@ -231,9 +240,11 @@ namespace sc {
                 layout.emplace(vot::DescriptorLayout2::_1d {
                         RT_Main->imageInfo(base, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_Main->imageInfo(base + 2, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_RayTracing->imageInfo(),
+                        blueNoise64->imageInfo(),
                 });
             }
 

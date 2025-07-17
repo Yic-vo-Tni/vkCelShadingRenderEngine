@@ -167,6 +167,10 @@ vec4 render_clouds(ray_t eye, float time) {
     //volume_sampler_t cloud = begin_volume(eye.origin + projection * 100.0, cld_absorb_coeff);
      volume_sampler_t cloud = begin_volume(eye.origin + projection * 300.0, cld_absorb_coeff);
 
+     const vec3 hemi_top = vec3(0.96, 0.55, 0.18); // 太阳色/顶部
+    const vec3 hemi_bottom = vec3(0.86, 0.63, 0.65); // 天空蓝/地面色（可换蓝灰）
+
+
     for (int i = 0; i < steps; i++) {
         cloud.height = (cloud.pos.y - cloud.origin.y) / cld_thick;
         float dens = density_func(cloud.pos, cloud.height, time);
@@ -175,13 +179,27 @@ vec4 render_clouds(ray_t eye, float time) {
         const vec3 sun_dir = normalize(vec3(7.0, 3.0, 2.0));
         const float sunset_factor = clamp(1.0 - sun_dir.y, 0.0, 1.0);
         const float sunset_weight = mix(0.0, 0.7, pow(sunset_factor, 1.5));
-        vec3 tint_color = mix(vec3(1.0), sun_color, sunset_weight * 0.7);
+      //  vec3 tint_color = mix(vec3(1.0), sun_color, sunset_weight * 0.7);
 
-        integrate_volume(cloud, eye.direction, normalize(vec3(0, 0, -1)), dens, march_step, tint_color);
+        float hLerp = clamp(cloud.height, 0.f, 1.f);
+        vec3 envColor = mix(hemi_bottom, hemi_top, hLerp);
+
+        vec3 tint_color = mix(envColor, sun_color, sunset_weight * 0.5f);
+
+        float transparency = cloud.T; // 体积累积透射率
+        float sun_dot = max(dot(eye.direction, sun_dir), 0.0);
+        float forward_scatter = pow(sun_dot, 128.0);
+
+        // == 透光/泛光增强
+        vec3 scatter_color = sun_color * forward_scatter * transparency * 0.9f; // 2.0可调
+        cloud.C += scatter_color * dens * march_step;
+
+        integrate_volume(cloud, eye.direction, normalize(sun_dir), dens, march_step, tint_color);
         //integrate_volume(cloud, eye.direction, normalize(vec3(0, 0, -1)), dens, march_step);
         cloud.pos += iter;
         if (cloud.alpha > 0.999) break;
     }
+    cloud.C = max(cloud.C, hemi_bottom * 0.15f);
     return vec4(cloud.C, cloud.alpha * smoothstep(0.0, 0.2, cutoff));
 }
 

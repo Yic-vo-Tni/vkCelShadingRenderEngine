@@ -38,18 +38,15 @@ vec4 applyBoneTransform(vec4 pos){
 }
 
 void main() {
-//    vec4 vpPos = camera.viewProj * vec4(inPos, 1.f);
-//    outPos = vec3(vpPos.x, vpPos.y, vpPos.z);
-//    outNor = inNor;
-//    outUV = inUv;
-//    gl_Position = vpPos;
-
     vec4 pos = applyBoneTransform(vec4(inPos, 1.f));
     vec3 nor = normalize(applyBoneTransform(vec4(inNor, 1.f))).xyz;
     pos = camera.viewProj * M * pos;
-//    vec4 pos = camera.viewProj * M * vec4(inPos, 1.f);
-    outPos = (M * pos).xyz;
-    outNor = inNor;
+
+//    outPos = (M * pos).xyz;
+    outPos = (M * vec4(inPos, 1.0)).xyz;
+    mat3 normalMatrix = transpose(inverse(mat3(M)));
+    outNor = normalize(normalMatrix * inNor);
+//    outNor = inNor;
     outUV = inUv;
     gl_Position = pos;
 }

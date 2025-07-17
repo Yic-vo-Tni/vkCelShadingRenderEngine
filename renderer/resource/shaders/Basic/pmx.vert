@@ -21,7 +21,8 @@ layout(push_constant) uniform PushConstants{ mat4 M;};
 void main() {
     vec4 pos = camera.viewProj * M * vec4(inPos, 1.f);
     outPos = (M * vec4(inPos, 1.0)).xyz;
-    outNor = inNor;
+    mat3 normalMatrix = transpose(inverse(mat3(M)));
+    outNor = normalize(normalMatrix * inNor);
     outUV = vec2(inUv.x, 1.f - inUv.y);
     gl_Position = pos;
 }

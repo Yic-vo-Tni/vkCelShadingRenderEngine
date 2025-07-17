@@ -172,6 +172,7 @@ namespace rhi {
 //
 //
 //        auto info = pipelineLibrary.renderPass2CI.pipelineRenderingCreateInfo.value_or(renderingInfo);
+
         if (mPipelineLibrary.renderPass2CI.colorAttachmentFormats_dynamicRenderingEx.empty())
             mPipelineLibrary.renderPass2CI.setColorAttachmentFormats({yic::systemHub.val<ev::pVkRenderContext>().surfaceFormat->format});
         auto info = mPipelineLibrary.renderPass2CI.getPipelineRenderingCreateInfo();

@@ -10,6 +10,7 @@ layout (set = 1, binding = 0) uniform sampler2D texSampler;
 
 layout (location = 0) out vec4 gAlbedo;
 layout (location = 1) out vec4 gPos;
+layout (location = 2) out vec4 gNor;
 
 void main() {
     vec3 color = vec3(1.f);
@@ -26,5 +27,6 @@ void main() {
 
     gAlbedo = vec4(color, a);
     gPos = vec4(inPos, 1.f);
+    gNor = vec4(inNor, 1.f);
 }
 
