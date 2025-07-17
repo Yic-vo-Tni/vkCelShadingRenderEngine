@@ -190,5 +190,9 @@ auto Image::imageInfo(std::optional<uint32_t> imageViewIndex, std::optional<vk::
             imageLayout};
 }
 
+auto Image::depthImageInfo(std::optional<vk::Sampler> sampler, vk::ImageLayout imageLayout) const -> vk::DescriptorImageInfo {
+    return {sampler.value_or(DefaultSampler ::sampler), depthImageView, imageLayout};
+}
+
 
 } // rhi

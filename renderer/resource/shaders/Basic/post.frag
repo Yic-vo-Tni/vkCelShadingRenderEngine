@@ -12,19 +12,21 @@ layout(set = 0, binding = 0) uniform GlobalUniforms { CameraMatrixUniform camera
 
 layout(input_attachment_index = 0, set = 1, binding = 0) uniform subpassInput i_gAlbedo;
 layout(input_attachment_index = 1, set = 1, binding = 1) uniform subpassInput i_gPos;
-layout(input_attachment_index = 2, set = 1, binding = 2) uniform subpassInput i_Volumetric;
-layout(set = 1, binding = 3) uniform sampler2D raytracing;
+layout(input_attachment_index = 2, set = 1, binding = 2) uniform subpassInput i_Volumetric_fog;
+layout(input_attachment_index = 3, set = 1, binding = 3) uniform subpassInput i_Volumetric_clouds;
+layout(set = 1, binding = 4) uniform sampler2D raytracing;
 
 void main()
 {
     vec2 uv = outUV;
     vec3 cameraPos = camera.pos_pad.xyz;
-//    float gamma = 1.f / 2.2f;
-//    fragColor   = pow(texture(noisyTxt, uv).rgba, vec4(gamma));
+    //    float gamma = 1.f / 2.2f;
+    //    fragColor   = pow(texture(noisyTxt, uv).rgba, vec4(gamma));
 
     vec4 albedo = subpassLoad(i_gAlbedo);
     vec3 pos = subpassLoad(i_gPos).xyz;
-    vec4 volumetric = subpassLoad(i_Volumetric);
+    vec4 volumetric_clouds = subpassLoad(i_Volumetric_clouds);
+    vec4 volumetric_fog = subpassLoad(i_Volumetric_fog);
     vec4 rt = texture(raytracing, uv).rgba;
 
     vec3 viewDir = normalize(cameraPos - pos);
@@ -44,12 +46,11 @@ void main()
     albedo = mix(albedo, vec4(fogColor, albedo.a), 1.f - fogFactor);
 
     if(albedo.a > 0.99f){
-        fragColor = albedo * rt;
+        vec4 color = albedo * rt;
+        fragColor.rgb = mix(color.rgb, volumetric_fog.rgb, volumetric_fog.a);
+        fragColor.a = 1.f;
     } else {
-        fragColor = volumetric;
+        fragColor = volumetric_clouds;
     }
 
 }
-
-
-

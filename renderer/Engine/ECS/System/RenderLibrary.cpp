@@ -101,16 +101,31 @@ namespace sc {
             .SET0
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(float)}))
 
-            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI())
+            .setRenderPass2CI(vot::RenderPass2CI()
+            .setRenderingDepth(vk::True))
+
+            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+            .setShaderPath("Common/screen_triangle.vert"))
+
+            .setFragmentShaderCI(vot::FragmentShaderCI()
+            .setShaderPath("Atmosphere/volumetric_overcast_clouds.frag")));
+
+        GP_Volumetric_Fog.combinePipelineLibrary(vot::PipelineLibrary()
+            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+            .SET0
+            .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
+            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof (glm::mat4 )}))
 
             .setRenderPass2CI(vot::RenderPass2CI()
             .setRenderingDepth(vk::True))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-            .setShaderPath("Atmosphere/volumetric_overcast_clouds.vert"))
+            .setShaderPath("Common/screen_triangle.vert"))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
-            .setShaderPath("Atmosphere/volumetric_overcast_clouds.frag")));
+            .setShaderPath("Fog/volumetric_fog.frag")));
 
         GP_Post.combinePipelineLibrary(GP_Volumetric_Overcast_Clouds.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
@@ -118,12 +133,11 @@ namespace sc {
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
-            .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
-
-            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI())
+            .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-            .setShaderPath("Basic/post.vert"))
+            .setShaderPath("Common/screen_triangle.vert"))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/post.frag")));
@@ -156,7 +170,6 @@ namespace sc {
         RT_ShadowMap = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
-                .updateColorToImGui(vot::uiWidget::eViewWidget)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Shadow RT Image");
@@ -175,6 +188,14 @@ namespace sc {
                 .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Volumetric overcast clouds RT Image");
 
+        RT_Volumetric_Fog = yic::allocator->allocImage(vot::ImageCI()
+                .setFlags(vot::imageFlagBits::eDynamicRender)
+                .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+//                .updateColorToImGui(vot::uiWidget::eViewWidget)
+                .setImageCount(frameImageCount)
+                .setExtent(RT_RESOLUTION)
+                .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Volumetric fog RT Image");
+
         RT_Post = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .updateColorToImGui(vot::uiWidget::eRenderWidget)
@@ -185,6 +206,23 @@ namespace sc {
     }
 
     auto RenderLibrary::buildUniqueDSHandle() -> void {
+        blueNoise64 = yic::allocator->loadTexture(R"(H:\VkCelShadingRenderer\renderer\resource\Texture\LDR_LLL1_0.png)");
+
+        GP_Volumetric_Fog.DS = yic::desSystem->allocUpdateDescriptorSets([&] {
+            vot::DescriptorLayout2 layout{};
+
+            for (auto i = 0u; i < frameImageCount; i++) {
+                auto base = RT_Main->config.colorAttachmentCount * i;
+                layout.emplace(vot::DescriptorLayout2::_1d{
+                        RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_ShadowMap->imageInfo(i),
+                        blueNoise64->imageInfo(),
+                });
+            }
+
+            return layout;
+        }, GP_Volumetric_Fog);
+
         GP_Post.DS = yic::desSystem->allocUpdateDescriptorSets([&]{
             vot::DescriptorLayout2 layout{};
 
@@ -193,6 +231,7 @@ namespace sc {
                 layout.emplace(vot::DescriptorLayout2::_1d {
                         RT_Main->imageInfo(base, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_RayTracing->imageInfo(),
                 });

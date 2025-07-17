@@ -27,6 +27,7 @@ namespace sc {
         yic::renderLibrary->RT_Main->drawRendering(cmd, [&]{ drawing_gBuffer(cmd); });
         yic::renderLibrary->RT_ShadowMap->drawRendering(cmd, [&]{ drawing_shadowMap(cmd); });
         yic::renderLibrary->RT_Volumetric_Clouds->drawRendering(cmd, [&]{ drawing_volumetric_clouds(cmd); });
+        yic::renderLibrary->RT_Volumetric_Fog->drawRendering(cmd, [&]{ drawing_volumetric_fog(cmd); });
         yic::renderLibrary->RT_RayTracing->drawRender(cmd, draw_RTShadowCI(), [&]{ draw_RTShadow(cmd); });
         yic::renderLibrary->RT_Post->drawRendering(cmd, [&]{ drawing_post(cmd); });
     }
@@ -101,6 +102,17 @@ namespace sc {
         .bindPipeline_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds)
         .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, ecs.get<sc::Camera>(GLOBAL::camera).DS)
         .pushConstants(yic::renderLibrary->GP_Volumetric_Overcast_Clouds.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (float), &iTime);
+        cmd.draw(3, 1, 0, 0);
+    }
+
+    auto RenderSubmissionSystem::drawing_volumetric_fog(vot::CommandBuffer &cmd) -> void {
+        auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
+        auto lightMat = sm::DirectionLightTool::updateLightSpaceMat(glm::vec3(7.f, 3.f, 2.f), cam.getProj(), cam.getView());
+        cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
+        .bindPipeline_(yic::renderLibrary->GP_Volumetric_Fog)
+        .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, ecs.get<sc::Camera>(GLOBAL::camera).DS)
+        .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, *rt.activeImageIndex)
+        .pushConstants(yic::renderLibrary->GP_Volumetric_Fog.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (glm::mat4), &lightMat);
         cmd.draw(3, 1, 0, 0);
     }
 

@@ -60,7 +60,7 @@ namespace sm {
 //
 //        glm::mat4 lightSpaceMatrix = lightProj * lightView;
 
-        auto dis = 30.f, nearPlane = 0.1f, farPlane = 60.f;
+        auto dis = 200.f, nearPlane = -100.f, farPlane = 300.f;
         auto v = glm::lookAt(dir, glm::vec3 {0.f, 0.f, 0.f}, glm::vec3 {0.f, 1.f, 0.f});
         auto left = -dis, right = dis, bottom = -dis, top = dis;
         auto p = glm::ortho(left, right, bottom, top, nearPlane, farPlane);

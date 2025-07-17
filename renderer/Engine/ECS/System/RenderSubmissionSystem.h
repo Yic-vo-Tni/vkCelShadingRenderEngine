@@ -20,6 +20,7 @@ namespace sc {
         auto drawing_gBuffer(vot::CommandBuffer& cmd) -> void;
         auto drawing_shadowMap(vot::CommandBuffer& cmd) -> void;
         auto drawing_volumetric_clouds(vot::CommandBuffer& cmd) -> void;
+        auto drawing_volumetric_fog(vot::CommandBuffer& cmd) -> void;
         auto drawing_post(vot::CommandBuffer& cmd) -> void;
 
         auto draw_RTShadowCI() -> vot::ImageDrawCI;

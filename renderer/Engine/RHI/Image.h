@@ -23,6 +23,7 @@ namespace vot::inline rhi {
                                      std::optional<vk::Sampler> sampler = std::nullopt,
                                      //std::optional<std::optional<vk::Sampler>> sampler = std::nullopt,
                                      vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal) const -> vk::DescriptorImageInfo;
+        [[nodiscard]] auto depthImageInfo(std::optional<vk::Sampler> sampler, vk::ImageLayout imageLayout) const -> vk::DescriptorImageInfo;
 
         auto beginRendering(vot::CommandBuffer& cmd, vk::Rect2D rect2D = vk::Rect2D{{0, 0}, vot::Resolutions::eQHDExtent}) -> void;
         auto endRendering(vot::CommandBuffer& cmd) -> void;
