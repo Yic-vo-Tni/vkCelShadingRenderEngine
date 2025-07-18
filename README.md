@@ -28,6 +28,18 @@
 
 > (English translation by ChatGPT. Please refer to the Chinese version if anything is unclear!)
 
+### 00_a.Learn Goal
+    Renderer = Architecture * Atmosphere * Elegance + Bonus
+- **System Graph**
+    - 系统图为核心的全局子系统编排（含渲染图等子图），更加解耦和可扩展
+- **Advanced Vulkan Ex**
+    - GPU并行构建cmd
+- **High-End Rendering Effects**
+    - 体素网格体积雾，预计算大气
+- **Animation System**
+    - 拆解Saba库，为后续上手vr/物理/布料的hello world
+- **Optimization && AI**
+
 ### 00、项目内容
 
 | 基础系统       | 实现 | 进行 | 计划 | 备注/进展说明/实现程度               | 重构计划 |
