@@ -138,7 +138,7 @@ inout volume_sampler_t vol,
       vec3 L,
       float density,
       float dt,
-    vec3 tint_color)
+      vec3 tint_color)
 {
     float T_i = exp(-vol.coeff_absorb * density * dt);
     vol.T *= T_i;
@@ -241,22 +241,8 @@ void main() {
 
     ray_t ray = get_primary_ray(point_cam, eye, look_at);
 
-//    float t = -ray.origin.y / ray.direction.y;
-//    bool hitGround = (ray.direction.y < -0.0001) && (t > 0.f);
-
     vec3 color;
-//    if (point_ndc.y < 0.45) {
-//        vec3 ground_color = vec3(0.42, 0.32, 0.18);
-//        color = ground_color;
-//    } else {
-//        color = render(ray, point_cam, time);
-//    }
-//    if (hitGround) {
-//        vec3 ground_color = vec3(0.42, 0.32, 0.18);
-//        color = ground_color;
-//    } else {
-        color = render(ray, point_cam, time);
-//    }
+    color = render(ray, point_cam, time);
 
     outColor = vec4(linear_to_srgb(color), 1.0);
 }
