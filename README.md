@@ -29,8 +29,7 @@
 > (English translation by ChatGPT. Please refer to the Chinese version if anything is unclear!)
 
 ### 00_a.
-<img src="screenShot/01.png" width="340"/> 
-<img src="screenShot/02.png" width="340"/>
+<img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
 
 ### 00_b.Learn Goal
     Renderer = Architecture * Atmosphere * Elegance + Bonus
