@@ -28,7 +28,11 @@
 
 > (English translation by ChatGPT. Please refer to the Chinese version if anything is unclear!)
 
-### 00_a.Learn Goal
+### 00_a.
+<img src="screenShot/01.png" width="340"/> 
+<img src="screenShot/02.png" width="340"/>
+
+### 00_b.Learn Goal
     Renderer = Architecture * Atmosphere * Elegance + Bonus
 - **System Graph**
     - 系统图为核心的全局子系统编排（含渲染图等子图），更加解耦和可扩展
