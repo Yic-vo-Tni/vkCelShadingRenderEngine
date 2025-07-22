@@ -1,440 +1,141 @@
 # vkCelShadingRenderEngine
 
-## 简述
-- 本仓库内容均为个人自学/工程实践的记录，主要为学习和自用，欢迎任何建议和交流反馈！
-- 自主学习Vulkan用，欢迎各位指正、指点 (*╹▽╹*)
-- **main** 分支：对 **legacy** 分支的重写（没办法组织的太烂了）。因为水平有限，目前只能在 Clang 下运行，MSVC 有 CRT 问题，MinGW 部分库编译不通。
-- **legacy** 分支：对 [vkCelShadingRenderer](https://github.com/Yic-vo-Tni/vkCelShadingRenderer) 的重写版，原来那个更烂 = =。
+[简体中文](README.zh-CN.md)
+> Polished English version by ChatGPT. 
 
-## Description *(Translation by ChatGPT / My English is not good)*
+## Overview
 - This repository is a personal record of self-learning and engineering practice, mainly for learning and personal use. Any suggestions or feedback are welcome!
 - Mainly used for exploring and learning Vulkan by myself. All comments and advice are appreciated. (╹▽╹)
-- **main branch**: A rewritten version of the legacy branch (the previous version was poorly organized). Due to limited experience, it currently only works under Clang; there are CRT issues with MSVC and some libraries fail to compile under MinGW.
-- **legacy branch**: A rewritten version of [vkCelShadingRenderer](https://github.com/Yic-vo-Tni/vkCelShadingRenderer). (Unfortunately, that version was even worse = =)
 
-## 学习记录
-- 因为对 Vulkan 感兴趣，属于直接硬学Vulkan，C++ 只是在项目推进中按需学习，整体代码水平有限，请多包涵。
-- **应用**: 已在项目实际功能中实现并使用
-- **了解**: 仅在项目中简单尝试、实践demo
-- **计划**: 已有思路未实现，或未来计划学习
-- **程度**: 根据对应栏目打勾，简要说明实际掌握或应用的具体深度
-
-## Learn Record
-- I started learning Vulkan out of personal interest, and focused directly on it; C++ was learned as needed throughout project development. My overall coding proficiency is limited—please forgive any shortcomings.
-- **Applied**: Actually implemented and used in project features
-- **Familiar**: Only tried or experimented with in simple demos
-- **Planned**: Have ideas but not yet implemented, or plan to learn in the future
-- **Proficiency**: Marked accordingly, briefly describing the actual level of mastery or usage
-
-> (English translation by ChatGPT. Please refer to the Chinese version if anything is unclear!)
-
-### 00_a.
+### Screenshots
 <img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
 
-### 00_b.Learn Goal
-  Renderer = Architecture * Atmosphere * Elegance + Bonus
-- **System Graph**
-  - 系统图为核心的全局子系统编排（含渲染图等子图），更加解耦和可扩展
-- **Advanced Vulkan Ex**
-  - GPU并行构建cmd
-- **High-End Rendering Effects**
-  - 体素网格体积雾，预计算大气
-- **Animation System**
-  - 拆解Saba库，为后续上手vr/物理/布料的hello world
-- **Optimization && AI**
+### Learning Goals & Planned Features
+> *Note: The following features are goals or planned work. Most are still in progress and not yet available in the current codebase.*
 
-### 00、项目内容
-
-| 基础系统       | 实现 | 进行 | 计划 | 备注/进展说明/实现程度               | 重构计划 |
-|------------|:--:|:--:|:--:|:---------------------------|----|
-| 事件系统       | ✔️ |    |    | 全局发布/订阅/异步事件/唯一事件          |   |
-| 全局线程安全存储接口 | ✔️ |    |    | 支持opt包含类型任意对象线程安全全局存取      |  |
-| ECS组件系统    | ✔️ |    |    | 基于 entt，组织管理模型/渲染/动画/光追等组件 |  |
-| 动画系统       | ✔️ |    |    | assimp加载简单蒙皮+saba一体vmd动画   |  |
-| 音频系统       | ✔️ |    |    | miniaudio支持音频播放            |  |
-| 物理系统       |    |    | ✔️ |                            |  |
-
-| 渲染系统                  | 实现 | 进行 | 计划 | 丢弃 | 备注/进展说明/实现程度               | 重构计划 |
-|-----------------------|:--:|:--:|:--:|:--:|:---------------------------|------|
-| 渲染线程分离                | ✔️ |    |    |    | 窗口线程/渲染线程解耦                |      |
-| 动态渲染                  | ✔️ |    |    |    | 替换掉framebuffer，Renderpass  |      |
-| 描述符池                  | ✔️ |    |    |    | 全局共享set0                   |      |
-| 管线库                   | ✔️ |    |    |    | 管线预编译、缓存、动态切换              |      |
-| 时间信号量                 | ✔️ |    |    |    | timeline-semaphore控制       |      |
-| 二级命令并行构建重用（legacy）    |    |    |    | ✔️ | 主分支重写                      |      |
-| 实时硬件光追阴影              | ✔️ |    |    |    | RT_KHR+动态BLAS              |      |
-| ShadowMap+PCF（legacy） |    |    |    | ✔️ | 正交投影构建，且无法实时计算场景AABB       |      |
-| 体积云                   | ✔️ |    |    |    | ray-marching实现，shadertoy迁移 |      |
-| 天空盒（legacy）           |    |    |    | ✔️ | cube贴图                     |      |
-| 简单体积雾/柏林噪声（legacy）    |    |    |    | ✔️ | fastNoiseLite库简单实现         |      |
-
-| 资源系统                | 实现 | 进行 | 计划 | 丢弃 | 备注/进展说明/实现程度                   | 重构计划 |
-|---------------------|:--:|:--:|:--:|:--:|:-------------------------------|------|
-| LRU Stagingbuffer策略 | ✔️ |    |    |    | 资源上传用 LRU 策略提升内存/带宽复用          |      |
-| 异步加载                | ✔️ |    |    |    | 多线程异步加载资源，避免渲染卡主               |      |
-| 常规模型                | ✔️ |    |    |    | assimp库加载，std::pmr::vector存储   |      |
-| 常规图像                | ✔️ |    |    |    | stb_image库解析                   |      |
-| mmd                 | ✔️ |    |    |    | saba库实现                        |      |
-| 中文路径问题              | ✔️ |    |    |    | Boost_locale库解决Windows多语言/中文路径 |      |
-
-| 工具链/编辑器系统              | 实现 | 进行 | 计划 | 丢弃 | 备注/进展说明/实现程度                               | 重构计划 |
-|------------------------|:--:|:--:|:--:|:--:|:-------------------------------------------|------|
-| shader热重载              | ✔️ |    |    |    | monaco-editor+webview,支持ctrl+s触发热编译，无需线程监控 |      |
-| shader热重载 (legacy)     |    |    |    | ✔️ | wx_widget+后台线程轮询监控文件更新                     |      |
-| 窗口锁帧120fps (legacy)    |    |    |    | ✔️ | 没必要，实时根据fps计算叠加值                           |      |
-| 窗口拖拽                   |  ✔️  |    |    |    | ImGui_docking                              |      |
-| 模型基础调整                 | ✔️ |    |    |    | ImGuizmo实现                                 |      |
-| 模型选取（ID_buffer)        |    |    | ✔️ |    | 渲染ID_buffer，鼠标坐标映射ImGui绘制坐标                |      |
-| 模型选取（鼠标射线碰撞检测）(legacy) |    |    |    | ✔️ | 支持鼠标AABB拾取、交互高亮                            |      |
+  **vkCelShadingRenderEngine = Architecture * Atmosphere * Elegance + Bonus**
 
 ---
 
-[//]: # (### 01、C++)
-
-[//]: # (| 语法/特性相关                   | 应用 | 了解 | 计划 | 程度/说明                              |)
-
-[//]: # (|--------------------------------|:----:|:----:|:----:|:---------------------------------------|)
-
-[//]: # (| C++98/03 语法                    |      | ✔️   |      | 了解历史写法，兼容老库                 |)
-
-[//]: # (| C++11 语法/特性                    | ✔️   |      |      | auto, lambda, range-for, 智能指针用法  |)
-
-[//]: # (| C++14/17 语法/特性                 | ✔️   |      |      | 结构化绑定，std::optional, variant等   |)
-
-[//]: # (| C++20/23 语法/特性                 |      | ✔️   |      | concept, ranges, coroutine 用过demo    |)
-
-[//]: # (| STL 所有容器                       | ✔️   |      |      | vector, map, set, deque, priority_queue等 |)
-
-[//]: # (| STL 算法（sort/find/transform等）   | ✔️   |      |      |                                        |)
-
-[//]: # (| 智能指针 unique_ptr/shared_ptr     | ✔️   |      |      | 资源生命周期管理                       |)
-
-[//]: # (| Lambda/闭包/回调/可捕获变量             | ✔️   |      |      | 事件系统、UI回调                       |)
-
-[//]: # (| operator重载                     | ✔️   |      |      | 迭代器/数据容器/数值类型等             |)
-
-[//]: # (| 类/继承/多态/虚函数                    | ✔️   |      |      | 各类系统/工厂/接口抽象                 |)
-
-[//]: # (| 函数对象/functor                   | ✔️   |      |      | operator&#40;&#41;重载                         |)
-
-[//]: # (| 模板函数/类                         | ✔️   |      |      | traits、事件泛型封装                   |)
-
-[//]: # (| 函数模板特化/偏特化                     |      | ✔️   |      | function_traits自动识别回调参数类型     |)
-
-[//]: # (| SFINAE/enable_if/decltype/auto |      | ✔️   |      | updateCondition等                      |)
-
-[//]: # (| constexpr/consteval/constinit  |      | ✔️   |      | 静态常量、编译期表达式                 |)
-
-[//]: # (| static_assert/type_traits      | ✔️   |      |      | 类型萃取、编译期检查                   |)
-
-[//]: # (| C++ RTTI/typeid/dynamic_cast   | ✔️   |      |      | 组件类型判定、事件分发                  |)
-
-[//]: # (---)
-
-[//]: # (| 并发与内存/工程化              | 应用 | 了解 | 计划 | 程度/说明                        |)
-
-[//]: # (|------------------------------|:----:|:----:|:----:|:---------------------------------|)
-
-[//]: # (| 自定义allocator/内存池        |      |      | ✔️   | 了解/看过源码，未集成工程         |)
-
-[//]: # (| move语义/右值引用             | ✔️   |      |      | 资源高效转移                     |)
-
-[//]: # (| 线程/thread/mutex/lock        |      | ✔️   |      | 用过std::thread/lock，主用TBB     |)
-
-[//]: # (| atomic/volatile/内存序        |      | ✔️   |      | TBB并发数据结构/atomic flag       |)
-
-[//]: # (| condition_variable/semaphore  |      |      | ✔️   | 看过线程同步示例                  |)
-
-[//]: # (| TBB/oneTBB/并行算法           |      | ✔️   |      | 任务调度，资源并发上传            |)
-
-[//]: # (| future/promise/async          |      |      | ✔️   | 了解原理，未主流程集成            |)
-
-[//]: # (| std::function/std::bind       | ✔️   |      |      | UI和ECS系统回调                   |)
-
-[//]: # (| 异常/try-catch/自定义异常     | ✔️   |      |      | 资源/逻辑异常处理                 |)
-
-[//]: # (| assert/静态断言              | ✔️   |      |      | 参数校验、单元测试                |)
-
-[//]: # (---)
-
-[//]: # (| 模板/类型/元编程/反射/设计模式 | 应用 | 了解 | 计划 | 程度/说明                        |)
-
-[//]: # (|------------------------------|:----:|:----:|:----:|:---------------------------------|)
-
-[//]: # (| 类型萃取/traits设计           |      | ✔️   |      | function_traits/成员遍历          |)
-
-[//]: # (| CRTP/curiously recurring template |      |      | ✔️   | 只在看源码时分析过                |)
-
-[//]: # (| 反射/自动序列化               |      | ✔️   |      | boost::hana成员反射               |)
-
-[//]: # (| 设计模式（单例/工厂/观察者/策略等） | ✔️   |      |      | 单例（系统/资源/渲染库），工厂/回调用 |)
-
-[//]: # (---)
-
-[//]: # (| 工具链/工程自动化             | 应用 | 了解 | 计划 | 程度/说明                           |)
-
-[//]: # (|------------------------------|:----:|:----:|:----:|:------------------------------------|)
-
-[//]: # (| CMake/编译脚本                |      | ✔️   |      | shader自动编译/自动测试              |)
-
-[//]: # (| 代码生成/元编程                |      |      | ✔️   | 了解宏生成/代码生成工具，未在主工程用 |)
-
-[//]: # (| 代码风格/静态分析/linter       |      | ✔️   |      | Clang-format, 静态检查工具           |)
-
-[//]: # (---)
-
-[//]: # (### 02、Vulkan/图形API)
-
-[//]: # ()
-[//]: # (| Vulkan 基础构建                | 应用 | 了解 | 计划 | 程度/说明              |)
-
-[//]: # (| -------------------------------- | :--: | :--: | :--: | -------------------- |)
-
-[//]: # (| Instance/Device/Surface         | ✔️   |      |      | 启动流程、窗口创建、自封装 |)
-
-[//]: # (| vk-hpp语法/自动析构               | ✔️   |      |      | 资源全RAII             |)
-
-[//]: # (| Physical/LogicalDevice管理      | ✔️   |      |      | 多GPU选择、功能查询       |)
-
-[//]: # (| Queue/CommandPool/CommandBuffer | ✔️   |      |      | 多线程绘制、命令复用       |)
-
-[//]: # (| Swapchain/Framebuffer           | ✔️   |      |      | resize自动重建、失效恢复   |)
-
-[//]: # (| RenderPass/Subpass/Attachment   | ✔️   |      |      | 多渲染目标、前后处理       |)
-
-[//]: # (| Pipeline/PipelineLayout/Shader  | ✔️   |      |      | 多管线灵活切换           |)
-
-[//]: # (| DescriptorSet/Pool/Layouts      | ✔️   |      |      | 多池分配、动态资源绑定     |)
-
-[//]: # (| PushConstant/UniformBuffer      | ✔️   |      |      | 小数据推送、矩阵/参数传递   |)
-
-[//]: # ()
-[//]: # (---)
-
-[//]: # ()
-[//]: # (| Vulkan 内存/资源/同步                 | 应用 | 了解 | 计划 | 程度/说明                 |)
-
-[//]: # (|---------------------------| :--: | :--: | :--: | --------------------- |)
-
-[//]: # (| Buffer/Image管理           | ✔️   |      |      | 统一allocator、生命周期管理  |)
-
-[//]: # (| BufferView/Map/Unmap      | ✔️   |      |      | 动态数据同步/异步上传      |)
-
-[//]: # (| ImageView/布局转换         | ✔️   |      |      | 各阶段自动Layout切换       |)
-
-[//]: # (| 多帧同步/Semaphores/Fences | ✔️   |      |      | 多帧管线自动同步           |)
-
-[//]: # (| AccelerationStructure管理 | ✔️   |      |      | 光追场景结构、动态创建/释放 |)
-
-[//]: # (| MultiQueue/多队列         |      | ✔️   |      | 理论了解，未主流程应用      |)
-
-[//]: # (| 动态描述符&#40;bindless&#41;      | ✔️   |      |      | 多资源动态上传/绑定        |)
-
-[//]: # (| MSAA/多采样抗锯齿         | ✔️   |      |      | shader参数配置、后处理     |)
-
-[//]: # (| Sampler/纹理采样           | ✔️   |      |      | 动态绑定、材质系统         |)
-
-[//]: # ()
-[//]: # (---)
-
-[//]: # ()
-[//]: # (| Vulkan 扩展/高级特性                  | 应用 | 了解 | 计划 | 程度/说明                   |)
-
-[//]: # (|-------------------------------| :--: | :--: | :--: | ----------------------- |)
-
-[//]: # (| 着色器模块/热重载                | ✔️   |      |      | ShaderEditor、热更新     |)
-
-[//]: # (| RayTracing（KHR）              | ✔️   |      |      | 光追Pipeline、阴影         |)
-
-[//]: # (| VK_KHR_dynamic_rendering       | ✔️   |      |      | RenderPass2CI适配        |)
-
-[//]: # (| timeline semaphore            |      |      | ✔️   | 计划并行提交、信号量替换      |)
-
-[//]: # (| MeshShader/DescriptorBuffer等扩展 |      | ✔️   |      | 文档/源码，未主流程集成    |)
-
-[//]: # (| Shader编译/调试/反编译            | ✔️   |      |      | spirv编译/反编译/调试工具  |)
-
-[//]: # (| ValidationLayer/调试扩展         | ✔️   |      |      | VUID定位、性能警告        |)
-
-[//]: # (| 性能分析/Profile/调优            |      | ✔️   |      | GPU Profile分析，待深入   |)
-
-[//]: # (| Vulkan多平台API抽象              |      | ✔️   |      | DX12/Metal原理分析        |)
-
-[//]: # (| DeviceGroup/多GPU               |      | ✔️   |      | 概念了解，未工程应用       |)
-
-[//]: # ()
-[//]: # (---)
-
-[//]: # ()
-[//]: # (| Vulkan 优化/经验/对比              | 应用 | 了解 | 计划 | 程度/说明                 |)
-
-[//]: # (|--------------------------| :--: | :--: | :--: | --------------------- |)
-
-[//]: # (| 内存对齐/性能/映射         | ✔️   |      |      | Buffer分配/对齐优化      |)
-
-[//]: # (| Shader优化（分支/unroll等）| ✔️   |      |      | 着色器代码调优           |)
-
-[//]: # (| Vulkan与OpenGL/DirectX对比 |      | ✔️   |      | API接口/原理差异         |)
-
-[//]: # (---)
-
-[//]: # ()
-[//]: # (### 03、渲染/引擎系统/图形学)
-
-[//]: # (| 渲染系统与场景                  | 应用 | 了解 | 计划 | 程度/说明                        |)
-
-[//]: # (|--------------------------------|:----:|:----:|:----:|:-------------------------------|)
-
-[//]: # (| 相机系统/投影矩阵/正交透视       | ✔️   |      |      | 支持交互旋转/缩放               |)
-
-[//]: # (| 视锥剔除/包围盒AABB/OBB          |      | ✔️   |      | 动态场景管理/裁剪               |)
-
-[//]: # (| 网格管理/分批绘制                | ✔️   |      |      | 顶点/索引/多submesh支持         |)
-
-[//]: # (| 渲染队列/排序                    | ✔️   |      |      | DrawCall按类型/优先级排序       |)
-
-[//]: # (| 跨平台资源格式支持               |      | ✔️   |      | PMX/VMD/Assimp                  |)
-
-[//]: # (| 项目结构/模块化/插件化           | ✔️   |      |      | 代码分层，单例工厂               |)
-
-[//]: # (| 跨平台/宏控制                    |      | ✔️   |      | 兼容Win/Linux                   |)
-
-[//]: # (| 文件系统/虚拟文件系统             |      | ✔️   |      | VFS了解                         |)
-
-[//]: # (---)
-
-[//]: # (| 材质/动画/特效/后处理              | 应用 | 了解 | 计划 | 程度/说明                       |)
-
-[//]: # (|----------------------------------|:----:|:----:|:----:|:-------------------------------|)
-
-[//]: # (| 材质系统/参数绑定                | ✔️   |      |      | Descriptor+ImGui切换            |)
-
-[//]: # (| 动画系统/骨骼蒙皮/插值            |      | ✔️   |      | PMX/VMD骨骼动画，关键帧插值      |)
-
-[//]: # (| 骨骼层级/蒙皮矩阵缓存             |      | ✔️   |      | 层级递归，减少重复计算           |)
-
-[//]: # (| 粒子系统/实例化/批量绘制          |      | ✔️   |      | demo学习/未实装                 |)
-
-[//]: # (| 光照模型（卡通/Blinn/Phong/PBR）  |      | ✔️   |      | 卡通shader自写，PBR了解         |)
-
-[//]: # (| 阴影（ShadowMap/光追阴影）        |      | ✔️   |      | RT阴影，基本投影实现            |)
-
-[//]: # (| 屏幕空间特效（SSAO/Bloom/TAA）    |      | ✔️   |      | 算法文档学习，未写demo           |)
-
-[//]: # (| 体积/大气/水面                    |      | ✔️   |      | VolumetricClouds shader         |)
-
-[//]: # (| 后处理/色调映射                   |      | ✔️   |      | Post通道，ImGui切换特效         |)
-
-[//]: # (| LOD/动态细分/剔除                 |      | ✔️   |      | 资料/源码分析，未工程用          |)
-
-[//]: # (---)
-
-[//]: # (| 编辑器/交互/引擎功能              | 应用 | 了解 | 计划 | 程度/说明                       |)
-
-[//]: # (|----------------------------------|:----:|:----:|:----:|:-------------------------------|)
-
-[//]: # (| 实时编辑器/操作器                | ✔️   |      |      | ImGui/ImGuizmo交互编辑          |)
-
-[//]: # (| UI框架/自定义控件                | ✔️   |      |      | ImGui全流程封装                 |)
-
-[//]: # (| ECS核心/多线程遍历               | ✔️   |      |      | entt全流程，tbb并行支持         |)
-
-[//]: # (| 资源热重载/热更新                |      | ✔️   |      | shader/配置/动画热更            |)
-
-[//]: # (| 动态资源加载/异步流              |      | ✔️   |      | tbb并发，解耦主线程             |)
-
-[//]: # (| 渲染统计/性能测量                |      | ✔️   |      | 帧率/FPS/内存/带宽等统计         |)
-
-[//]: # (| 自动化测试/单元测试              |      | ✔️   |      | 学习过gtest用法                 |)
-
-[//]: # (| 网络通信/同步                    |      |      | ✔️   | socket/http/未项目用            |)
-
-[//]: # (---)
-
-[//]: # (### 04、工具链/工程/平台适配/生态极细分)
-
-[//]: # ()
-[//]: # (| 工程管理与构建                  | 应用 | 了解 | 计划 | 程度/说明                      |)
-
-[//]: # (|--------------------------------|:----:|:----:|:----:|:-----------------------------|)
-
-[//]: # (| CMake/构建脚本                 |      | ✔️   |      | shader自动编译                 |)
-
-[//]: # (| Git/版本管理                   | ✔️   |      |      | 全项目用Git管理                |)
-
-[//]: # (| linter/静态分析/格式化          |      | ✔️   |      | clang-format                  |)
-
-[//]: # (| 日志系统/错误追踪               | ✔️   |      |      | yic::logger集成               |)
-
-[//]: # (| 文档/注释/开发手册              | ✔️   |      |      | 工程内有注释/自动文档          |)
-
-[//]: # (---)
-
-[//]: # (| 发布/兼容/扩展/集成               | 应用 | 了解 | 计划 | 程度/说明                      |)
-
-[//]: # (|----------------------------------|:----:|:----:|:----:|:-----------------------------|)
-
-[//]: # (| 跨平台打包/发布                  |      | ✔️   |      | 了解打包，未正式发布           |)
-
-[//]: # (| 插件/脚本/扩展系统                |      | ✔️   |      | 关注UE/Unity实现              |)
-
-[//]: # (| 第三方库集成&#40;Assimp/ImGui/GLFW&#41;  | ✔️   |      |      | assimp, imgui, glfw深度集成   |)
-
-[//]: # (| 数据格式转换/导出                 |      | ✔️   |      | 纹理/模型格式                  |)
-
-[//]: # (| 性能工具/profile/benchmark        |      | ✔️   |      | API profile/帧率统计           |)
-
-[//]: # (| 内存检测/泄漏检测                 |      | ✔️   |      | valgrind理论                   |)
-
-[//]: # (| 兼容性测试/平台适配               |      | ✔️   |      | DX12/Metal文档分析             |)
-
-[//]: # (| 脚本语言绑定&#40;Python/Lua&#41;          |      | ✔️   |      | pybind11/lua绑定概念           |)
-
-[//]: # (| CI/CD自动部署                     |      |      | ✔️   | 概念了解，未工程用             |)
-
-[//]: # (---)
-
-[//]: # (### 05、动画/物理/AI/其他)
-
-[//]: # (| 动画/物理/AI/场景/扩展         | 应用 | 了解 | 计划 | 程度/说明                        |)
-
-[//]: # (|------------------------------|:----:|:----:|:----:|:-------------------------------|)
-
-[//]: # (| 动画/BlendTree/状态机         |      | ✔️   |      | 多动画切换，简单状态             |)
-
-[//]: # (| AI/寻路/行为树                |      | ✔️   |      | demo用过A*                      |)
-
-[//]: # (| 物理/软体/布娃娃              |      |      | ✔️   | 理论了解                        |)
-
-[//]: # (| 粒子物理/布料模拟             |      | ✔️   |      | 资料学习                        |)
-
-[//]: # (| 道具系统/事件驱动AI           |      | ✔️   |      | UE源码分析                      |)
-
-[//]: # (| 场景管理/分区加载             |      | ✔️   |      | 动态加载/资源调度                |)
-
-[//]: # (| 编辑器扩展/脚本API            |      | ✔️   |      | UE/Unity学习经验                |)
-
-[//]: # (| 工具链/批处理/导出            |      | ✔️   |      | 自定义文件导入导出               |)
-
-[//]: # (---)
-
-[//]: # ()
-
-
-
-[//]: # (tree /F > tree.txt)
-
-[//]: # ()
-[//]: # (Get-ChildItem -Recurse -Include *.h,*.cpp | ForEach-Object {)
-
-[//]: # ("===== $&#40;$_.FullName&#41; =====")
-
-[//]: # (Get-Content $_)
-
-[//]: # ("")
-
-[//]: # (} | Set-Content all_code.txt)
-
-
-
-
+- **System Graph**
+
+  Unified management and scheduling of global systems, including subsystems such as the render graph.
+- **Advanced Vulkan Extensions**
+
+  GPU-side parallel command buffer construction.
+- **High-End Rendering Effects**
+
+  Voxel grid volumetric fog/clouds and physically-based precomputed atmosphere.
+- **Animation System**
+
+  Deconstructing Saba library for future experiments in VR, physics, and cloth simulation.
+- **Optimization && AI**
+ 
+### Current Project Status
+> The tables below summarize all core systems and features of the project, including those already implemented (✔️), planned (📋), and deprecated (❌).  
+> Most features with a ✔️ status are already available in the current codebase and have passed initial engineering validation.  
+> Items marked 📋 or 🚧 represent ongoing work or future plans.  
+> This section reflects the **actual progress and core features** of the engine, rather than long-term aspirations.
+
+| System            | Status | Notes                                |
+|-------------------|:------:|--------------------------------------|
+| Event             |   ✔️   | Global pub/sub, async, unique events |
+| Global TS Storage |   ✔️   | Thread-safe storage, type-safe opt   |
+| ECS               |   ✔️   | EnTT-based, modular                  |
+| Animation         |   ✔️   | Assimp+Saba, basic skin+VMD          |
+| Audio             |   ✔️   | miniaudio                            |
+| Material          |   📋   |
+| Physics           |   📋   | Planned                              |
+
+| Rendering System                     | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                                    | Refactor |
+|--------------------------------------|:--:|:--:|:--:|:-:|-----------------------------------------------------|:--------:|
+| Render Thread Separation             | ✔️ |    |    |   | Decoupled window and rendering threads              |          |
+| Dynamic Rendering                    | ✔️ |    |    |   | Framebuffer/Renderpass replaced                     |          |
+| Descriptor Pool                      | ✔️ |    |    |   | Global shared set0                                  |          |
+| Pipeline Library                     | ✔️ |    |    |   | Pipeline precompile, caching, dynamic switching     |          |
+| Timeline Semaphore                   | ✔️ |    |    |   | Timeline semaphore for synchronization              |          |
+| Secondary Cmd Parallel (legacy)      |    |    |    | ❌ | Rewritten                                           |          |
+| Real-Time RT Shadows                 | ✔️ |    |    |   | RT_KHR + dynamic BLAS                               |          |
+| ShadowMap+PCF (legacy)               |    |    |    | ❌ | Orthographic, can't update scene AABB in real time  |          |
+| Volumetric Clouds                    | ✔️ |    |    |   | Ray-marching, Shadertoy migrated                    |          |
+| Volumetric Fog                       | ✔️ |    |    |   | Raymarching & screen space fog, blue noise sampling |          |
+| Deferred Rendering (G-buffer)        | ✔️ |    |    |   | G-buffer structure, deferred shading pipeline       |          |
+| Simple Render Graph                  | ✔️ |    |    |   | Basic render graph system implemented               |          |
+| Skybox (legacy)                      |    |    |    | ❌ | Cube map, legacy                                    |          |
+| Simple Volumetric Fog/Noise (legacy) |    |    |    | ❌ | FastNoiseLite simple implementation                 |          |
+
+| Resource Systems       | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                                  | Refactor |
+|------------------------|:--:|:--:|:--:|:-:|---------------------------------------------------|:--------:|
+| LRU Staging Buffer     | ✔️ |    |    |   | LRU upload for better memory/bandwidth usage      |          |
+| Async Resource Loading | ✔️ |    |    |   | Multithreaded async loading, avoid main thread    |          |
+| Standard Model         | ✔️ |    |    |   | Assimp loading, stored in std::pmr::vector        |          |
+| Standard Images        | ✔️ |    |    |   | stb_image loading                                 |          |
+| MMD Support            | ✔️ |    |    |   | Implemented via Saba library                      |          |
+| Chinese Path Support   | ✔️ |    |    |   | Boost_locale for Windows multilingual path issues |          |
+
+| Toolchain / Editor Systems             | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                            | Refactor |
+|----------------------------------------|:--:|:--:|:--:|:-:|---------------------------------------------|:--------:|
+| Shader Hot Reload                      | ✔️ |    |    |   | Monaco-editor + webview, Ctrl+S hot compile |          |
+| Shader Hot Reload (legacy)             |    |    |    | ❌ | wx_widget + thread polling for file change  |          |
+| 120fps Window Lock (legacy)            |    |    |    | ❌ | Unnecessary, real-time FPS adjustment       |          |
+| Window Drag & Docking                  | ✔️ |    |    |   | ImGui docking                               |          |
+| Model Basic Manipulation               | ✔️ |    |    |   | ImGuizmo support                            |          |
+| Model Selection (ID buffer)            |    |    | 📋 |   | Render ID buffer, mouse mapping via ImGui   |          |
+| Model Selection (Ray picking) (legacy) |    |    |    | ❌ | Mouse AABB picking, interactive highlight   |          |
+
+| Vulkan Extension / Feature            | ✔️ | 🚧 | 📋 | ❌ |
+|---------------------------------------|:--:|:--:|:--:|:-:|
+| VK_LAYER_KHRONOS_validation           | ✔️ |    |    |   |
+| VK_EXT_debug_utils                    | ✔️ |    |    |   |
+| ShaderInt64 (feature)                 |    |    | 📋 |   |
+| SamplerAnisotropy (feature)           |    |    | 📋 |   |
+| GeometryShader (feature)              |    |    | 📋 |   |
+| RobustBufferAccess (feature)          |    |    | 📋 |   |
+| TessellationShader (feature)          |    |    | 📋 |   |
+| VK_KHR_swapchain                      | ✔️ |    |    |   |
+| VK_KHR_deferred_host_operations       |    |    | 📋 |   |
+| VK_KHR_spirv_1_4                      |    |    | 📋 |   |
+| VK_KHR_create_renderpass2             |    |    |    | ❌ |
+| VK_KHR_pipeline_library               | ✔️ |    |    |   |
+| VK_KHR_shader_non_semantic_info       |    |    | 📋 |   |
+| VK_EXT_pipeline_creation_feedback     | ✔️ |    |    |   |
+| VK_KHR_ray_tracing_pipeline           | ✔️ |    |    |   |
+| VK_KHR_acceleration_structure         | ✔️ |    |    |   |
+| VK_KHR_buffer_device_address          | ✔️ |    |    |   |
+| VK_KHR_synchronization2               | ✔️ |    |    |   |
+| VK_KHR_timeline_semaphore             | ✔️ |    |    |   |
+| VK_KHR_dynamic_rendering              | ✔️ |    |    |   |
+| VK_KHR_pipeline_executable_properties |    |    | 📋 |   |
+| VK_EXT_shader_object                  |    |    | 📋 |   |
+| VK_EXT_descriptor_indexing            | ✔️ |    |    |   |
+| VK_EXT_descriptor_buffer              |    | 🚧 |    |   |
+| VK_EXT_transform_feedback             |    |    | 📋 |   |
+| VK_EXT_conditional_rendering          |    |    | 📋 |   |
+| VK_EXT_graphics_pipeline_library      |    |    | 📋 |   |
+| VK_EXT_shader_module_identifier       |    |    | 📋 |   |
+| VK_NVX_multiview_per_view_attributes  |    |    | 📋 |   |
+| VK_NV_device_generated_commands       |    |    | 📋 |   |
+| VK_EXT_mesh_shader                    |    | 🚧 |    |   |
+| VK_KHR_dynamic_rendering_local_read   | ✔️ |    |    |   |
+| VK_EXT_robustness2                    |    |    | 📋 |   |
+
+| Third-party Libraries  | ✔️ | 🚧 | 📋 | ❌ |
+|------------------------|:--:|:--:|:--:|:-:|
+| assimp                 | ✔️ |    |    |   |
+| boost                  | ✔️ |    |    |   |
+| entt                   | ✔️ |    |    |   |
+| flecs                  |    |    |    | ❌ |
+| glfw                   | ✔️ |    |    |   |
+| glm                    | ✔️ |    |    |   |
+| mimalloc               | ✔️ |    |    |   |
+| miniaudio              | ✔️ |    |    |   |
+| nlohmann               | ✔️ |    |    |   |
+| oneapi                 | ✔️ |    |    |   |
+| ozz                    |    |    | 📋 |   |
+| spdlog                 | ✔️ |    |    |   |
+| stb                    | ✔️ |    |    |   |
+| webview                | ✔️ |    |    |   |
+| saba                   | ✔️ |    |    |   |
+| imgui-docking/imguizmo | ✔️ |    |    |   |
+| cuda                   |    |    | 📋 |   |
+| bullet                 |    |    | 📋 |   |
