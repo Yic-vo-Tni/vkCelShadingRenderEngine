@@ -27,7 +27,13 @@ namespace sc {
         rhi::GraphicsPipeline GP_ShadowMap_PMX;
         rhi::RayTracingPipeline RP_Shadow;
 
-        vot::Image_sptr RT_Main; // albedo pos
+        enum eGBuffer : uint8_t {
+            eAlbedo = 0,
+            ePosition = 1,
+            eNormal = 2,
+            eCount
+        };
+        vot::Image_sptr RT_GBuffer;
         vot::Image_sptr RT_Post;
         vot::Image_sptr RT_Volumetric_Clouds;
         vot::Image_sptr RT_Volumetric_Fog;

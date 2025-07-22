@@ -165,7 +165,7 @@ namespace sc {
     auto RenderLibrary::buildRenderTarget() -> void {
         auto RT_RESOLUTION = vot::Resolutions::eQHDExtent;
 
-        RT_Main = yic::allocator->allocImage(vot::ImageCI()
+        RT_GBuffer = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
@@ -221,9 +221,9 @@ namespace sc {
             vot::DescriptorLayout2 layout{};
 
             for (auto i = 0u; i < frameImageCount; i++) {
-                auto base = RT_Main->config.colorAttachmentCount * i;
+                auto base = RT_GBuffer->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d{
-                        RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_ShadowMap->imageInfo(i),
                         blueNoise64->imageInfo(),
                 });
@@ -236,11 +236,11 @@ namespace sc {
             vot::DescriptorLayout2 layout{};
 
             for(auto i = 0u; i < frameImageCount; i++){
-                auto base = RT_Main->config.colorAttachmentCount * i;
+                auto base = RT_GBuffer->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d {
-                        RT_Main->imageInfo(base, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_Main->imageInfo(base + 1, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_Main->imageInfo(base + 2, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + eGBuffer::eAlbedo, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + eGBuffer::eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_RayTracing->imageInfo(),

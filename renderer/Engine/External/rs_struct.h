@@ -81,7 +81,7 @@ struct RenderComponent{
     vot::vector<vot::Image_sptr> diffuseTextures;
     vot::DescriptorHandle dsHandle;
     vot::unordered_map<uint8_t, vot::vector<SubMesh>> subMeshes;
-    vk::IndexType indexType;
+    vk::IndexType indexType{vk::IndexType::eUint32};
     vk::CommandBuffer* cmd; // unused
 };
 

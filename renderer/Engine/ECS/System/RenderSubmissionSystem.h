@@ -5,6 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_RENDERSUBMISSIONSYSTEM_H
 #define VKCELSHADINGRENDERER_RENDERSUBMISSIONSYSTEM_H
 
+#include "RenderGraph.h"
 
 namespace sc {
 
@@ -17,14 +18,6 @@ namespace sc {
     private:
         auto flow(vot::CommandBuffer& cmd) -> void;
 
-        auto drawing_gBuffer(vot::CommandBuffer& cmd) -> void;
-        auto drawing_shadowMap(vot::CommandBuffer& cmd) -> void;
-        auto drawing_volumetric_clouds(vot::CommandBuffer& cmd) -> void;
-        auto drawing_volumetric_fog(vot::CommandBuffer& cmd) -> void;
-        auto drawing_post(vot::CommandBuffer& cmd) -> void;
-
-        auto draw_RTShadowCI() -> vot::ImageDrawCI;
-        auto draw_RTShadow(vot::CommandBuffer& cmd) -> void;
     private:
         entt::registry& ecs;
 
@@ -33,6 +26,8 @@ namespace sc {
         ev::pVkSetupContext ct{};
         ev::pVkRenderContext rt{};
         vot::RHandle RHandle = nullptr;
+
+        std::unique_ptr<RenderGraph> uRenderGraph;
     };
 
 } // sc

@@ -32,15 +32,15 @@
 <img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
 
 ### 00_b.Learn Goal
-    Renderer = Architecture * Atmosphere * Elegance + Bonus
+  Renderer = Architecture * Atmosphere * Elegance + Bonus
 - **System Graph**
-    - 系统图为核心的全局子系统编排（含渲染图等子图），更加解耦和可扩展
+  - 系统图为核心的全局子系统编排（含渲染图等子图），更加解耦和可扩展
 - **Advanced Vulkan Ex**
-    - GPU并行构建cmd
+  - GPU并行构建cmd
 - **High-End Rendering Effects**
-    - 体素网格体积雾，预计算大气
+  - 体素网格体积雾，预计算大气
 - **Animation System**
-    - 拆解Saba库，为后续上手vr/物理/布料的hello world
+  - 拆解Saba库，为后续上手vr/物理/布料的hello world
 - **Optimization && AI**
 
 ### 00、项目内容
