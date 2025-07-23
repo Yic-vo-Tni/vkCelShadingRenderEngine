@@ -12,12 +12,9 @@
 namespace sc {
 
     InspectorPanel::InspectorPanel(entt::registry& registry) : ecs(registry){}
-    //InspectorPanel::InspectorPanel(flecs::world &world) : ecs(world){}
 
     auto InspectorPanel::frame() -> void {
         yic::imguiHub->to(vot::uiWidget::ePanelWidget, [&]{
-            //ecs.query<const vot::RenderVisibleTag, vot::BasicInfoComponent, vot::AnimationComponent>().each(
-                    //[&](flecs::entity e, const vot::RenderVisibleTag,
             ecs.view<const vot::RenderVisibleTag, vot::BasicInfoComponent, vot::AnimationComponent>().each(
                     [&](entt::entity e,
                         vot::BasicInfoComponent &info,
@@ -30,16 +27,12 @@ namespace sc {
                 yic::imguiHub->collapsingHeader(hideId.c_str(), [&]{
                     ImGui::PushID(hideId.c_str());
 
-                    //if (e.has<vot::MMDTag>()){
                     if (ecs.all_of<vot::MMDTag>(e)){
                         if (ImGui::BeginCombo("Select Animation", vmd.first.empty() ? "No Animations" : vmd.first.c_str())){
                             for(const auto & ptVmd : yic::resourceSystem->mLoader->mMmdLoader->ptVmds){
                                 if (ImGui::Selectable(ptVmd.c_str())){
-                                  //  yic::resourceSystem->mLoader->mMmdLoader->bindVmd(ptVmd, *e.get<vot::VertexDataComponent>(), ac);
                                     yic::resourceSystem->mLoader->mMmdLoader->bindVmd(ptVmd, ecs.get<vot::VertexDataComponent>(e), ac);
-//                                    yic::resourceSystem->mLoader->mMmdLoader->bakeVmd(ecs.get<vot::VertexDataComponent>(e), ac);
                                     yic::logger->info("bind vmd success");
-                                   // activeAnim = 0;
                                 }
                             }
                             ImGui::EndCombo();
@@ -69,7 +62,6 @@ namespace sc {
         });
 
         yic::imguiHub->to(vot::uiWidget::eRenderWidget, [&]{
-            //ecs.query<vot::RenderComponent, const vot::BasicInfoComponent>().each([&](flecs::entity_view e, vot::RenderComponent& rc, const vot::BasicInfoComponent& bic){
             ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each([&](entt::entity e, vot::RenderComponent& rc, const vot::BasicInfoComponent& bic){
                 if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO){
                     //auto camera = sc::camera_comp(ecs);

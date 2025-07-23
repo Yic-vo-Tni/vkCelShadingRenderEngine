@@ -10,7 +10,7 @@ namespace sc {
         passes.emplace_back(pass);
     }
 
-    auto RenderGraph::exe(vot::CommandBuffer &cmd) -> void {
+    auto RenderGraph::end(vot::CommandBuffer &cmd) -> void {
         auto sorted = topologicalSort();
         for(auto& pass : sorted){
             if (pass.drawci != std::nullopt){

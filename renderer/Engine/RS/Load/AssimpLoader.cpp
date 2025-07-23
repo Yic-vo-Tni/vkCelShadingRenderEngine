@@ -95,7 +95,7 @@ namespace rs {
             }
 
             return layout;
-        }, yic::renderLibrary->GP_Basic);
+        }, yic::renderLibrary->GP_Basic_Assimp);
     }
 
     auto AssimpLoader::extractAnim(AssimpLoader::ImportContext &mic, vot::AnimationComponent& ac) -> void {

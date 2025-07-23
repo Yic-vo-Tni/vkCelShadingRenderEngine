@@ -23,6 +23,8 @@ namespace rs{ class Animation; }
 
 namespace vot::inline rs{
 
+struct DescriptorSet0{ vot::DescriptorHandle handles[3]; };
+
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 nor;

@@ -22,9 +22,7 @@ namespace sc {
     RenderLibrary::~RenderLibrary() = default;
 
     auto RenderLibrary::buildPipelines() -> void {
-        auto format = yic::systemHub.val<ev::pVkRenderContext>().surfaceFormat->format;
-
-        GP_Basic.combinePipelineLibrary(vot::PipelineLibrary()
+        GP_Basic_Assimp.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
@@ -54,7 +52,7 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/model.frag")));
 
-        GP_Basic_PMX.combinePipelineLibrary(GP_Basic.acquirePipelineLibrary()
+        GP_Basic_PMX.combinePipelineLibrary(GP_Basic_Assimp.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
@@ -72,7 +70,7 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/pmx.frag")));
 
-        GP_ShadowMap_Basic.combinePipelineLibrary(vot::PipelineLibrary()
+        GP_ShadowMap_Assimp.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof (glm::mat4 )}))
 
@@ -89,10 +87,7 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("ShadowMap/DirectionLight.frag")));
 
-        GP_ShadowMap_PMX.combinePipelineLibrary(GP_ShadowMap_Basic.acquirePipelineLibrary()
-            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
-            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof (glm::mat4 )})) //
-
+        GP_ShadowMap_PMX.combinePipelineLibrary(GP_ShadowMap_Assimp.acquirePipelineLibrary()
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
             .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
             .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))));
@@ -102,28 +97,19 @@ namespace sc {
             .SET0
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(float)}))
 
-            .setRenderPass2CI(vot::RenderPass2CI()
-            .setRenderingDepth(vk::True))
-
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Common/screen_triangle.vert"))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Atmosphere/volumetric_overcast_clouds.frag")));
 
-        GP_Volumetric_Fog.combinePipelineLibrary(vot::PipelineLibrary()
+        GP_Volumetric_Fog.combinePipelineLibrary(GP_Volumetric_Overcast_Clouds.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof (glm::mat4 )}))
-
-            .setRenderPass2CI(vot::RenderPass2CI()
-            .setRenderingDepth(vk::True))
-
-            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-            .setShaderPath("Common/screen_triangle.vert"))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Fog/volumetric_fog.frag")));
@@ -142,9 +128,6 @@ namespace sc {
             .setRenderPass2CI(vot::RenderPass2CI()
             .setColorAttachmentFormats({vk::Format::eR16G16B16A16Sfloat})
             .setRenderingDepth(vk::True))
-
-            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-            .setShaderPath("Common/screen_triangle.vert"))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/post.frag")));
@@ -170,7 +153,7 @@ namespace sc {
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
                 .setFormat(vk::Format::eR16G16B16A16Sfloat)
-                .setColorAttachmentCount(3) // albedo pos nor
+                .setColorAttachmentCount(3)
                 .setExtent(RT_RESOLUTION)
                 .setDstDepthImageLayout(vk::ImageLayout::eRenderingLocalReadKHR)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Main RT Image");
@@ -182,7 +165,7 @@ namespace sc {
                 .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Shadow RT Image");
 
-        RT_RayTracing = yic::allocator->allocImage(vot::ImageCI()
+        RTX_RayTracing = yic::allocator->allocImage(vot::ImageCI()
                 .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
                 .setImageCount(1)
                 .setExtent(RT_RESOLUTION)
@@ -199,7 +182,6 @@ namespace sc {
         RT_Volumetric_Fog = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
-//                .updateColorToImGui(vot::uiWidget::eViewWidget)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Volumetric fog RT Image");
@@ -243,7 +225,7 @@ namespace sc {
                         RT_GBuffer->imageInfo(base + eGBuffer::eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_RayTracing->imageInfo(),
+                        RTX_RayTracing->imageInfo(),
                         blueNoise64->imageInfo(),
                 });
             }

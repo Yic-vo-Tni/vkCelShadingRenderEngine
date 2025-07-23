@@ -99,8 +99,10 @@ auto Image::beginRendering(vot::CommandBuffer &cmd, vk::Rect2D rect2D) -> void {
             .setLayerCount(1)
             .setColorAttachments(colorAttachments);
 
+    vk::RenderingAttachmentInfo depthStencilAttach;
     if ((config.imageFlags & vot::imageFlagBits::eDepthStencil) != 0){
-        auto depthStencilAttach = vk::RenderingAttachmentInfo()
+        //auto depthStencilAttach = vk::RenderingAttachmentInfo()
+        depthStencilAttach
                 .setImageView(depthImageView)
                 .setImageLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
                 .setLoadOp(vk::AttachmentLoadOp::eClear)
@@ -108,7 +110,7 @@ auto Image::beginRendering(vot::CommandBuffer &cmd, vk::Rect2D rect2D) -> void {
                 .setClearValue(vk::ClearDepthStencilValue{1.f, 0});
 
         renderingInfo.setPDepthAttachment(&depthStencilAttach)
-            .setPStencilAttachment(&depthStencilAttach);
+            .setPStencilAttachment(nullptr);
     }
 
     cmd.beginRendering(renderingInfo, dispatchLoaderDynamic);
@@ -163,10 +165,11 @@ auto Image::drawRender(vot::CommandBuffer &cmd, const vot::ImageDrawCI& ci, cons
                                              .setImage(images[activeIndex])
                                              .setOldLayout(ci.oldLayout)
                                              .setNewLayout(ci.newLayout)
-                                             .setSrcAccessMask(ci.srcAccessMask)
-                                             .setDstAccessMask(ci.dstAccessMask)
-                                             .setSrcStageMask(ci.srcStageMask)
-                                             .setDstStageMask(ci.dstStageMask)
+    //如果非首次需添加，需要时需修改
+//                                             .setSrcAccessMask(ci.srcAccessMask)
+//                                             .setDstAccessMask(ci.dstAccessMask)
+//                                             .setSrcStageMask(ci.srcStageMask)
+//                                             .setDstStageMask(ci.dstStageMask)
                                              .setSubresourceRange(ci.subresourceRange));
 
     fn();

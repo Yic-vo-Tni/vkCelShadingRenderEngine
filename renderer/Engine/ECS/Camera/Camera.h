@@ -40,7 +40,8 @@ namespace sc {
         glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        vot::Buffer_sptr buf{};
+        //vot::Buffer_sptr buf{};
+        vot::Buffer_sptr buf[3];
     public:
         bool firstMouse = true;
         Camera() : position(0.f, 0.f, 25.f), orientation(glm::quat(1., 0., 0., 0.)) {
@@ -56,11 +57,15 @@ namespace sc {
         [[nodiscard]] inline auto& getView() const { return mView;}
         [[nodiscard]] inline auto& getProj() const { return mProj;}
         [[nodiscard]] inline auto& getVpMatrixBuf() const { return buf;}
-        [[nodiscard]] inline auto vpBufferInfo() const { return buf->bufferInfo();}
+        //[[nodiscard]] inline auto vpBufferInfo() const { return buf->bufferInfo();}
+        [[nodiscard]] inline auto vpBufferInfo(const int& i) const { return buf[i]->bufferInfo();}
         vot::DescriptorHandle DS;
 
         auto clear() -> void{
-            buf.reset();
+            //buf.reset();
+            for(auto& b : buf){
+                b.reset();
+            }
         }
 
         auto computeViewMatrix() -> void{
@@ -82,15 +87,32 @@ namespace sc {
             mVpMatrix.vp = mProj * mView;
             mVpMatrix.pos_pad = glm::vec4(position.x, position.y, position.z, 0.f);
             mVpMatrix.front_pad = glm::vec4(cameraFront.x, cameraFront.y, cameraFront.z, 0.f);
-            if (buf){
-                buf->update(mVpMatrix);
-            } else {
-                //buf = yic::allocator->allocBuffer(sizeof(glm::mat4), &mVp, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
-                buf = yic::allocator->allocBuffer(sizeof(VpMatrix), &mVpMatrix, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
+//            if (buf){
+//                buf->update(mVpMatrix);
+//            } else {
+//                //buf = yic::allocator->allocBuffer(sizeof(glm::mat4), &mVp, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
+//                buf = yic::allocator->allocBuffer(sizeof(VpMatrix), &mVpMatrix, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
+//            }
+            for(auto& b : buf){
+                b = yic::allocator->allocBuffer(sizeof(VpMatrix), &mVpMatrix, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
             }
 
             return *this;
         }
+
+        auto updateCamera(const int& i){
+            computeViewMatrix();
+            computeProjMatrix();
+
+            mVpMatrix.vp = mProj * mView;
+            mVpMatrix.pos_pad = glm::vec4(position.x, position.y, position.z, 0.f);
+            mVpMatrix.front_pad = glm::vec4(cameraFront.x, cameraFront.y, cameraFront.z, 0.f);
+
+            buf[i]->update(mVpMatrix);
+
+            return *this;
+        }
+
 
         auto rotateCamera(float angle, float axis_x, float axis_y, float axis_z) -> void{
             glm::quat newRotate = glm::angleAxis(glm::radians(angle), glm::vec3 (axis_x, axis_y, axis_z));

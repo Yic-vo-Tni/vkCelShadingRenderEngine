@@ -10,15 +10,7 @@
 
 namespace rs {
 
-    //ResourceSystem::ResourceSystem(flecs::world& world) : ecs(world) {
     ResourceSystem::ResourceSystem(entt::registry& registry) : ecs(registry) {
-//        world.component<vot::BasicInfoComponent>();
-//        world.component<vot::VertexDataComponent>();
-//        world.component<vot::RenderComponent>();
-//        world.component<vot::AnimationComponent>();
-//        world.component<vot::RayTracingComponent>();
-
-        //mLoader = std::make_unique<Loader>(ecs);
         mLoader = std::make_unique<Loader>(ecs);
         mAnimator = std::make_unique<Animator>();
     }
@@ -30,7 +22,10 @@ namespace rs {
     auto ResourceSystem::frame() -> void {
         double time = saba::GetTime();
         double elapsed = time - mSaveTime;
-        if (elapsed > 1.f / 30.f){
+//        if (elapsed > 1.f / 30.f){
+//            elapsed = 1.f / 30.f;
+//        }
+        if (elapsed > 0.5f){
             elapsed = 1.f / 30.f;
         }
         mSaveTime = time;
@@ -43,6 +38,7 @@ namespace rs {
                         if (!vc.isMMD) {
                             mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
                         } else {
+                            mAnimTime += float(elapsed);
                             vc.pmx->BeginAnimation();
                             vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), mAnimTime * 30.f, mElapsed);
                             vc.pmx->EndAnimation();
@@ -50,15 +46,6 @@ namespace rs {
                             mLoader->mMmdLoader->updateAnim(vc, rc);
 
                             mLoader->mAudio->play();
-                            mAnimTime += float(elapsed);
-
-//                            mAnimTime += float(elapsed);
-//                            auto frameIdx = int(mAnimTime * 30.f);
-//                            if (frameIdx != lastFrame){
-//                                rc.vertexBuffer->update(mLoader->mMmdLoader->bakeVertices[frameIdx]);
-//                            }
-//
-//                            mLoader->mAudio->play();
                         }
                     }
                 });

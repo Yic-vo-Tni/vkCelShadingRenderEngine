@@ -19,21 +19,50 @@ Engine::~Engine() {
     yic::qFamily->acquireQueueUnSafe(vot::queueType::eGraphics).waitIdle();
     yic::systemHub.val<ev::pVkSetupContext>().device->waitIdle();
 
-    yic::shaderHot->destroy();
+    ui::ShaderHotReload::destroy();
     mEcs.reset();
     mRhi.reset();
     mWindow.reset();
 }
 
 auto Engine::run() -> void {
-    mRenderThread = std::make_unique<std::thread>([this]{
-        yic::shaderHot = ui::ShaderHotReload::make();
+    mFastLogicThread = std::make_unique<std::thread>([this]{
+        {
+            std::unique_lock<std::mutex> lock(mInitMutex);
 
-        mRhi = std::make_unique<rhi::Rhi>();
-        mEcs = std::make_unique<sc::Ecs>();
+            yic::shaderHot = ui::ShaderHotReload::make();
+
+            mRhi = std::make_unique<rhi::Rhi>();
+            mEcs = std::make_unique<sc::Ecs>();
+
+            mEcs->fastLogic();
+            mEcs->fastLogic();
+            mEcs->fastLogic();
+
+            mInit = true;
+            mInitCondVar.notify_one();
+        }
 
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
-            mEcs->prepare();
+            mEcs->fastLogic();
+        }
+    });
+
+    mSlowLogicThread = std::make_unique<std::thread>([this]{
+        while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
+
+        }
+    });
+
+    mRenderThread = std::make_unique<std::thread>([this]{
+        {
+            std::unique_lock<std::mutex> lock(mInitMutex);
+            mInitCondVar.wait(lock, [this]{ return mInit;});
+        }
+
+        while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
+//            mEcs->prepare();
+            mEcs->render();
             mRhi->render();
         }
         mWindow->renderClosed();
@@ -44,10 +73,12 @@ auto Engine::run() -> void {
         }
     });
 
-        mWindow->loop([&]{ yic::systemHub.process(); });
 
-        if (mRenderThread && mRenderThread->joinable())
-            mRenderThread->join();
+    mWindow->loop([&]{ yic::systemHub.process(); });
+
+    if (mRenderThread && mRenderThread->joinable()) mRenderThread->join();
+    if (mFastLogicThread && mFastLogicThread->joinable()) mFastLogicThread->join();
+    if (mSlowLogicThread && mSlowLogicThread->joinable()) mSlowLogicThread->join();
 
 }
 

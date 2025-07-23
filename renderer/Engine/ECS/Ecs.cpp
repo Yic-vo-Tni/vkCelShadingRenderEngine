@@ -4,6 +4,7 @@
 
 #include "Ecs.h"
 #include "Core/DispatchSystem/SystemHub.h"
+#include "Core/Management/TripleBufferIndexManager.h"
 #include "Camera/Camera.h"
 #include "RHI/QueueFamily.h"
 #include "Editor/ImGuiHub.h"
@@ -19,7 +20,6 @@
 namespace sc {
 
     Ecs::Ecs() {
-   //     configure();
         prepose();
         buildGlobalCamera();
     }
@@ -31,8 +31,6 @@ namespace sc {
         rs::ResourceSystem::destroy();
         sm::SceneSystem::destroy();
     };
-
-//    auto Ecs::configure() -> void {}
 
     auto Ecs::prepose() -> void {
         ct = yic::systemHub.val<ev::pVkSetupContext>();
@@ -49,21 +47,51 @@ namespace sc {
     }
 
     auto Ecs::prepare() -> void {
+//        yic::systemHub.poll<ev::tModelLoaded>();
+//
+//        handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera));
+//        yic::shaderHot->frame();
+//        inspectorPanel->frame();
+//        yic::resourceSystem->frame();
+//        yic::sceneSystem->frame();
+//        submissionSystem->frame();
+    }
+
+    auto Ecs::render() -> void {
         yic::systemHub.poll<ev::tModelLoaded>();
 
-        oneapi::tbb::parallel_invoke(
-                [&] {
-                    handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera));
-                    yic::shaderHot->frame();
-                    inspectorPanel->frame();
-                },
-                [&] {
-                    yic::resourceSystem->frame();
-                }
-        );
+        auto i = yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
 
-        yic::sceneSystem->frame();
-        submissionSystem->frame();
+        {
+            oneapi::tbb::parallel_invoke(
+                    [&] {
+                        yic::shaderHot->frame();
+                        inspectorPanel->frame();
+                    },
+                    [&] {
+                        yic::resourceSystem->frame();
+                    }
+            );
+
+            yic::sceneSystem->frame();
+            submissionSystem->frame();
+        }
+        yic::indexRing.get(vot::LogicBufferType::eFast).read_end();
+    }
+
+    auto Ecs::fastLogic() -> void {
+        auto i = yic::indexRing.get(vot::LogicBufferType::eFast).write_begin();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (i == 0xff) return;
+        {
+            handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera), i);
+        }
+        yic::indexRing.get(vot::LogicBufferType::eFast).write_end();
+    }
+
+    auto Ecs::slowLogic() -> void {
+
     }
 
     auto Ecs::buildGlobalCamera() -> void {
@@ -71,15 +99,16 @@ namespace sc {
         auto& cam = ecs.emplace<sc::Camera>(GLOBAL::camera);
         cam.computeViewProjMatrix();
 
-        GLOBAL::sunLight = ecs.create();
-        auto& sun = ecs.emplace<vot::DirectionLightComponent>(GLOBAL::sunLight);
-
-        cam.DS = yic::desSystem->allocUpdateDescriptorSets([&]{
-            return vot::DescriptorLayout2{ cam.vpBufferInfo() };
-        }, yic::renderLibrary->GP_Basic, 0, 1);
+        GLOBAL::set0 = ecs.create();
+        auto& set0 = ecs.emplace<vot::DescriptorSet0>(GLOBAL::set0);
+        for(auto i = 0; i < 3; i++){
+            set0.handles[i] = yic::desSystem->allocUpdateDescriptorSets([&]{
+                return vot::DescriptorLayout2{ cam.vpBufferInfo(i) };
+            }, yic::renderLibrary->GP_Basic_Assimp, 0, 1);
+        }
     }
 
-    auto Ecs::handleCameraMovement(auto &cameraEntity) -> void {
+    auto Ecs::handleCameraMovement(auto &cameraEntity, auto& i) -> void {
         sc::Camera& c = cameraEntity;
         auto& f = yic::systemHub.val<ev::freeCameraController>();
         if (f.W == true)
@@ -99,7 +128,8 @@ namespace sc {
 
         yic::systemHub.sto(ev::freeCameraController{false, false, false, false, false, false, false});
 
-        c.computeViewProjMatrix();
+        //c.computeViewProjMatrix();
+        c.updateCamera(i);
     }
 
     auto Ecs::calFnTimeConsuming(const std::function<void()> &fn) -> void {

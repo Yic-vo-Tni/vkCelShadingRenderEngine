@@ -23,13 +23,28 @@ namespace rhi {
             if constexpr (std::is_same_v<T, vot::PipelineDescriptorSetLayoutCI2>)
                 arg.clear(ct.device);
         }, mPipelineLibrary.pipelineDescriptorSetLayoutCI);
-        if (mPipelineLibrary.pipelineLayout) ct.device->destroy(mPipelineLibrary.pipelineLayout);
-        if (mPipelineLibrary.renderPass) ct.device->destroy(mPipelineLibrary.renderPass);
-        if (mPipelineLibrary.vertexInputInterface) ct.device->destroy(mPipelineLibrary.vertexInputInterface);
-        if (mPipelineLibrary.preRasterizationShaders) ct.device->destroy(mPipelineLibrary.preRasterizationShaders);
-        if (mPipelineLibrary.fragmentOutputInterface) ct.device->destroy(mPipelineLibrary.fragmentOutputInterface);
-        if (mPipelineLibrary.fragmentShader) ct.device->destroy(mPipelineLibrary.fragmentShader);
-        if (mFinalPipeline) ct.device->destroy(mFinalPipeline);
+
+        auto de = [&](auto& pipe){
+            if (pipe && pipe != VK_NULL_HANDLE){
+                ct.device->destroy(pipe);
+                pipe = VK_NULL_HANDLE;
+            }
+        };
+
+        de(mPipelineLibrary.pipelineLayout);
+        de(mPipelineLibrary.renderPass);
+        de(mPipelineLibrary.vertexInputInterface);
+        de(mPipelineLibrary.preRasterizationShaders);
+        de(mPipelineLibrary.fragmentOutputInterface);
+        de(mPipelineLibrary.fragmentShader);
+        de(mFinalPipeline);
+//        if (mPipelineLibrary.pipelineLayout) ct.device->destroy(mPipelineLibrary.pipelineLayout);
+//        if (mPipelineLibrary.renderPass) ct.device->destroy(mPipelineLibrary.renderPass);
+//        if (mPipelineLibrary.vertexInputInterface) ct.device->destroy(mPipelineLibrary.vertexInputInterface);
+//        if (mPipelineLibrary.preRasterizationShaders) ct.device->destroy(mPipelineLibrary.preRasterizationShaders);
+//        if (mPipelineLibrary.fragmentOutputInterface) ct.device->destroy(mPipelineLibrary.fragmentOutputInterface);
+//        if (mPipelineLibrary.fragmentShader) ct.device->destroy(mPipelineLibrary.fragmentShader);
+//        if (mFinalPipeline) ct.device->destroy(mFinalPipeline);
     }
 
     auto GraphicsPipeline::combinePipelineLibrary(vot::PipelineLibrary pipelineLibrary) -> void {
@@ -71,7 +86,11 @@ namespace rhi {
         auto libraryCI = vk::PipelineLibraryCreateInfoKHR()
                 .setLibraries(libraries);
 
-        if (mFinalPipeline) ct.device->destroy(mFinalPipeline);
+        //if (mFinalPipeline) ct.device->destroy(mFinalPipeline);
+        if (mFinalPipeline){
+            ct.device->destroy(mFinalPipeline);
+            mFinalPipeline = VK_NULL_HANDLE;
+        }
         mFinalPipeline = vot::create("create pipeline") = [&]{
             return ct.device->createGraphicsPipeline(mPipelineCache, vk::GraphicsPipelineCreateInfo()
                     .setPNext(&libraryCI)

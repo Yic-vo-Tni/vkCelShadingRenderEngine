@@ -22,6 +22,12 @@ private:
     std::unique_ptr<sc::Ecs> mEcs;
     std::atomic_bool mLoopStop = true;
     std::unique_ptr<std::thread> mRenderThread;
+    std::unique_ptr<std::thread> mFastLogicThread;
+    std::unique_ptr<std::thread> mSlowLogicThread;
+
+    std::mutex mInitMutex;
+    std::condition_variable mInitCondVar;
+    bool mInit = false;
 
     std::atomic_bool mDestroy = false;
     std::mutex mMutex;

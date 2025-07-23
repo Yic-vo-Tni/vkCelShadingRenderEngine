@@ -137,15 +137,7 @@ namespace sm {
 
     auto SceneSystem::syncTLAS() -> void {
         vot::vector<vk::AccelerationStructureInstanceKHR> asInsts;
-//        ecs.query<const vot::RayTracingComponent, const vot::RenderComponent>().each([&](flecs::entity e, const vot::RayTracingComponent& rtc, const vot::RenderComponent& rc){
-//            asInsts.emplace_back(vk::AccelerationStructureInstanceKHR()
-//                    .setTransform(yic::allocator->glmMatToVkTransformMatrix(rc.baseMat * rc.zmoMat))
-//                    .setInstanceCustomIndex(0)
-//                    .setMask(0xff)
-//                    .setInstanceShaderBindingTableRecordOffset(0)
-//                    .setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable)
-//                    .setAccelerationStructureReference(rtc.blas->accelAddr()));
-//        });
+
         ecs.view<const vot::RayTracingComponent, const vot::RenderComponent>()
                 .each([&](auto e, const vot::RayTracingComponent &rtc, const vot::RenderComponent &rc) {
                     asInsts.emplace_back(vk::AccelerationStructureInstanceKHR()
@@ -209,7 +201,7 @@ namespace sm {
         auto& DS_RP_Shadow = yic::renderLibrary->RP_Shadow.DS;
         auto layout = [&]{ return vot::DescriptorLayout2{ vot::DescriptorLayout2::_1d{
                 mActiveScene->tlas->accelInfo(),
-                yic::renderLibrary->RT_RayTracing->imageInfo(std::nullopt, nullptr, vk::ImageLayout::eGeneral),
+                yic::renderLibrary->RTX_RayTracing->imageInfo(std::nullopt, nullptr, vk::ImageLayout::eGeneral),
                 mActiveScene->bufferAddrBuffer->bufferInfo(),
         }};};
         if (DS_RP_Shadow.pSet == nullptr){

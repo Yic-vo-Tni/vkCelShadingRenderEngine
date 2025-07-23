@@ -14,6 +14,10 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX /utf-8")
 #    add_compile_options("/utf-8")
 elseif (MINGW)
+    #set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld -flto=thin")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -flto=thin")
+
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -D__USE_MINGW_ANSI_STDIO=1")
 endif ()
 

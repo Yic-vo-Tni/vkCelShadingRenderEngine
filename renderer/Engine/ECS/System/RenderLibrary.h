@@ -18,12 +18,12 @@ namespace sc {
         RenderLibrary();
         ~RenderLibrary();
 
-        rhi::GraphicsPipeline GP_Basic;
+        rhi::GraphicsPipeline GP_Basic_Assimp;
         rhi::GraphicsPipeline GP_Basic_PMX;
         rhi::GraphicsPipeline GP_Post;
         rhi::GraphicsPipeline GP_Volumetric_Overcast_Clouds;
         rhi::GraphicsPipeline GP_Volumetric_Fog;
-        rhi::GraphicsPipeline GP_ShadowMap_Basic;
+        rhi::GraphicsPipeline GP_ShadowMap_Assimp;
         rhi::GraphicsPipeline GP_ShadowMap_PMX;
         rhi::RayTracingPipeline RP_Shadow;
 
@@ -33,12 +33,14 @@ namespace sc {
             eNormal = 2,
             eCount
         };
+
         vot::Image_sptr RT_GBuffer;
         vot::Image_sptr RT_Post;
         vot::Image_sptr RT_Volumetric_Clouds;
         vot::Image_sptr RT_Volumetric_Fog;
-        vot::Image_sptr RT_RayTracing;
         vot::Image_sptr RT_ShadowMap;
+
+        vot::Image_sptr RTX_RayTracing;
 
         //
         vot::Image_sptr blueNoise64;

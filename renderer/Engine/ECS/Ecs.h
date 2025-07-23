@@ -16,13 +16,16 @@ namespace sc {
         ~Ecs();
 
         auto prepare() -> void;
+
+        auto render() -> void;
+        auto fastLogic() -> void;
+        auto slowLogic() -> void;
     private:
-//        auto configure() -> void;
         auto prepose() -> void;
 
     private:
         auto buildGlobalCamera() -> void;
-        auto handleCameraMovement(auto& cameraEntity) -> void;
+        auto handleCameraMovement(auto& cameraEntity, auto& i) -> void;
         static auto calFnTimeConsuming(const std::function<void()>& fn) -> void;
     private:
         entt::registry ecs;

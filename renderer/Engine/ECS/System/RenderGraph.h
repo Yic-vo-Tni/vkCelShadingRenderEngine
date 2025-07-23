@@ -19,10 +19,10 @@ namespace sc {
     public:
         auto addPass(const RenderPassNode& pass) -> void;
 
-        auto clear() -> void{ passes.clear(); }
-        auto exe(vot::CommandBuffer& cmd) -> void;
+        auto begin() -> void{ passes.clear(); }
+        auto end(vot::CommandBuffer& cmd) -> void;
     private:
-        auto passDependsOn(const RenderPassNode& A, const RenderPassNode& B) -> bool ;
+        static auto passDependsOn(const RenderPassNode& A, const RenderPassNode& B) -> bool ;
         auto topologicalSort() -> vot::vector<RenderPassNode>;
 
         vot::vector<RenderPassNode> passes;
