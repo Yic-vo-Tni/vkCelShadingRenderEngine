@@ -12,6 +12,7 @@
 #include <saba/src/Saba/Model/MMD/VMDAnimation.h>
 #include <saba/src/Saba/Model/MMD/VMDCameraAnimation.h>
 
+#include "Core/Management/TripleBufferIndexManager.h"
 #include "RHI/Allocator.h"
 #include "RHI/DescriptorSystem.h"
 #include "ECS/System/RenderLibrary.h"
@@ -42,11 +43,16 @@ namespace rs {
         auto nor = pmx->GetUpdateNormals();
         auto uv = pmx->GetUpdateUVs();
 
-        vot::vector<Vertex> vertices;
+        for(auto& pmr : vertexDataComponent.mmdVertices_pmr){
+            pmr = std::pmr::vector<vot::MMDVertex>{&mVertexPool};
+            pmr.resize(pmx->GetVertexCount());
+        }
+
+        vot::vector<vot::MMDVertex> vertices;
         vot::AABB aabb{};
         vertices.resize(pmx->GetVertexCount());
         for(auto i = 0; i < pmx->GetVertexCount(); i++){
-            vertices[i] = Vertex{pos[i], nor[i], uv[i]};
+            vertices[i] = vot::MMDVertex{pos[i], nor[i], uv[i]};
             aabb.min = glm::min(aabb.min, pos[i]);
             aabb.max = glm::max(aabb.max, pos[i]);
         }
@@ -54,7 +60,11 @@ namespace rs {
         renderComponent.baseMat = glm::translate(glm::mat4 (1.f), -renderComponent.center);
 
         auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-        renderComponent.vertexBuffer = yic::allocator->allocBufferStaging(pmx->GetVertexCount() * sizeof(Vertex), vertices.data(), usage | vk::BufferUsageFlagBits::eVertexBuffer, "pmx vert");
+
+        for(auto& v : renderComponent.vertexBuffer){
+            v = yic::allocator->allocBufferStaging(pmx->GetVertexCount() * sizeof(vot::MMDVertex), vertices.data(), usage | vk::BufferUsageFlagBits::eVertexBuffer, "pmx vert");
+        }
+        //renderComponent.vertexBuffer = yic::allocator->allocBufferStaging(pmx->GetVertexCount() * sizeof(Vertex), vertices.data(), usage | vk::BufferUsageFlagBits::eVertexBuffer, "pmx vert");
         vot::vector<uint32_t > indices;
         indices.reserve(pmx->GetIndexCount());
         switch (pmx->GetIndexElementSize()) {
@@ -134,53 +144,56 @@ namespace rs {
 
 
 
-    auto MmdLoader::bakeVmd(vot::VertexDataComponent& vc, vot::AnimationComponent& ac) -> void {
-        auto AnimTime = 0.f;
-        auto elapsed = 1.f / 30.f;
+//    auto MmdLoader::bakeVmd(vot::VertexDataComponent& vc, vot::AnimationComponent& ac) -> void {
+//        auto AnimTime = 0.f;
+//        auto elapsed = 1.f / 30.f;
+//
+//        bakeVertices.resize(ac.vmd.second->GetMaxKeyTime() + 1);
+//        for (auto i = 0u; i < ac.vmd.second->GetMaxKeyTime(); i++) {
+//            bakeVertices[i].resize(vc.pmx->GetVertexCount());
+//            vc.pmx->BeginAnimation();
+//            vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), (float)i, 1 / 30.f);
+//            vc.pmx->EndAnimation();
+//
+//            vc.pmx->Update();
+//            auto pos = vc.pmx->GetUpdatePositions();
+//            auto nor = vc.pmx->GetUpdateNormals();
+//            auto uv = vc.pmx->GetUpdateUVs();
+//            for(auto j = 0; j < vc.pmx->GetVertexCount(); j++){
+//                bakeVertices[i][j] = vot::Vertex{.pos = pos[j], .nor = nor[j], .uv = uv[j]};
+//            }
+//        }
+//
+//        yic::logger->info("bake vmd success");
+//    }
 
-        bakeVertices.resize(ac.vmd.second->GetMaxKeyTime() + 1);
-        for (auto i = 0u; i < ac.vmd.second->GetMaxKeyTime(); i++) {
-            bakeVertices[i].resize(vc.pmx->GetVertexCount());
-            vc.pmx->BeginAnimation();
-            vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), (float)i, 1 / 30.f);
-            vc.pmx->EndAnimation();
-
-            vc.pmx->Update();
-            auto pos = vc.pmx->GetUpdatePositions();
-            auto nor = vc.pmx->GetUpdateNormals();
-            auto uv = vc.pmx->GetUpdateUVs();
-            for(auto j = 0; j < vc.pmx->GetVertexCount(); j++){
-                bakeVertices[i][j] = vot::Vertex{.pos = pos[j], .nor = nor[j], .uv = uv[j]};
-            }
-        }
-
-        yic::logger->info("bake vmd success");
-    }
-
-    auto MmdLoader::updateAnim(const vot::VertexDataComponent& vc, vot::RenderComponent& rc) -> void {
+    auto MmdLoader::updateAnim(vot::VertexDataComponent& vc, vot::RenderComponent& rc) -> void {
         vc.pmx->Update();
         auto pos = vc.pmx->GetUpdatePositions();
         auto nor = vc.pmx->GetUpdateNormals();
         auto uv = vc.pmx->GetUpdateUVs();
 
-        vot::vector<Vertex> vertices;
-        vertices.resize(vc.pmx->GetVertexCount());
-        for(auto i = 0; i < vc.pmx->GetVertexCount(); i++){
-            vertices[i] = Vertex{pos[i], nor[i], uv[i]};
-        }
-//        oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_t>(0, vertices.size(), 1024), [&](const oneapi::tbb::blocked_range<size_t>& r){
-//            for(size_t i = r.begin(); i < r.end(); i++){
-//                vertices[i].pos = pos[i];
-//                vertices[i].nor = nor[i];
-//                vertices[i].uv = uv[i];
-//            }
-//        });
+//        vot::vector<Vertex> vertices;
+//        vertices.resize(vc.pmx->GetVertexCount());
 
-        rc.vertexBuffer->update(vertices);
+        auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).logic_cur();
+
+        for(auto i = 0; i < vc.pmx->GetVertexCount(); i++){
+           // vertices[i] = Vertex{pos[i], nor[i], uv[i]};
+            vc.mmdVertices_pmr[index][i] = vot::MMDVertex{pos[i], nor[i], uv[i]};
+        }
+
+    //    rc.vertexBuffer[index]->update(vc.mmdVertices_pmr[index].data());
+        //rc.vertexBuffer->update(vertices);
     }
 
     auto MmdLoader::vmd(const vot::string &pt) -> void {
         ptVmds.emplace_back(pt);
+    }
+
+    auto MmdLoader::updateAnimVert(vot::VertexDataComponent &vc, vot::RenderComponent &rc) -> void {
+        auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
+        rc.vertexBuffer[index]->update(vc.mmdVertices_pmr[index]);
     }
 
 

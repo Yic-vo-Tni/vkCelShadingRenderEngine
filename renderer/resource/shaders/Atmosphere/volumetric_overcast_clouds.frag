@@ -165,9 +165,9 @@ vec4 render_clouds(ray_t eye, float time) {
     vec3 iter = projection * march_step;
     float cutoff = dot(eye.direction, vec3(0, 1, 0));
     //volume_sampler_t cloud = begin_volume(eye.origin + projection * 100.0, cld_absorb_coeff);
-     volume_sampler_t cloud = begin_volume(eye.origin + projection * 300.0, cld_absorb_coeff);
+    volume_sampler_t cloud = begin_volume(eye.origin + projection * 300.0, cld_absorb_coeff);
 
-     const vec3 hemi_top = vec3(0.96, 0.55, 0.18); // 太阳色/顶部
+    const vec3 hemi_top = vec3(0.96, 0.55, 0.18); // 太阳色/顶部
     const vec3 hemi_bottom = vec3(0.86, 0.63, 0.65); // 天空蓝/地面色（可换蓝灰）
 
 
@@ -179,7 +179,7 @@ vec4 render_clouds(ray_t eye, float time) {
         const vec3 sun_dir = normalize(vec3(7.0, 3.0, 2.0));
         const float sunset_factor = clamp(1.0 - sun_dir.y, 0.0, 1.0);
         const float sunset_weight = mix(0.0, 0.7, pow(sunset_factor, 1.5));
-      //  vec3 tint_color = mix(vec3(1.0), sun_color, sunset_weight * 0.7);
+        //  vec3 tint_color = mix(vec3(1.0), sun_color, sunset_weight * 0.7);
 
         float hLerp = clamp(cloud.height, 0.f, 1.f);
         vec3 envColor = mix(hemi_bottom, hemi_top, hLerp);
@@ -226,9 +226,9 @@ void main() {
     vec2 fragCoord = gl_FragCoord.xy;
     vec2 res = iResolution;
     vec2 aspect_ratio = vec2(res.x / res.y, 1);
- //   vec3 eye = vec3(0.f, 0.f, 25.f);//
+    //   vec3 eye = vec3(0.f, 0.f, 25.f);//
     // 0.f, 1.f, 0.f
- //   vec3 look_at = vec3(0.f, 0.f, 25.f) + vec3(0.f, 0.f, -1.f);
+    //   vec3 look_at = vec3(0.f, 0.f, 25.f) + vec3(0.f, 0.f, -1.f);
     //0.f, 1.6f, -1.f
     vec3 eye = camera.pos_pad.xyz;
     vec3 look_at = camera.pos_pad.xyz + camera.front_pad.xyz;
@@ -236,7 +236,7 @@ void main() {
     // 1.f
     vec2 point_ndc = fragCoord / res;
     point_ndc.y = 1.f - point_ndc.y;
-   // vec3 point_cam = vec3((2.0 * point_ndc - 1.0) * aspect_ratio * FOV, -1.0);
+    // vec3 point_cam = vec3((2.0 * point_ndc - 1.0) * aspect_ratio * FOV, -1.0);
     vec3 point_cam = vec3((1.0 - 2.0 * point_ndc.x) * aspect_ratio.x * FOV, (2.0 * point_ndc.y - 1.0) * aspect_ratio.y * FOV, -1.0);
 
     ray_t ray = get_primary_ray(point_cam, eye, look_at);
@@ -246,5 +246,3 @@ void main() {
 
     outColor = vec4(linear_to_srgb(color), 1.0);
 }
-
-

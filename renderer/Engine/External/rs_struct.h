@@ -34,7 +34,25 @@ struct Vertex {
     glm::vec4 boneWeight{0.f};
 };
 
+struct MMDVertex {
+    glm::vec3 pos;
+    glm::vec3 nor;
+    glm::vec2 uv;
+};
 
+enum VertexType{
+    eMMD = 0, eAssimp = 1
+};
+
+template<bool HasBones>
+struct VertexT{
+    glm::vec3 pos;
+    glm::vec3 nor;
+    glm::vec2 uv;
+
+    std::conditional_t<HasBones, glm::ivec4, std::monostate> boneIds{-1};
+    std::conditional_t<HasBones, glm::vec4, std::monostate> boneWeight{0.f};
+};
 
 struct AABB {
     glm::vec3 max;
@@ -67,7 +85,8 @@ struct BasicInfoComponent{
 
 struct VertexDataComponent{
     bool isMMD{false};
-    std::pmr::vector<Vertex> vertices_pmr;
+    std::pmr::vector<Vertex> vertices_pmr[3];
+    std::pmr::vector<MMDVertex> mmdVertices_pmr[3];
     std::pmr::vector<uint32_t> indices_pmr;
     std::pmr::vector<uint32_t> adjIndices_pmr;
     std::shared_ptr<saba::MMDModel> pmx = nullptr;
@@ -77,7 +96,7 @@ struct RenderComponent{
     glm::mat4 baseMat{1.f};
     glm::mat4 zmoMat{1.f};
     glm::vec3 center;
-    vot::Buffer_sptr vertexBuffer;
+    vot::Buffer_sptr vertexBuffer[3];
     vot::Buffer_sptr indexBuffer;
     vot::Buffer_sptr adjIndexBuffer;
     vot::vector<vot::Image_sptr> diffuseTextures;

@@ -43,7 +43,8 @@ namespace sc {
         vot::Image_sptr RTX_RayTracing;
 
         //
-        vot::Image_sptr blueNoise64;
+        vot::Image_sptr T_blueNoise64;
+        vot::Image_sptr T_fbmNoise;
     private:
         auto buildPipelines() -> void;
         auto buildRenderTarget() -> void;

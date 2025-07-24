@@ -26,14 +26,16 @@ namespace rs {
 
     auto Loader::asyncLoadA() -> void {
         yic::systemHub.subscribe([&](const ev::tResourcesPaths &pts) {
-            yic::logger->warn("Load path: {0}", pts.paths[0]);
 
             {
                 _readyA.store(false, std::memory_order_relaxed);
                 _doneA.store(false, std::memory_order_relaxed);
+                _readyB.store(false, std::memory_order_relaxed);
+                _doneB.store(false, std::memory_order_relaxed);
             }
 
             for (const auto &rawPt: pts.paths) {
+                yic::logger->warn("Load path: {0}", rawPt);
                 vot::string pt{rawPt};
                 auto check = [&](const vot::vector<vot::string>& suffixes){
                     return std::ranges::any_of(suffixes, [&](const vot::string& suffix){
@@ -61,9 +63,11 @@ namespace rs {
                     GLOBAL::pickON = basicInfoComponent.name;
 
                     yic::systemHub.publishPolling(ev::tModelLoaded{});
+                    yic::systemHub.publishPolling(ev::tModelLoadedSlow{});
 
                     {
                         _readyA.wait(false);
+                        _readyB.wait(false);
                     }
 
                     e = ecs.create();
@@ -79,9 +83,14 @@ namespace rs {
                     {
                         _doneA.store(true, std::memory_order_release);
                         _doneA.notify_one();
+
+                        _doneB.store(true, std::memory_order_release);
+                        _doneB.notify_one();
                     }
 
                 }
+
+               // std::this_thread::sleep_for(std::chrono::seconds (3));
             }
         });
 
@@ -98,6 +107,17 @@ namespace rs {
             yic::sceneSystem->reloadTlas();
 
             ecs.emplace<vot::RenderVisibleTag>(e);
+        });
+
+        yic::systemHub.subscribePolling([&](const ev::tModelLoadedSlow&){
+            {
+                _readyB.store(true, std::memory_order_release);
+                _readyB.notify_one();
+            }
+
+            {
+                _doneB.wait(false);
+            }
         });
     }
 

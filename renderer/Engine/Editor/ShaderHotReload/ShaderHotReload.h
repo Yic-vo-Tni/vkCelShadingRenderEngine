@@ -20,9 +20,7 @@ namespace ui {
     public:
         MAKE_SINGLETON(ShaderHotReload);
         ShaderHotReload() {
-#ifdef _DEBUG
             compile();
-#endif
             shaderEditor = std::make_unique<ShaderEditor>();
         };
         ~ShaderHotReload() = default;

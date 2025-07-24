@@ -340,6 +340,46 @@ namespace rhi {
         return std::make_shared<vot::Image>(images, imageViews, allocations, mVmaAllocator, config, id);
     }
 
+    auto Allocator::uploadImage(const vk::Image& image, void* data, vk::Extent3D extent, vk::Format format) -> void {
+        size_t pixelSize = (format == vk::Format::eR16Sfloat ? 2 : 4);
+        size_t totalBytes = extent.width * extent.height * extent.depth * pixelSize;
+        auto stagingBufferHandle = acquireStagingBuffer(totalBytes);
+        auto& [stagingBuffer, stagingAlloc, devSize] = stagingBufferHandle;
+
+        mapBuffer(stagingAlloc, totalBytes, data, false);
+
+        yic::command->drawOneTimeSubmit([&](vot::CommandBuffer& cmd){
+            pipelineBarrier2(cmd, {}, vk::ImageMemoryBarrier2()
+                    .setImage(image)
+                    .setOldLayout(vk::ImageLayout::eUndefined)
+                    .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+                    .setSrcAccessMask(vk::AccessFlagBits2::eNone)
+                    .setDstAccessMask(vk::AccessFlagBits2::eTransferWrite)
+                    .setSrcStageMask(vk::PipelineStageFlagBits2::eTopOfPipe)
+                    .setDstStageMask(vk::PipelineStageFlagBits2::eTransfer)
+                    .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
+
+            vk::BufferImageCopy copy{0, 0, 0,
+                                     vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                                     {0, 0, 0},
+                                     extent
+            };
+            cmd.copyBufferToImage(stagingBuffer, image, vk::ImageLayout::eTransferDstOptimal, copy);
+
+            pipelineBarrier2(cmd, {}, vk::ImageMemoryBarrier2()
+                    .setImage(image)
+                    .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+                    .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                    .setSrcAccessMask(vk::AccessFlagBits2::eTransferWrite)
+                    .setDstAccessMask(vk::AccessFlagBits2::eShaderRead)
+                    .setSrcStageMask(vk::PipelineStageFlagBits2::eTransfer)
+                    .setDstStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
+                    .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
+        });
+
+        releaseStagingBuffer(stagingBufferHandle);
+    }
+
     auto Allocator::createImage(const vot::ImageCI &config) -> imageHandle {
         vk::ImageCreateInfo ci{
                 {},

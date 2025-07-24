@@ -51,6 +51,19 @@ namespace rs {
                 });
     }
 
+    auto ResourceSystem::frameUpdate() -> void {
+        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent, vot::RenderComponent>()
+                .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc,
+                          vot::AnimationComponent &ac, vot::RenderComponent &rc) {
+                    if (info.playAnimation) {
+                        if (!vc.isMMD) {
+                            mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
+                        } else {
+                            mLoader->mMmdLoader->updateAnimVert(vc, rc);
+                        }
+                    }
+                });
+    }
 
 
 } // rs

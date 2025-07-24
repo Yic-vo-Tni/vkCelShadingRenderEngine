@@ -84,6 +84,7 @@ namespace rhi {
         auto clear() -> void{ mDescriptors.clear(); ci.clear(); ct.device->destroy(sampler); }
 
         inline static vk::Sampler sampler = nullptr;
+//        inline static vk::Sampler sampler3d = nullptr;
     private:
         ev::pVkSetupContext ct{};
         uint32_t* activeImageIndex{};

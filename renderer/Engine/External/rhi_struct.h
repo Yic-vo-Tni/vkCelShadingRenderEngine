@@ -490,6 +490,7 @@ struct DescriptorHandle{
         ImageCI& setRenderPass(vk::RenderPass rp){ renderPass = rp; return *this; }
         ImageCI& setFlags(vot::imageFlags flags) { imageFlags = flags; return *this; }
         ImageCI& setImageType(vk::ImageType type) { imageType = type; return *this;}
+        ImageCI& setImageViewType(vk::ImageViewType type) { imageViewType = type; return *this;}
         ImageCI& setFormat(vk::Format f) { format = f; return *this; }
         ImageCI& setExtent(vk::Extent3D e) { extent = e; return *this; }
         ImageCI& setExtent(vk::Extent2D e) { extent = vk::Extent3D{e, 1}; return *this; }

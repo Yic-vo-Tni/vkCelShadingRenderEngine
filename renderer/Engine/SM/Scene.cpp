@@ -7,6 +7,7 @@
 #include "Scene.h"
 
 #include "Core/DispatchSystem/SystemHub.h"
+#include "Core/Management/TripleBufferIndexManager.h"
 #include "RHI/Allocator.h"
 #include "RHI/Command.h"
 
@@ -33,12 +34,10 @@ namespace sm {
         mActiveScene->update = false;
 
         vot::vector<std::array<uint64_t, 2>> bufferAddr;
-//        ecs.query<const vot::RenderComponent>().each([&](flecs::entity e, const vot::RenderComponent& rc){
-//            bufferAddr.emplace_back(std::array<uint64_t, 2>{rc.vertexBuffer->bufferAddr(), rc.indexBuffer->bufferAddr()});
-//        });
+
         ecs.view<const vot::RenderComponent>()
                 .each([&](auto e, const vot::RenderComponent& rc){
-                   bufferAddr.emplace_back(std::array<uint64_t, 2>{rc.vertexBuffer->bufferAddr(), rc.indexBuffer->bufferAddr()});
+                   bufferAddr.emplace_back(std::array<uint64_t, 2>{rc.vertexBuffer[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()]->bufferAddr(), rc.indexBuffer->bufferAddr()});
                 });
         mActiveScene->bufferAddrBuffer = yic::allocator->allocBufferStaging(sizeof (uint64_t ) * 2 * bufferAddr.size(), bufferAddr.data(), vk::BufferUsageFlagBits::eStorageBuffer);
 
@@ -46,22 +45,26 @@ namespace sm {
     }
 
     auto SceneSystem::frame() -> void {
-//        if (*rt.activeImageIndex == 0) {
-            ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent>()
-                    .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
-                              vot::RenderComponent &rc, vot::RayTracingComponent &rtc) {
-                        if (bc.playAnimation)
-                            syncBLAS(vc, rc, rtc, true);
-                    });
-            if (GLOBAL::visibleZMO) {
-                syncTLAS();
+        static int frameCounter = 0;
+        frameCounter++;
+
+        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent>()
+        .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
+                vot::RenderComponent &rc, vot::RayTracingComponent &rtc) {
+            if (bc.playAnimation){
+                bool onlyTransform = true;
+                if (frameCounter % 90 != 0) onlyTransform = false;
+                syncBLAS(vc, rc, rtc, onlyTransform);
             }
-//        }
+        });
+        if (GLOBAL::visibleZMO) {
+            syncTLAS();
+        }
     }
 
     auto SceneSystem::syncBLAS(const vot::VertexDataComponent &vc, vot::RenderComponent &rc,
                                 vot::RayTracingComponent &rtc, bool update) -> void {
-        auto vertAddr = rc.vertexBuffer->bufferAddr();
+        auto vertAddr = rc.vertexBuffer[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()]->bufferAddr();
         auto indexAddr = rc.indexBuffer->bufferAddr();
 
         uint32_t maxVert{}, numTri{};
@@ -69,7 +72,7 @@ namespace sm {
             maxVert = (uint32_t ) vc.pmx->GetVertexCount();
             numTri = (uint32_t ) vc.pmx->GetIndexCount() / 3;
         } else {
-            maxVert = (uint32_t) vc.vertices_pmr.size();
+            maxVert = (uint32_t) vc.vertices_pmr[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()].size();
             numTri = (uint32_t) vc.indices_pmr.size() / 3;
         }
 

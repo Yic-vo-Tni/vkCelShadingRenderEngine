@@ -28,6 +28,12 @@ namespace vot::inline rhi {
                 updateFn(src.data());
         }
 
+        template<typename T>
+        auto update(const std::pmr::vector<T>& src, bool unmap = false) {
+            if (!src.empty())
+                updateFn(src.data());
+        }
+
         auto bufferAddr() -> vk::DeviceAddress {
             if (!buffer) return 0;
 

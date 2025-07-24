@@ -34,6 +34,7 @@ namespace rhi {
         vk::PhysicalDeviceDeviceGeneratedCommandsFeaturesNV deviceGeneratedCommandsFeaturesNv{};
         vk::PhysicalDeviceMeshShaderFeaturesEXT meshShaderFeaturesExt{vk::True, vk::True};
         vk::PhysicalDeviceRobustness2FeaturesEXT robustness2FeaturesExt{vk::True, vk::True};
+        vk::PhysicalDeviceFragmentShadingRateFeaturesKHR fragmentShadingRateFeaturesKhr{vk::True, vk::True, vk::True};
 //        vk::PhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeaturesExt{};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
@@ -72,6 +73,7 @@ namespace rhi {
                 .addPhysicalExtensions(VK_EXT_MESH_SHADER_EXTENSION_NAME, &meshShaderFeaturesExt)
                 .addPhysicalExtensions(VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_EXTENSION_NAME, &dynamicRenderingLocalReadFeaturesKhr)
                 .addPhysicalExtensions(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, &robustness2FeaturesExt)
+                .addPhysicalExtensions(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, &fragmentShadingRateFeaturesKhr)
 
                 // not support
 //                .addPhysicalExtensions(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME, &hostImageCopyFeaturesExt)

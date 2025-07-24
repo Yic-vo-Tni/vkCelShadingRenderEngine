@@ -63,18 +63,20 @@ namespace sc {
         auto i = yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
 
         {
-            oneapi::tbb::parallel_invoke(
-                    [&] {
-                        yic::shaderHot->frame();
-                        inspectorPanel->frame();
-                    },
-                    [&] {
-                        yic::resourceSystem->frame();
-                    }
-            );
+            auto j = yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
+            if (j != 0xff)
+            {
+                yic::resourceSystem->frameUpdate();
+            }
+
+            yic::shaderHot->frame();
+            inspectorPanel->frame();
 
             yic::sceneSystem->frame();
             submissionSystem->frame();
+
+            if (j != 0xff)
+                yic::indexRing.get(vot::LogicBufferType::eSlow).read_end();
         }
         yic::indexRing.get(vot::LogicBufferType::eFast).read_end();
     }
@@ -91,7 +93,21 @@ namespace sc {
     }
 
     auto Ecs::slowLogic() -> void {
+        yic::systemHub.poll<ev::tModelLoadedSlow>();
+        auto j = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
 
+        static bool firstRun = true;
+        if (firstRun) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            firstRun = false;
+        }
+
+        if (j == 0xff ) {
+            return;
+        }
+        yic::resourceSystem->frame();
+
+        yic::indexRing.get(vot::LogicBufferType::eSlow).write_end();
     }
 
     auto Ecs::buildGlobalCamera() -> void {

@@ -40,7 +40,7 @@ auto Engine::run() -> void {
             mEcs->fastLogic();
 
             mInit = true;
-            mInitCondVar.notify_one();
+            mInitCondVar.notify_all();
         }
 
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
@@ -49,8 +49,13 @@ auto Engine::run() -> void {
     });
 
     mSlowLogicThread = std::make_unique<std::thread>([this]{
-        while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
+        {
+            std::unique_lock<std::mutex> lock(mInitMutex);
+            mInitCondVar.wait(lock, [this]{ return mInit;});
+        }
 
+        while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
+            mEcs->slowLogic();
         }
     });
 

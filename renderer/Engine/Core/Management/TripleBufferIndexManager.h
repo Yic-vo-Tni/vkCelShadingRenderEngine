@@ -68,7 +68,8 @@ namespace hide{
                 return renderIndex;
             }
 
-            return renderIndex;
+            //return renderIndex;
+            return 255;
         }
 
         auto read_end() -> void{

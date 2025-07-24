@@ -43,6 +43,7 @@ namespace rhi {
 
         auto loadTexture(const imagePath& pt) -> vot::Image_sptr;
         auto allocImage(vot::ImageCI config, const vot::string& id) -> vot::Image_sptr ;
+        auto uploadImage(const vk::Image& image, void* data, vk::Extent3D extent, vk::Format format) -> void;
     public:
         template<typename ...Args>
         auto pipelineBarrier2(vot::CommandBuffer& cmd, vk::DependencyInfo info, Args&&...args){

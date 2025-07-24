@@ -90,6 +90,7 @@ namespace ev {
     struct tResourcesPaths{ vot::vector<vot::string> paths; };
 
     struct tModelLoaded{};
+    struct tModelLoadedSlow{};
 
     struct tUpdateScene{};
 }

@@ -17,11 +17,12 @@ namespace rhi {
                 .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
                 .setMaxSets(maxSets)
                 .setPoolSizes({
-                    {vk::DescriptorType::eUniformBuffer, 0.3f},
-                    {vk::DescriptorType::eStorageBuffer, 0.2f},
-                    {vk::DescriptorType::eCombinedImageSampler, 0.3f},
-                    {vk::DescriptorType::eInputAttachment, 0.1f},
-                    {vk::DescriptorType::eAccelerationStructureKHR, 0.1f}
+                    {.type = vk::DescriptorType::eUniformBuffer, .countOrRatio = 0.3f},
+                    {.type = vk::DescriptorType::eStorageBuffer, .countOrRatio = 0.2f},
+                    {.type = vk::DescriptorType::eCombinedImageSampler, .countOrRatio = 0.3f},
+                    {.type = vk::DescriptorType::eInputAttachment, .countOrRatio = 0.1f},
+                    {.type = vk::DescriptorType::eAccelerationStructureKHR, .countOrRatio = 0.05f},
+                    {.type = vk::DescriptorType::eStorageImage, .countOrRatio = 0.05f},
                 });
 
         mDescriptorSets.reserve(maxSets);

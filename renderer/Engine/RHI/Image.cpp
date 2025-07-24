@@ -35,7 +35,8 @@ Image::Image(const vot::smart_vector<vk::Image> &images, const vot::smart_vector
 }
 
     Image::~Image() {
-        std::cout << "img destroy" << id << std::endl;
+       // std::cout << "img destroy" << id << std::endl;
+        yic::logger->info("destroy {0}", id);
         for(auto& fb : framebuffers){
             if (fb) device.destroy(fb);
         }

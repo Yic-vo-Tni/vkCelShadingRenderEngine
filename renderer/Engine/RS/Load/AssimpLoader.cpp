@@ -67,10 +67,16 @@ namespace rs {
             auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
             auto annotate = [&](const vot::string &id) { return " model: " + ctx.fileName + " " + id + " buf"; };
 
-            rc.vertexBuffer = yic::allocator->allocBufferStaging(vc.vertices_pmr.size() * sizeof(vot::Vertex),
-                                                                 vc.vertices_pmr.data(),
+//            rc.vertexBuffer = yic::allocator->allocBufferStaging(vc.vertices_pmr.size() * sizeof(vot::Vertex),
+//                                                                 vc.vertices_pmr.data(),
+//                                                                 usage | vk::BufferUsageFlagBits::eVertexBuffer,
+//                                                                 annotate("vert"));
+            for(auto& vb : rc.vertexBuffer){
+                vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::Vertex),
+                                                                 vc.vertices_pmr[0].data(),
                                                                  usage | vk::BufferUsageFlagBits::eVertexBuffer,
                                                                  annotate("vert"));
+            }
             rc.indexBuffer = yic::allocator->allocBufferStaging(vc.indices_pmr.size() * sizeof(uint32_t),
                                                                 vc.indices_pmr.data(),
                                                                 usage | vk::BufferUsageFlagBits::eIndexBuffer,
@@ -196,7 +202,7 @@ namespace rs {
             for(auto wIndex = 0u; wIndex < numWeights; wIndex++){
                 auto vertId = weights[wIndex].mVertexId;
                 auto weight = weights[wIndex].mWeight;
-                auto& vert = vc.vertices_pmr[vertexOffset + vertId];
+                auto& vert = vc.vertices_pmr[vertexOffset + vertId][0]; /////////// bug
 
                 for(auto x = 0; x < 4; ++x){
                     if (vert.boneIds[x] < 0){
@@ -231,7 +237,10 @@ namespace rs {
                 v.boneWeight[k] = 0.f;
             }
 
-            vc.vertices_pmr[j + vertexOffset] = v;
+            for(auto& pmr : vc.vertices_pmr){
+                pmr[j + vertexOffset] = v;
+            }
+            //vc.vertices_pmr[j + vertexOffset] = v;
         }
     }
 
@@ -241,7 +250,10 @@ namespace rs {
     }
 
     auto AssimpLoader::assignBuffer(const ImportContext& ctx, vot::VertexDataComponent& vc) -> void {
-        vc.vertices_pmr = std::pmr::vector<vot::Vertex>{&mVertexPool};
+        //vc.vertices_pmr = std::pmr::vector<vot::Vertex>{&mVertexPool};
+        for(auto& pmr : vc.vertices_pmr){
+            pmr = std::pmr::vector<vot::Vertex>{&mVertexPool};
+        }
         vc.indices_pmr = std::pmr::vector<uint32_t>{&mIndexPool};
         vc.adjIndices_pmr = std::pmr::vector<uint32_t>{&mAdjacencyIndexPool};
 
@@ -252,7 +264,10 @@ namespace rs {
             indexCount += aiMesh->mNumFaces * 3;
         }
 
-        vc.vertices_pmr.resize(vertexCount);
+//        vc.vertices_pmr.resize(vertexCount);
+        for(auto& pmr : vc.vertices_pmr){
+            pmr.resize(vertexCount);
+        }
         vc.indices_pmr.resize(indexCount);
         vc.adjIndices_pmr.resize(indexCount * 2);
     }

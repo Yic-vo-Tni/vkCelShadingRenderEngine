@@ -31,6 +31,8 @@ namespace rs {
         entt::entity e;
         ev::pVkSetupContext ct{};
         std::atomic<bool> _readyA{false}, _doneA{false};
+
+        std::atomic<bool> _readyB{false}, _doneB{false};
     public:
         std::unique_ptr<AssimpLoader> mAssimpLoader;
         std::unique_ptr<MmdLoader> mMmdLoader;

@@ -28,7 +28,9 @@ namespace sc {
 
     auto RenderSubmissionSystem::flow(vot::CommandBuffer &cmd) -> void {
    //     yic::logger->info(3);
-        auto set0 = ecs.get<vot::DescriptorSet0>(GLOBAL::set0).handles[yic::indexRing.get(vot::LogicBufferType::eFast).render_cur()];
+        auto fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
+        auto slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
+        auto set0 = ecs.get<vot::DescriptorSet0>(GLOBAL::set0).handles[fast];
    //     yic::logger->info(4);
 
         auto draw_meshes = [&](rhi::GraphicsPipeline& pipeline, auto view) {
@@ -38,7 +40,7 @@ namespace sc {
 
             view.each([&](entt::entity e, const vot::RenderComponent& rc) {
                 auto combMat = rc.baseMat * rc.zmoMat;
-                cmd.bindVertexBuffers(rc.vertexBuffer);
+                cmd.bindVertexBuffers(rc.vertexBuffer[slow]);
                 cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
                 cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &combMat);
 
@@ -58,7 +60,7 @@ namespace sc {
             view.each([&](entt::entity e, const vot::RenderComponent& rc) {
                 //auto lightMat = sm::DirectionLightTool::updateLightSpaceMat(glm::vec3(7.f, 3.f, 2.f), cam.getProj(), cam.getView() * rc.baseMat * rc.zmoMat);
                 auto lightMat = glm::mat4(1.f); // bug
-                cmd.bindVertexBuffers(rc.vertexBuffer);
+                cmd.bindVertexBuffers(rc.vertexBuffer[slow]);
                 cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
                 cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &lightMat);
 
@@ -74,7 +76,7 @@ namespace sc {
             cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
             .bindPipeline_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds)
             .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, set0)
-           // .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, ecs.get<sc::Camera>(GLOBAL::camera).DS)
+//            .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, *rt.activeImageIndex)
             .pushConstants(yic::renderLibrary->GP_Volumetric_Overcast_Clouds.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (float), &iTime);
             cmd.draw(3, 1, 0, 0);
         };
@@ -82,8 +84,13 @@ namespace sc {
         auto draw_volumetric_fog = [&]{
             auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
             auto lightMat = sm::DirectionLightTool::updateLightSpaceMat(glm::vec3(7.f, 3.f, 2.f), cam.getProj(), cam.getView());
-            cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
-            .bindPipeline_(yic::renderLibrary->GP_Volumetric_Fog)
+            vk::FragmentShadingRateCombinerOpKHR vrsCombiner[] = {
+                    vk::FragmentShadingRateCombinerOpKHR::eReplace,
+                    vk::FragmentShadingRateCombinerOpKHR::eReplace,
+            };
+            cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
+            cmd.setFragmentShadingRateKHR(vk::Extent2D{4, 4}, vrsCombiner, *ct.dynamicDispatcher);
+            cmd.bindPipeline_(yic::renderLibrary->GP_Volumetric_Fog)
             .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, set0)
             //.bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, ecs.get<sc::Camera>(GLOBAL::camera).DS)
             .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, *rt.activeImageIndex)
@@ -105,7 +112,7 @@ namespace sc {
                 .bindDescriptorSets_(yic::renderLibrary->RP_Shadow, set0)
                // .bindDescriptorSets_(yic::renderLibrary->RP_Shadow, ecs.get<sc::Camera>(GLOBAL::camera).DS)
                 .bindDescriptorSets_(yic::renderLibrary->RP_Shadow)
-                .traceRaysKHR_(yic::renderLibrary->RP_Shadow, vot::Resolutions::eQHDExtent, 1,ct.dynamicDispatcher);
+                .traceRaysKHR_(yic::renderLibrary->RP_Shadow, vot::Resolutions::eQHDExtent, 1, ct.dynamicDispatcher);
             }
         };
 

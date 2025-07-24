@@ -25,7 +25,8 @@ Buffer::Buffer(vk::Buffer buffer, VmaAllocation alloc, void *data, VmaAllocator 
 }
 
 Buffer::~Buffer() {
-    std::cout << "desctroy" << id << std::endl;
+    //std::cout << "desctroy" << id << std::endl;
+    yic::logger->info("destroy {0}", id);
     vmaDestroyBuffer(allocator, buffer, allocation);
 }
 

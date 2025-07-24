@@ -47,41 +47,41 @@
 | Material          |   📋   |
 | Physics           |   📋   | Planned                              |
 
-| Rendering System                     | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                                    | Refactor |
-|--------------------------------------|:--:|:--:|:--:|:-:|-----------------------------------------------------|:--------:|
-| Render Thread Separation             | ✔️ |    |    |   | Decoupled window and rendering threads              |          |
-| Dynamic Rendering                    | ✔️ |    |    |   | Framebuffer/Renderpass replaced                     |          |
-| Descriptor Pool                      | ✔️ |    |    |   | Global shared set0                                  |          |
-| Pipeline Library                     | ✔️ |    |    |   | Pipeline precompile, caching, dynamic switching     |          |
-| Timeline Semaphore                   | ✔️ |    |    |   | Timeline semaphore for synchronization              |          |
-| Secondary Cmd Parallel (legacy)      |    |    |    | ❌ | Rewritten                                           |          |
-| Real-Time RT Shadows                 | ✔️ |    |    |   | RT_KHR + dynamic BLAS                               |          |
-| ShadowMap+PCF (legacy)               |    |    |    | ❌ | Orthographic, can't update scene AABB in real time  |          |
-| Volumetric Clouds                    | ✔️ |    |    |   | Ray-marching, Shadertoy migrated                    |          |
-| Volumetric Fog                       | ✔️ |    |    |   | Raymarching & screen space fog, blue noise sampling |          |
-| Deferred Rendering (G-buffer)        | ✔️ |    |    |   | G-buffer structure, deferred shading pipeline       |          |
-| Simple Render Graph                  | ✔️ |    |    |   | Basic render graph system implemented               |          |
-| Skybox (legacy)                      |    |    |    | ❌ | Cube map, legacy                                    |          |
-| Simple Volumetric Fog/Noise (legacy) |    |    |    | ❌ | FastNoiseLite simple implementation                 |          |
+| Rendering System                     | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                                           | Refactor |
+|--------------------------------------|:--:|:--:|:--:|:-:|------------------------------------------------------------|:--------:|
+| Thread Separation                    | ✔️ |    |    |   | Decoupled window , fast & slow logic and rendering threads |          |
+| Dynamic Rendering                    | ✔️ |    |    |   | Framebuffer/Renderpass replaced                            |          |
+| Descriptor Pool                      | ✔️ |    |    |   | Global shared set0                                         |          |
+| Pipeline Library                     | ✔️ |    |    |   | Pipeline precompile, dynamic switching                     |          |
+| Timeline Semaphore                   | ✔️ |    |    |   | Timeline semaphore for synchronization2                    |          |
+| Secondary Cmd Parallel (legacy)      |    |    |    | ❌ | Rewritten                                                  |          |
+| Real-Time RT Shadows                 | ✔️ |    |    |   | RT_KHR + dynamic BLAS                                      |          |
+| ShadowMap+PCF (legacy)               |    |    |    | ❌ | Orthographic, can't update scene AABB in real time         |          |
+| Volumetric Clouds                    | ✔️ |    |    |   | Ray-marching, Shadertoy migrated                           |          |
+| Volumetric Fog                       | ✔️ |    |    |   | Raymarching & screen space fog, blue noise sampling        |          |
+| Deferred Rendering (G-buffer)        | ✔️ |    |    |   | G-buffer structure, deferred shading pipeline              |          |
+| Simple Render Graph                  | ✔️ |    |    |   | Basic render graph system implemented                      |          |
+| Skybox (legacy)                      |    |    |    | ❌ | Cube map, legacy                                           |          |
+| Simple Volumetric Fog/Noise (legacy) |    |    |    | ❌ | FastNoiseLite simple implementation                        |          |
 
-| Resource Systems       | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                                  | Refactor |
-|------------------------|:--:|:--:|:--:|:-:|---------------------------------------------------|:--------:|
-| LRU Staging Buffer     | ✔️ |    |    |   | LRU upload for better memory/bandwidth usage      |          |
-| Async Resource Loading | ✔️ |    |    |   | Multithreaded async loading, avoid main thread    |          |
-| Standard Model         | ✔️ |    |    |   | Assimp loading, stored in std::pmr::vector        |          |
-| Standard Images        | ✔️ |    |    |   | stb_image loading                                 |          |
-| MMD Support            | ✔️ |    |    |   | Implemented via Saba library                      |          |
-| Chinese Path Support   | ✔️ |    |    |   | Boost_locale for Windows multilingual path issues |          |
+| Resource Systems       | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                                    | Refactor  |
+|------------------------|:--:|:--:|:--:|:-:|-----------------------------------------------------|:---------:|
+| Staging Buffer Pool    | ✔️ |    |    |   | Multi-size, thread-safe buffer pool, per-size reuse | LRU/limit |
+| Async Resource Loading | ✔️ |    |    |   | async loading, avoid main thread                    |           |
+| Standard Model         | ✔️ |    |    |   | Assimp loading, stored in std::pmr::vector          |           |
+| Standard Images        | ✔️ |    |    |   | stb_image loading                                   |           |
+| MMD Support            | ✔️ |    |    |   | Implemented via Saba library                        |           |
+| Chinese Path Support   | ✔️ |    |    |   | Boost_locale for Windows multilingual path issues   |           |
 
-| Toolchain / Editor Systems             | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                            | Refactor |
-|----------------------------------------|:--:|:--:|:--:|:-:|---------------------------------------------|:--------:|
-| Shader Hot Reload                      | ✔️ |    |    |   | Monaco-editor + webview, Ctrl+S hot compile |          |
-| Shader Hot Reload (legacy)             |    |    |    | ❌ | wx_widget + thread polling for file change  |          |
-| 120fps Window Lock (legacy)            |    |    |    | ❌ | Unnecessary, real-time FPS adjustment       |          |
-| Window Drag & Docking                  | ✔️ |    |    |   | ImGui docking                               |          |
-| Model Basic Manipulation               | ✔️ |    |    |   | ImGuizmo support                            |          |
-| Model Selection (ID buffer)            |    |    | 📋 |   | Render ID buffer, mouse mapping via ImGui   |          |
-| Model Selection (Ray picking) (legacy) |    |    |    | ❌ | Mouse AABB picking, interactive highlight   |          |
+| Toolchain / Editor Systems             | ✔️ | 🚧 | 📋 | ❌ | Notes / Progress                            |       Refactor       |
+|----------------------------------------|:--:|:--:|:--:|:-:|---------------------------------------------|:--------------------:|
+| Shader Hot Reload                      | ✔️ |    |    |   | Monaco-editor + webview, Ctrl+S hot compile | VK_EXT_SHADER_OBJECT |
+| Shader Hot Reload (legacy)             |    |    |    | ❌ | wx_widget + thread polling for file change  |                      |
+| 120fps Window Lock (legacy)            |    |    |    | ❌ |                                             |                      |
+| Window Drag & Docking                  | ✔️ |    |    |   | ImGui docking                               |                      |
+| Model Basic Manipulation               | ✔️ |    |    |   | ImGuizmo support                            |                      |
+| Model Selection (ID buffer)            |    |    | 📋 |   | Render ID buffer, mouse mapping via ImGui   |                      |
+| Model Selection (Ray picking) (legacy) |    |    |    | ❌ | Mouse AABB picking, interactive highlight   |                      |
 
 | Vulkan Extension / Feature            | ✔️ | 🚧 | 📋 | ❌ |
 |---------------------------------------|:--:|:--:|:--:|:-:|
@@ -138,4 +138,6 @@
 | saba                   | ✔️ |    |    |   |
 | imgui-docking/imguizmo | ✔️ |    |    |   |
 | cuda                   |    |    | 📋 |   |
-| bullet                 |    |    | 📋 |   |
+| bullet                 |    |    |    | ❌ |
+| vma                    | ✔️ |    |    |   |
+| jolt physics           |    |    | 📋 |   |
