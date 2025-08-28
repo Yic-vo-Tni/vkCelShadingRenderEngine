@@ -52,8 +52,8 @@ namespace sm {
         .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
                 vot::RenderComponent &rc, vot::RayTracingComponent &rtc) {
             if (bc.playAnimation){
-                bool onlyTransform = true;
-                if (frameCounter % 90 != 0) onlyTransform = false;
+                bool onlyTransform = false;
+                if (frameCounter % 90 != 0) onlyTransform = true;
                 syncBLAS(vc, rc, rtc, onlyTransform);
             }
         });

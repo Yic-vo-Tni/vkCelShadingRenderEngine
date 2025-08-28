@@ -35,11 +35,13 @@ namespace rhi {
         vk::PhysicalDeviceMeshShaderFeaturesEXT meshShaderFeaturesExt{vk::True, vk::True};
         vk::PhysicalDeviceRobustness2FeaturesEXT robustness2FeaturesExt{vk::True, vk::True};
         vk::PhysicalDeviceFragmentShadingRateFeaturesKHR fragmentShadingRateFeaturesKhr{vk::True, vk::True, vk::True};
-//        vk::PhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeaturesExt{};
+        vk::PhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeaturesExt{vk::True};
+        vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1FeaturesExt{vk::True};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
                 .addInstanceLayers("VK_LAYER_KHRONOS_validation")
                 .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
+                .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
 
                 .addPhysicalFeatures(vk::PhysicalDeviceFeatures2KHR().features
                                              .setShaderInt64(vk::True)
@@ -74,9 +76,8 @@ namespace rhi {
                 .addPhysicalExtensions(VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_EXTENSION_NAME, &dynamicRenderingLocalReadFeaturesKhr)
                 .addPhysicalExtensions(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, &robustness2FeaturesExt)
                 .addPhysicalExtensions(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, &fragmentShadingRateFeaturesKhr)
-
-                // not support
-//                .addPhysicalExtensions(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME, &hostImageCopyFeaturesExt)
+                .addPhysicalExtensions(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME, &swapchainMaintenance1FeaturesExt)
+                .addPhysicalExtensions(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME, &hostImageCopyFeaturesExt)
 
                 .setQueuesPriority({1.f, 0.8f}));
 

@@ -25,55 +25,92 @@ namespace hide{
         };
         static constexpr uint8_t MultiBuffer{3};
     public:
+        // auto write_begin() -> uint8_t {
+        //     uint8_t oldestIdx = 255;
+        //     uint64_t oldestFrame = UINT64_MAX;
+        //     for (uint8_t i = 0; i < MultiBuffer; ++i) {
+        //         if (!slots[i].ready.load(std::memory_order_seq_cst)) {
+        //             logicIndex = i;
+        //             return i;
+        //         }
+        //
+        //         auto fid = slots[i].frameId.load(std::memory_order_seq_cst);
+        //         if (fid < oldestFrame) {
+        //             oldestFrame = fid;
+        //             oldestIdx = i;
+        //         }
+        //     }
+        //
+        //     logicIndex = oldestIdx;
+        //     return oldestIdx;
+        // }
+        //
+        // auto write_end() -> void {
+        //     ++logicFrameId;
+        //     slots[logicIndex].frameId.store(logicFrameId, std::memory_order_seq_cst);
+        //     slots[logicIndex].ready.store(true, std::memory_order_seq_cst);
+        // }
+        //
+        // auto read_begin() -> uint8_t {
+        //     uint64_t newestFrame = 0;
+        //     int newestIdx = -1;
+        //     for (uint8_t i = 0; i < MultiBuffer; ++i) {
+        //         if (slots[i].ready.load(std::memory_order_seq_cst)) {
+        //             auto fid = slots[i].frameId.load(std::memory_order_seq_cst);
+        //             if (fid > newestFrame) {
+        //                 newestFrame = fid;
+        //                 newestIdx = i;
+        //             }
+        //         }
+        //     }
+        //     if (newestIdx >= 0) {
+        //         renderIndex = newestIdx;
+        //         return renderIndex;
+        //     }
+        //
+        //     //return renderIndex;
+        //     return 255;
+        // }
+        //
+        // auto read_end() -> void{
+        //     slots[renderIndex].ready.store(false, std::memory_order_seq_cst);
+        // }
+
         auto write_begin() -> uint8_t {
-            uint8_t oldestIdx = 255;
+            uint8_t oldestIdx = 0;
             uint64_t oldestFrame = UINT64_MAX;
             for (uint8_t i = 0; i < MultiBuffer; ++i) {
-                if (!slots[i].ready.load(std::memory_order_seq_cst)) {
+                if (!slots[i].ready.load(std::memory_order_acquire)) {
                     logicIndex = i;
                     return i;
                 }
-
-                auto fid = slots[i].frameId.load(std::memory_order_seq_cst);
+                auto fid = slots[i].frameId.load(std::memory_order_relaxed);
                 if (fid < oldestFrame) {
                     oldestFrame = fid;
                     oldestIdx = i;
                 }
             }
-
             logicIndex = oldestIdx;
-            return oldestIdx;
+            return logicIndex;
         }
 
         auto write_end() -> void {
             ++logicFrameId;
-            slots[logicIndex].frameId.store(logicFrameId, std::memory_order_seq_cst);
-            slots[logicIndex].ready.store(true, std::memory_order_seq_cst);
+            slots[logicIndex].frameId.store(logicFrameId, std::memory_order_release);
+            slots[logicIndex].ready.store(true, std::memory_order_release);
+            latestIndex.store(logicIndex, std::memory_order_release);
         }
 
         auto read_begin() -> uint8_t {
-            uint64_t newestFrame = 0;
-            int newestIdx = -1;
-            for (uint8_t i = 0; i < MultiBuffer; ++i) {
-                if (slots[i].ready.load(std::memory_order_seq_cst)) {
-                    auto fid = slots[i].frameId.load(std::memory_order_seq_cst);
-                    if (fid > newestFrame) {
-                        newestFrame = fid;
-                        newestIdx = i;
-                    }
-                }
-            }
-            if (newestIdx >= 0) {
-                renderIndex = newestIdx;
+            int idx = latestIndex.load(std::memory_order_acquire);
+            if (idx >= 0 && slots[idx].ready.load(std::memory_order_acquire)) {
+                renderIndex = idx;
                 return renderIndex;
             }
-
-            //return renderIndex;
             return 255;
         }
 
-        auto read_end() -> void{
-            slots[renderIndex].ready.store(false, std::memory_order_seq_cst);
+        auto read_end() -> void {
         }
 
         void print_slots() {
@@ -89,6 +126,8 @@ namespace hide{
         SlotInfo slots[MultiBuffer] = {};
         uint8_t logicIndex{}, renderIndex{};
         uint64_t logicFrameId = 0;
+
+        std::atomic_int latestIndex{-1};
     };
 
     class TripleBufferIndexManagerSet{
