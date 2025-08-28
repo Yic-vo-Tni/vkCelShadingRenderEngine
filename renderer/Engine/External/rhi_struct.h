@@ -414,6 +414,18 @@ struct DescriptorHandle{
         vk::Pipeline fragmentOutputInterface{};
         vk::Pipeline fragmentShader{};
 
+        uint32_t destroyedMask{0};
+
+        enum ResourceBit : uint32_t {
+            eRenderPassBit = 1 << 0,
+            ePipelineLayoutBit = 1 << 1,
+            eVertexInputInterfaceBit = 1 << 2,
+            ePreRasterizationShadersBit = 1 << 3,
+            eFragmentOutputInterfaceBit = 1 << 4,
+            eFragmentShaderBit = 1 << 5,
+            eAll = 0xFFFFFFFF,
+        };
+
         RenderPass2CI renderPass2CI;
 //        PipelineDescriptorSetLayoutCI pipelineDescriptorSetLayoutCI;
 //        PipelineDescriptorSetLayoutCI2 pipelineDescriptorSetLayoutCI2;
@@ -433,6 +445,7 @@ struct DescriptorHandle{
 //        auto& setPipelineDescriptorSetLayoutCI2(const struct PipelineDescriptorSetLayoutCI2& ci2) { refreshPipelineStages(); pipelineLayout = VK_NULL_HANDLE; pipelineDescriptorSetLayoutCI2 = ci2; return *this; };
         auto& setRenderPass2CI(const struct RenderPass2CI& ci) { refreshPipelineStages(); renderPass = VK_NULL_HANDLE; renderPass2CI = ci; return *this; }
 //        auto useDynamicRendering() { renderPass = VK_NULL_HANDLE; return *this; }
+
     private:
         auto refreshPipelineStages() -> void { preRasterizationShaders = VK_NULL_HANDLE; fragmentOutputInterface = VK_NULL_HANDLE; fragmentShader = VK_NULL_HANDLE; }
     };

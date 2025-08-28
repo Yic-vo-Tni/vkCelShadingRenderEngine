@@ -9,6 +9,11 @@
 #include "Editor/ShaderHotReload/ShaderHotReload.h"
 
 namespace rhi {
+    PipeRSManager::PipeRSManager() : ct(yic::systemHub.val<ev::pVkSetupContext>()) {
+    }
+
+    PipeRSManager::~PipeRSManager() = default;
+
 
     GraphicsPipeline::GraphicsPipeline() : ct(yic::systemHub.val<ev::pVkSetupContext>()) {
 
@@ -31,12 +36,12 @@ namespace rhi {
             }
         };
 
-        de(mPipelineLibrary.pipelineLayout);
+        // de(mPipelineLibrary.pipelineLayout);
         de(mPipelineLibrary.renderPass);
-        de(mPipelineLibrary.vertexInputInterface);
-        de(mPipelineLibrary.preRasterizationShaders);
-        de(mPipelineLibrary.fragmentOutputInterface);
-        de(mPipelineLibrary.fragmentShader);
+        // de(mPipelineLibrary.vertexInputInterface);
+        // de(mPipelineLibrary.preRasterizationShaders);
+        // de(mPipelineLibrary.fragmentOutputInterface);
+        // de(mPipelineLibrary.fragmentShader);
         de(mFinalPipeline);
 //        if (mPipelineLibrary.pipelineLayout) ct.device->destroy(mPipelineLibrary.pipelineLayout);
 //        if (mPipelineLibrary.renderPass) ct.device->destroy(mPipelineLibrary.renderPass);
@@ -118,7 +123,8 @@ namespace rhi {
                 .setPVertexInputState(&vertexInputState)
                 .setPNext(&libraryInfo);
 
-        mPipelineLibrary.vertexInputInterface = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        //mPipelineLibrary.vertexInputInterface = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        mPipelineLibrary.vertexInputInterface = PipeRSManager->gPipeHandle(mPipelineCache, ci);
     }
 
     auto GraphicsPipeline::buildPreRasterizationShadersLibrary() -> void {
@@ -168,7 +174,8 @@ namespace rhi {
                 .setRenderPass(mPipelineLibrary.renderPass)
                 .setPNext(&libraryInfo);
 
-        mPipelineLibrary.preRasterizationShaders = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+       // mPipelineLibrary.preRasterizationShaders = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        mPipelineLibrary.preRasterizationShaders = PipeRSManager->gPipeHandle(mPipelineCache, ci);
     }
 
     auto GraphicsPipeline::buildFragmentOutputInterfaceLibrary() -> void {
@@ -210,7 +217,8 @@ namespace rhi {
                 .setPMultisampleState(&multisampleState)
                 .setPNext(&libraryInfo);
 
-        mPipelineLibrary.fragmentOutputInterface = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        //mPipelineLibrary.fragmentOutputInterface = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        mPipelineLibrary.fragmentOutputInterface = PipeRSManager->gPipeHandle(mPipelineCache, ci);
     }
 
     auto GraphicsPipeline::buildFragmentShaderLibrary() -> void {
@@ -248,7 +256,8 @@ namespace rhi {
                 .setLayout(mPipelineLibrary.pipelineLayout)
                 .setPNext(&libraryInfo);
 
-        mPipelineLibrary.fragmentShader = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        // mPipelineLibrary.fragmentShader = ct.device->createGraphicsPipeline(mPipelineCache, ci, nullptr).value;
+        mPipelineLibrary.fragmentShader = PipeRSManager->gPipeHandle(mPipelineCache, ci);
     }
 
     auto GraphicsPipeline::buildPipelineLayout(vot::PipelineLibrary &pipelineLibrary) const -> void {
@@ -273,9 +282,11 @@ namespace rhi {
         std::visit([&](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, vot::PipelineDescriptorSetLayoutCI>)
-                pipelineLibrary.pipelineLayout = arg.buildPipelineSetLayout(ct.device);
+                //pipelineLibrary.pipelineLayout = arg.buildPipelineSetLayout(ct.device);
+                    pipelineLibrary.pipelineLayout = PipeRSManager->gPipeLayoutHandle(arg.buildPipelineSetLayout(ct.device));
             if constexpr (std::is_same_v<T, vot::PipelineDescriptorSetLayoutCI2>)
-                pipelineLibrary.pipelineLayout = arg.buildPipelineSetLayout(ct.device);
+                //pipelineLibrary.pipelineLayout = arg.buildPipelineSetLayout(ct.device);
+                    pipelineLibrary.pipelineLayout = PipeRSManager->gPipeLayoutHandle(arg.buildPipelineSetLayout(ct.device));
         }, setLayoutCI);
     }
 

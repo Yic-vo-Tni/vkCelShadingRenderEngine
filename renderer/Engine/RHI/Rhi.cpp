@@ -43,6 +43,7 @@ namespace rhi {
                 .addInstanceLayers("VK_LAYER_KHRONOS_validation")
                 .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
                 .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
+                .addInstanceExtensions(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)
 
                 .addPhysicalFeatures(vk::PhysicalDeviceFeatures2KHR().features
                                              .setShaderInt64(vk::True)
@@ -85,11 +86,13 @@ namespace rhi {
 
         mSwapchain = std::make_unique<Swapchain>();
 
+        PipeRSManager = PipeRSManager::make();
         yic::command = rhi::CommandManager::make();
         yic::timeline = rhi::TimelineSemaphore::make();
         yic::allocator = rhi::Allocator::make();
         yic::desSystem = rhi::DescriptorSystem::make();
         yic::imguiImage = rhi::ImGuiDescriptorManager::make();
+
     }
 
     Rhi::~Rhi() {
@@ -99,6 +102,7 @@ namespace rhi {
         yic::timeline->clear();
         yic::command->clear();
         yic::desSystem->clear();
+        PipeRSManager->clear();
         yic::imguiImage->clear();
         mSwapchain.reset();
         mVkInit.reset();

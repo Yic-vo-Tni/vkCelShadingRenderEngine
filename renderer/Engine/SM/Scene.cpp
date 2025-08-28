@@ -45,16 +45,21 @@ namespace sm {
     }
 
     auto SceneSystem::frame() -> void {
-        static int frameCounter = 0;
-        frameCounter++;
+        // static int frameCounter = 0;
+        // frameCounter++;
+        static double elapsedTime = 0.0;
+        elapsedTime += (1 / GLOBAL::fps);
 
         auto playAnim = false;
         ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent>()
         .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
                 vot::RenderComponent &rc, vot::RayTracingComponent &rtc) {
             if (bc.playAnimation){
-                bool onlyTransform = false;
-                if (frameCounter % 90 != 0) onlyTransform = true;
+                bool onlyTransform = true;
+            //    if (frameCounter % 90 != 0) onlyTransform = true;
+
+                if (elapsedTime >= 2.0) { onlyTransform = false; elapsedTime = 0.0;}
+
                 syncBLAS(vc, rc, rtc, onlyTransform);
 
                 playAnim = true;

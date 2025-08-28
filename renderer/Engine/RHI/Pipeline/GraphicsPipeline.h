@@ -9,6 +9,43 @@
 
 namespace rhi {
 
+    class PipeRSManager {
+    public:
+        Make = []{ return Singleton<PipeRSManager>::make_ptr(); };
+        PipeRSManager();
+        ~PipeRSManager();
+
+        auto gPipeHandle(vk::PipelineCache cache, const vk::GraphicsPipelineCreateInfo& ci) -> vk::Pipeline {
+            auto pipeline = ct.device->createGraphicsPipeline(cache, ci, nullptr).value;
+            pipelines.emplace_back(pipeline);
+            return pipeline;
+        };
+        auto gPipeLayoutHandle(const vk::PipelineLayout& layout) -> vk::PipelineLayout {
+            pipelineLayouts.emplace_back(layout);
+            return layout;
+        }
+
+        auto clear() -> void {
+            for (auto& pipe : pipelines) {
+                if (pipe && pipe != VK_NULL_HANDLE) {
+                    ct.device->destroy(pipe);
+                    pipe = VK_NULL_HANDLE;
+                }
+            }
+            for (auto& layout : pipelineLayouts) {
+                if (layout && layout != VK_NULL_HANDLE) {
+                    ct.device->destroy(layout);
+                    layout = VK_NULL_HANDLE;
+                }
+            }
+        };
+    private:
+        ev::pVkSetupContext ct{};
+        vot::vector<vk::Pipeline> pipelines;
+        vot::vector<vk::PipelineLayout> pipelineLayouts;
+    };
+    inline PipeRSManager* PipeRSManager;
+
     class GraphicsPipeline : public vot::IPipeline{
     public:
         vot::DescriptorHandle DS;
