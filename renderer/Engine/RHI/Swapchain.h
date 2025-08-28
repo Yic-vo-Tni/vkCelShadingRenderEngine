@@ -23,6 +23,9 @@ namespace rhi {
         auto prepareFrame() -> void;
         auto clear() -> void { mImGuiLauncher.reset();}
     private:
+        auto initSwapchainImageLayouts() -> void;
+
+    private:
         ev::pVkSetupContext ct{};
 
         uint8_t mImageCount{};

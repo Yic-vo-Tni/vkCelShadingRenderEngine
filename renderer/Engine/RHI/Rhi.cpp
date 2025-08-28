@@ -37,6 +37,7 @@ namespace rhi {
         vk::PhysicalDeviceFragmentShadingRateFeaturesKHR fragmentShadingRateFeaturesKhr{vk::True, vk::True, vk::True};
         vk::PhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeaturesExt{vk::True};
         vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1FeaturesExt{vk::True};
+        vk::PhysicalDevicePresentModeFifoLatestReadyFeaturesEXT presentModeFifoLatestReadyFeatures{vk::True};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
                 .addInstanceLayers("VK_LAYER_KHRONOS_validation")
@@ -78,6 +79,7 @@ namespace rhi {
                 .addPhysicalExtensions(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, &fragmentShadingRateFeaturesKhr)
                 .addPhysicalExtensions(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME, &swapchainMaintenance1FeaturesExt)
                 .addPhysicalExtensions(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME, &hostImageCopyFeaturesExt)
+                .addPhysicalExtensions(VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME, &presentModeFifoLatestReadyFeatures)
 
                 .setQueuesPriority({1.f, 0.8f}));
 

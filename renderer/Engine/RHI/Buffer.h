@@ -71,7 +71,7 @@ struct Accel : public  Identifiable{
 
 private:
     vk::Device device{};
-    vk::DispatchLoaderDynamic dyDispatch;
+    vk::detail::DispatchLoaderDynamic dyDispatch;
 };
 
 

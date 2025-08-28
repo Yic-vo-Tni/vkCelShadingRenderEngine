@@ -66,10 +66,21 @@ namespace rhi {
         vot::SubmitInfo::increase();
 
         graphicsQueue.submit(sub, submitInfo.cmds.front().fence);
-        return graphicsQueue.presentKHR(vk::PresentInfoKHR()
-                                                .setSwapchains(swapchainKhr)
-                                                .setImageIndices(imageIndex)
-                                                .setWaitSemaphores(submitInfo.signalSemaphore));
+        // return graphicsQueue.presentKHR(vk::PresentInfoKHR()
+        //                                         .setSwapchains(swapchainKhr)
+        //                                         .setImageIndices(imageIndex)
+        //                                         .setWaitSemaphores(submitInfo.signalSemaphore));
+
+        vk::Result r;
+        try {
+            r = graphicsQueue.presentKHR(vk::PresentInfoKHR()
+                .setSwapchains(swapchainKhr)
+                .setImageIndices(imageIndex)
+                .setWaitSemaphores(submitInfo.signalSemaphore));
+        } catch (vk::OutOfDateKHRError&) {
+            return vk::Result::eErrorOutOfDateKHR;
+        }
+        return r;
     }
 
     auto TimelineSemaphore::clear() -> void {

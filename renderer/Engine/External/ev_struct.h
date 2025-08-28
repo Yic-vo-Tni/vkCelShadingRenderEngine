@@ -21,7 +21,7 @@ namespace ev {
     struct pVkSetupContext {
         HANA(pVkSetupContext,
              (vk::Instance * , instance),
-             (vk::DispatchLoaderDynamic * , dynamicDispatcher),
+             (vk::detail::DispatchLoaderDynamic * , dynamicDispatcher),
              (vk::DebugUtilsMessengerEXT * , debugMessenger),
              (vk::PhysicalDevice * , physicalDevice),
              (vk::Device * , device));

@@ -176,7 +176,7 @@ struct DescriptorHandle{
         }
 
         using cVk ::traceRaysKHR;
-        auto& traceRaysKHR_(auto& pipeline, const vk::Extent2D& extent, const uint32_t& depth, vk::DispatchLoaderDynamic* dynamicDispatcher){
+        auto& traceRaysKHR_(auto& pipeline, const vk::Extent2D& extent, const uint32_t& depth, vk::detail::DispatchLoaderDynamic* dynamicDispatcher){
             cVk ::traceRaysKHR(pipeline.gRgen(), pipeline.gMiss(),
                                pipeline.gHit(), pipeline.gCall(),
                                extent.width, extent.height, depth, *dynamicDispatcher);

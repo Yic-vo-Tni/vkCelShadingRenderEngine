@@ -111,7 +111,7 @@ namespace rhi {
     private:
         CreateInfo mCreateInfo{};
         vk::Instance mInstance{};
-        vk::DispatchLoaderDynamic mDynamicDispatcher{};
+        vk::detail::DispatchLoaderDynamic mDynamicDispatcher{};
         vk::DebugUtilsMessengerEXT mDebugMessenger{};
         vk::PhysicalDevice mPhysicalDevice{};
         vk::Device mDevice{};

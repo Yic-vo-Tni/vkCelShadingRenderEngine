@@ -48,6 +48,7 @@ namespace sm {
         static int frameCounter = 0;
         frameCounter++;
 
+        auto playAnim = false;
         ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent>()
         .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
                 vot::RenderComponent &rc, vot::RayTracingComponent &rtc) {
@@ -55,9 +56,11 @@ namespace sm {
                 bool onlyTransform = false;
                 if (frameCounter % 90 != 0) onlyTransform = true;
                 syncBLAS(vc, rc, rtc, onlyTransform);
+
+                playAnim = true;
             }
         });
-        if (GLOBAL::visibleZMO) {
+        if (GLOBAL::visibleZMO || playAnim) {
             syncTLAS();
         }
     }

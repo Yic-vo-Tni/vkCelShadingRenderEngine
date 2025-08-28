@@ -45,7 +45,7 @@ namespace vot::inline rhi {
     protected:
         inline static uint32_t *index = nullptr;
         vk::Device device;
-        vk::DispatchLoaderDynamic dispatchLoaderDynamic;
+        vk::detail::DispatchLoaderDynamic dispatchLoaderDynamic;
         uint32_t activeIndex{};
     };
 

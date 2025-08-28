@@ -62,7 +62,7 @@ namespace rhi {
     }
 
     auto VkInit::createDebugMessenger() -> vk::DebugUtilsMessengerEXT {
-        mDynamicDispatcher = vk::DispatchLoaderDynamic(mInstance, vkGetInstanceProcAddr);
+        mDynamicDispatcher = vk::detail::DispatchLoaderDynamic(mInstance, vkGetInstanceProcAddr);
 
         return vot::create("create debug messenger") = [&]{
             using s = vk::DebugUtilsMessageSeverityFlagBitsEXT;
