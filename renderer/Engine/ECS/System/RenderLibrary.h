@@ -25,6 +25,7 @@ namespace sc {
         rhi::GraphicsPipeline GP_Volumetric_Fog;
         rhi::GraphicsPipeline GP_ShadowMap_Assimp;
         rhi::GraphicsPipeline GP_ShadowMap_PMX;
+        rhi::GraphicsPipeline GP_Dummy;
         rhi::RayTracingPipeline RP_Shadow;
 
         enum eGBuffer : uint8_t {

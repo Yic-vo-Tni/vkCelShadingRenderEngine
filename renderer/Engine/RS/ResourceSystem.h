@@ -12,17 +12,14 @@ namespace rs {
 
     class ResourceSystem {
     public:
-        //explicit ResourceSystem(flecs::world& world);
         explicit ResourceSystem(entt::registry& registry);
         ~ResourceSystem();
         MAKE_SINGLETON(ResourceSystem);
 
         auto frame() -> void;
-
         auto frameUpdate() -> void;
     public:
     private:
-        //flecs::world& ecs;
         entt::registry& ecs;
         double mSaveTime{};
         float mElapsed{}, mAnimTime{0.f};

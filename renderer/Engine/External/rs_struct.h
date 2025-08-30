@@ -124,8 +124,6 @@ struct RayTracingComponent{
     vot::Buffer_sptr scratchBuffer;
 };
 
-struct RenderVisibleTag{ };
-struct MMDTag{};
 
 }
 

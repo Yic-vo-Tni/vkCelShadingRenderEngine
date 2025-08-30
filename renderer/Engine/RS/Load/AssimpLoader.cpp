@@ -67,10 +67,6 @@ namespace rs {
             auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
             auto annotate = [&](const vot::string &id) { return " model: " + ctx.fileName + " " + id + " buf"; };
 
-//            rc.vertexBuffer = yic::allocator->allocBufferStaging(vc.vertices_pmr.size() * sizeof(vot::Vertex),
-//                                                                 vc.vertices_pmr.data(),
-//                                                                 usage | vk::BufferUsageFlagBits::eVertexBuffer,
-//                                                                 annotate("vert"));
             for(auto& vb : rc.vertexBuffer){
                 vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::Vertex),
                                                                  vc.vertices_pmr[0].data(),

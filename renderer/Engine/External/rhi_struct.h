@@ -305,11 +305,8 @@ struct DescriptorHandle{
     };
 
     struct VertexInputInterfaceCI{
-        //std::initializer_list<vk::VertexInputBindingDescription> vertexInputBindings;
         vot::vector<vk::VertexInputBindingDescription> vertexInputBindings;
-        //std::initializer_list<vk::VertexInputAttributeDescription> vertexInputAttributes;
         vot::vector<vk::VertexInputAttributeDescription> vertexInputAttributes;
-        //std::optional<vk::PrimitiveTopology> primitiveTopology;
         std::optional<vk::PipelineCreateFlags> pipelineCreateFlags;
 
         SS_OPT(vk::PrimitiveTopology, primitiveTopology, PrimitiveTopology);
@@ -331,7 +328,6 @@ struct DescriptorHandle{
         auto& setGeomShaderPath(vot::string pt) { geomShaderPt = std::move(pt); return *this; }
     };
     struct FragmentOutputInterfaceCI{
-//        std::initializer_list<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
         vot::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
 
         auto& setColorBlendAttachmentStates(const vot::vector<vk::PipelineColorBlendAttachmentState>& blendAttachmentStates) { colorBlendAttachmentStates = blendAttachmentStates; return *this;}

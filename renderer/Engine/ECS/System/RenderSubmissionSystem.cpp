@@ -27,19 +27,16 @@ namespace sc {
     RenderSubmissionSystem::~RenderSubmissionSystem() = default;
 
     auto RenderSubmissionSystem::flow(vot::CommandBuffer &cmd) -> void {
-   //     yic::logger->info(3);
-        auto fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
-        auto slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
-        auto set0 = ecs.get<vot::DescriptorSet0>(GLOBAL::set0).handles[fast];
-   //     yic::logger->info(4);
+        const auto fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
+        const auto slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
+        const auto set0 = ecs.get<vot::DescriptorSet0>(GLOBAL::set0).handles[fast];
 
         auto draw_meshes = [&](rhi::GraphicsPipeline& pipeline, auto view) {
             cmd.bindPipeline_(pipeline)
             .bindDescriptorSets_(pipeline, set0);
-            //.bindDescriptorSets_(pipeline, ecs.get<sc::Camera>(GLOBAL::camera).DS);
 
             view.each([&](entt::entity e, const vot::RenderComponent& rc) {
-                auto combMat = rc.baseMat * rc.zmoMat;
+                const auto combMat = rc.baseMat * rc.zmoMat;
                 cmd.bindVertexBuffers(rc.vertexBuffer[slow]);
                 cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
                 cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &combMat);
@@ -64,38 +61,51 @@ namespace sc {
                 cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
                 cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &lightMat);
 
-                for(const auto& [index, subMeshes] : rc.subMeshes){
-                    for(const auto& subMesh : subMeshes){
-                        cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
-                    }
+                // for(const auto &subMeshes: rc.subMeshes | std::views::values){
+                //     for(const auto&[indexCount, firstIndex] : subMeshes){
+                //         cmd.drawIndexed(indexCount, 1, firstIndex, 0, 0);
+                //     }
+                // }
+                for (const auto& subMesh : rc.subMeshes | std::views::values | std::views::join) {
+                    cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
                 }
             });
         };
 
         auto draw_volumetric_clouds = [&]{
-            cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
-            .bindPipeline_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds)
-            .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, set0)
-//            .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, *rt.activeImageIndex)
-            .pushConstants(yic::renderLibrary->GP_Volumetric_Overcast_Clouds.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (float), &iTime);
-            cmd.draw(3, 1, 0, 0);
+            if (GLOBAL::showVolumetricClouds) {
+                cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
+                .bindPipeline_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds)
+                .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Overcast_Clouds, set0)
+                .pushConstants(yic::renderLibrary->GP_Volumetric_Overcast_Clouds.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (float), &iTime);
+                cmd.draw(3, 1, 0, 0);
+            } else {
+                cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
+                .bindPipeline_(yic::renderLibrary->GP_Dummy);
+                cmd.draw(3, 1, 0, 0);
+            }
         };
 
         auto draw_volumetric_fog = [&]{
-            auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
-            auto lightMat = sm::DirectionLightTool::updateLightSpaceMat(glm::vec3(7.f, 3.f, 2.f), cam.getProj(), cam.getView());
-            vk::FragmentShadingRateCombinerOpKHR vrsCombiner[] = {
-                    vk::FragmentShadingRateCombinerOpKHR::eReplace,
-                    vk::FragmentShadingRateCombinerOpKHR::eReplace,
-            };
-            cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
-            cmd.setFragmentShadingRateKHR(vk::Extent2D{4, 4}, vrsCombiner, *ct.dynamicDispatcher);
-            cmd.bindPipeline_(yic::renderLibrary->GP_Volumetric_Fog)
-            .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, set0)
-            //.bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, ecs.get<sc::Camera>(GLOBAL::camera).DS)
-            .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, *rt.activeImageIndex)
-            .pushConstants(yic::renderLibrary->GP_Volumetric_Fog.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (glm::mat4), &lightMat);
-            cmd.draw(3, 1, 0, 0);
+            if (!GLOBAL::showVolumetricFog) {
+                const auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
+                const auto lightMat = sm::DirectionLightTool::updateLightSpaceMat(glm::vec3(7.f, 3.f, 2.f), cam.getProj(), cam.getView());
+                constexpr vk::FragmentShadingRateCombinerOpKHR vrsCombiner[] = {
+                        vk::FragmentShadingRateCombinerOpKHR::eReplace,
+                        vk::FragmentShadingRateCombinerOpKHR::eReplace,
+                };
+                cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
+                cmd.setFragmentShadingRateKHR(vk::Extent2D{4, 4}, vrsCombiner, *ct.dynamicDispatcher);
+                cmd.bindPipeline_(yic::renderLibrary->GP_Volumetric_Fog)
+                .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, set0)
+                .bindDescriptorSets_(yic::renderLibrary->GP_Volumetric_Fog, *rt.activeImageIndex)
+                .pushConstants(yic::renderLibrary->GP_Volumetric_Fog.acquirePipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof (glm::mat4), &lightMat);
+                cmd.draw(3, 1, 0, 0);
+            } else {
+                cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
+                .bindPipeline_(yic::renderLibrary->GP_Dummy)
+                .draw(3, 1, 0, 0);
+            }
         };
 
         auto drawci_RTShadow = vot::ImageDrawCI()
@@ -110,7 +120,6 @@ namespace sc {
             if (yic::sceneSystem->acquireActiveScene()->tlas != nullptr) {
                 cmd.bindPipeline_(yic::renderLibrary->RP_Shadow)
                 .bindDescriptorSets_(yic::renderLibrary->RP_Shadow, set0)
-               // .bindDescriptorSets_(yic::renderLibrary->RP_Shadow, ecs.get<sc::Camera>(GLOBAL::camera).DS)
                 .bindDescriptorSets_(yic::renderLibrary->RP_Shadow)
                 .traceRaysKHR_(yic::renderLibrary->RP_Shadow, vot::Resolutions::eQHDExtent, 1, ct.dynamicDispatcher);
             }
@@ -118,7 +127,6 @@ namespace sc {
 
         auto draw_post = [&]{
             cmd.setRenderArea_(vot::Resolutions::eQHDExtent)
-            //.bindDescriptorSets_(yic::renderLibrary->GP_Post, ecs.get<sc::Camera>(GLOBAL::camera).DS)
             .bindDescriptorSets_(yic::renderLibrary->GP_Post, set0)
             .bindPipeline_(yic::renderLibrary->GP_Post)
             .bindDescriptorSets_(yic::renderLibrary->GP_Post, *rt.activeImageIndex)
@@ -134,16 +142,16 @@ namespace sc {
             .target = yic::renderLibrary->RT_GBuffer,
             .execute = [&]{
                 cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
-                draw_meshes(yic::renderLibrary->GP_Basic_Assimp, ecs.view<const vot::RenderVisibleTag, const vot::RenderComponent>(entt::exclude<vot::MMDTag>));
-                draw_meshes(yic::renderLibrary->GP_Basic_PMX, ecs.view<const vot::RenderVisibleTag, const vot::MMDTag, const vot::RenderComponent>());
+                draw_meshes(yic::renderLibrary->GP_Basic_Assimp, ecs.view<const vot::mark::eVisible, const vot::RenderComponent>(entt::exclude<vot::mark::eMMD>));
+                draw_meshes(yic::renderLibrary->GP_Basic_PMX, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());
             }
         });
         uRenderGraph->addPass({
             .target = yic::renderLibrary->RT_ShadowMap,
             .execute = [&]{
                 cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
-                draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_Assimp, ecs.view<const vot::RenderVisibleTag, const vot::RenderComponent>(entt::exclude<vot::MMDTag>));
-                draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_PMX, ecs.view<const vot::RenderVisibleTag, const vot::MMDTag, const vot::RenderComponent>());
+                draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_Assimp, ecs.view<const vot::mark::eVisible, const vot::RenderComponent>(entt::exclude<vot::mark::eMMD>));
+                draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_PMX, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());
             }
         });
         uRenderGraph->addPass({

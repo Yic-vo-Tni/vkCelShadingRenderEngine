@@ -20,30 +20,27 @@ namespace rs {
     }
 
     auto ResourceSystem::frame() -> void {
-        double time = saba::GetTime();
+        const double time = saba::GetTime();
         double elapsed = time - mSaveTime;
-//        if (elapsed > 1.f / 30.f){
-//            elapsed = 1.f / 30.f;
-//        }
+
         if (elapsed > 0.5f){
             elapsed = 1.f / 30.f;
         }
         mSaveTime = time;
-        mElapsed = float(elapsed);
+        mElapsed = static_cast<float>(elapsed);
 
-        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent, vot::RenderComponent>()
-                .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc,
-                          vot::AnimationComponent &ac, vot::RenderComponent &rc) {
+        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent>()
+                .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc, vot::AnimationComponent &ac) {
                     if (info.playAnimation) {
                         if (!vc.isMMD) {
                             mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
                         } else {
-                            mAnimTime += float(elapsed);
+                            mAnimTime += static_cast<float>(elapsed);
                             vc.pmx->BeginAnimation();
                             vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), mAnimTime * 30.f, mElapsed);
                             vc.pmx->EndAnimation();
 
-                            mLoader->mMmdLoader->updateAnim(vc, rc);
+                            mAnimator->sampleVmd(vc);
 
                             mLoader->mAudio->play();
                         }
@@ -59,7 +56,7 @@ namespace rs {
                         if (!vc.isMMD) {
                             mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
                         } else {
-                            mLoader->mMmdLoader->updateAnimVert(vc, rc);
+                            mAnimator->syncVmd(vc, rc);
                         }
                     }
                 });

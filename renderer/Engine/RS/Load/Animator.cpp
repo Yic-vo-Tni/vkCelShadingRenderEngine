@@ -3,6 +3,13 @@
 //
 
 #include "Animator.h"
+#include "Core/Management/TripleBufferIndexManager.h"
+
+#include <saba/src/Saba/Base/Path.h>
+#include <saba/src/Saba/Model/MMD/PMDModel.h>
+#include <saba/src/Saba/Model/MMD/VMDFile.h>
+#include <saba/src/Saba/Model/MMD/VMDAnimation.h>
+#include <saba/src/Saba/Model/MMD/VMDCameraAnimation.h>
 
 namespace rs {
 
@@ -29,7 +36,6 @@ namespace rs {
             if (boneInfoMap.find(nodeName) != boneInfoMap.end()){
                 auto index = boneInfoMap[nodeName].id;
                 auto invBind = boneInfoMap[nodeName].offset;
-                // boneMats[index] = globalInverse * globalTransform * invBind;
                 boneMats[index] = globalTransform * invBind;
             }
 
@@ -42,6 +48,40 @@ namespace rs {
         if (boneMatBuf){
             boneMatBuf->update(boneMats);
         };
+    }
+
+
+    auto Animator::bindVmd(const std::pair<vot::string, saba::VMDFile>& vmdFile, const vot::VertexDataComponent& vc, vot::AnimationComponent& ac) -> void {
+        auto vmd = std::make_unique<saba::VMDAnimation>();
+        if (!vmd->Create(vc.pmx)){
+            yic::logger->error("failed to load vmd");
+        }
+
+        if (!vmd->Add(vmdFile.second)){
+
+        }
+        vmd->SyncPhysics(0.f);
+
+        ac.vmd = std::pair(vmdFile.first, std::move(vmd));
+    }
+
+    auto Animator::sampleVmd(vot::VertexDataComponent& vc) -> void {
+        vc.pmx->Update();
+        const auto pos = vc.pmx->GetUpdatePositions();
+        const auto nor = vc.pmx->GetUpdateNormals();
+        const auto uv = vc.pmx->GetUpdateUVs();
+
+        const auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).logic_cur();
+
+        for(auto i = 0; i < vc.pmx->GetVertexCount(); i++){
+            vc.mmdVertices_pmr[index][i] = vot::MMDVertex{pos[i], nor[i], uv[i]};
+        }
+    }
+
+
+    auto Animator::syncVmd(const vot::VertexDataComponent &vc, const vot::RenderComponent &rc) -> void {
+        const auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
+        rc.vertexBuffer[index]->update(vc.mmdVertices_pmr[index]);
     }
 
 } // rs

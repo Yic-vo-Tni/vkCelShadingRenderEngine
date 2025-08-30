@@ -245,4 +245,5 @@ void main() {
     color = render(ray, point_cam, time);
 
     outColor = vec4(linear_to_srgb(color), 1.0);
+    //outColor =  vec4(0.88f, 0.82f, 0.76f, 0.5f); // #E0D1C2
 }

@@ -126,22 +126,22 @@ namespace rhi {
     auto ImGuiDescriptorManager::drawImage(const vot::string &id, const ImVec2 &imageSize) -> void {
         if (!mDescriptors[id])
             return;
-        auto& descriptors = mDescriptors[id]->acquire();
+        const auto& descriptors = mDescriptors[id]->acquire();
 
         if (*activeImageIndex < 0 || *activeImageIndex == UINT32_MAX){
             for(const auto& des : descriptors){
                  ImGui::Image((ImTextureID)des, imageSize);
             }
         } else {
-            auto e = vot::Resolutions::eQHDExtent;
-            auto windowSize = ImGui::GetWindowSize();
+            constexpr auto e = vot::Resolutions::eQHDExtent;
+            const auto windowSize = ImGui::GetWindowSize();
 
-            float scaleX = (float) windowSize.x / (float) e.width;
-            float scaleY = (float) windowSize.y / (float) e.height;
-            float scale = std::min(scaleX, scaleY);
+            const float scaleX = static_cast<float>(windowSize.x) / static_cast<float>(e.width);
+            const float scaleY = static_cast<float>(windowSize.y) / static_cast<float>(e.height);
+            const float scale = std::min(scaleX, scaleY);
 
-            auto scaledWidth = (float) e.width * scale;
-            auto scaledHeight = (float) e.height * scale;
+            const auto scaledWidth = static_cast<float>(e.width) * scale;
+            const auto scaledHeight = static_cast<float>(e.height) * scale;
 
             float cursorX = (windowSize.x - scaledWidth) * 0.5f;
             float cursorY = (windowSize.y - scaledHeight + 40.f) * 0.5f;
@@ -149,7 +149,7 @@ namespace rhi {
             ImGui::SetCursorPos({cursorX > 0 ? cursorX : 0, cursorY > 0 ? cursorY : 0});
 
             if (!descriptors.empty())
-                ImGui::Image(descriptors.size() > *activeImageIndex ? (ImTextureID)descriptors[*activeImageIndex] : (ImTextureID)descriptors.back(), ImVec2{scaledWidth, scaledHeight});
+                ImGui::Image(descriptors.size() > *activeImageIndex ? static_cast<ImTextureID>(descriptors[*activeImageIndex]) : static_cast<ImTextureID>(descriptors.back()), ImVec2{scaledWidth, scaledHeight});
         }
     }
 } // rhi

@@ -15,8 +15,6 @@ namespace sc {
         Ecs();
         ~Ecs();
 
-        auto prepare() -> void;
-
         auto render() -> void;
         auto fastLogic() -> void;
         auto slowLogic() -> void;

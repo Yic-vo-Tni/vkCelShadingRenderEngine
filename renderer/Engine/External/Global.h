@@ -15,6 +15,9 @@ namespace GLOBAL{
     inline float fps;
     inline entt::entity camera;
     inline entt::entity set0;
+
+    inline bool showVolumetricClouds{false};
+    inline bool showVolumetricFog{false};
 }
 
 #endif //VKCELSHADINGRENDERER_GLOBAL_H

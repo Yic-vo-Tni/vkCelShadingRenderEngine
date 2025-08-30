@@ -20,18 +20,29 @@ namespace rs {
     class Loader{
     public:
         explicit Loader(entt::registry& registry);
-        //explicit Loader(flecs::world& world);
         ~Loader();
+
+    public:
+      auto gVmdFiles() const { return mMmdLoader->vmdFiles; }
 
     private:
         auto asyncLoadA() -> void;
+
     private:
-        //flecs::world& ecs;
+        auto onResourcePaths(const vot::string& pt) -> void;
+        auto LoadModel(const vot::string& pt) -> void;
+        auto onModelLoaded(const ev::tModelLoaded& ev) -> void;
+        auto onModelLoadedS() -> void;
+
+        auto check(const vot::string& pt, const vot::vector<vot::string>& suffixes) -> bool {
+            return std::ranges::any_of(suffixes, [&](const vot::string& suffix){
+                 return pt.ends_with(suffix);
+             });
+        }
+    private:
         entt::registry& ecs;
-        entt::entity e;
         ev::pVkSetupContext ct{};
         std::atomic<bool> _readyA{false}, _doneA{false};
-
         std::atomic<bool> _readyB{false}, _doneB{false};
     public:
         std::unique_ptr<AssimpLoader> mAssimpLoader;

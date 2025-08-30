@@ -135,7 +135,7 @@ namespace ui {
         ImGuiStyle &style = ImGui::GetStyle();
         style.Colors[ImGuiCol_WindowBg].w = 0.f;
         style.WindowPadding = ImVec2(0.f, 0.f);
-        style.WindowBorderSize = 0.f;
+       // style.WindowBorderSize = 0.f;
         style.FramePadding = ImVec2(15.f, 15.f);
         style.ItemSpacing = ImVec2(20.f, 20.f);
         style.TabRounding = 4;
@@ -144,6 +144,9 @@ namespace ui {
         style.GrabRounding = 3;
         style.FrameRounding = 3;
         style.PopupRounding = 4;
+
+        style.ItemInnerSpacing.y = 6;
+        style.WindowBorderSize = 2.f;
 
         style.FrameBorderSize = 0.f;
 

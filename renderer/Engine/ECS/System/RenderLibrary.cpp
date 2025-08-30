@@ -26,6 +26,13 @@ namespace sc {
     RenderLibrary::~RenderLibrary() = default;
 
     auto RenderLibrary::buildPipelines() -> void {
+        GP_Dummy.combinePipelineLibrary(vot::PipelineLibrary()
+            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+            .setShaderPath("Common/screen_triangle.vert"))
+
+            .setFragmentShaderCI(vot::FragmentShaderCI()
+            .setShaderPath("Common/dummy.frag")));
+
         GP_Basic_Assimp.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0

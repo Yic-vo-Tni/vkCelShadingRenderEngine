@@ -14,107 +14,120 @@ namespace sc {
     InspectorPanel::InspectorPanel(entt::registry& registry) : ecs(registry){}
 
     auto InspectorPanel::frame() -> void {
-        yic::imguiHub->to(vot::uiWidget::ePanelWidget, [&]{
-            ecs.view<const vot::RenderVisibleTag, vot::BasicInfoComponent, vot::AnimationComponent>().each(
-                    [&](entt::entity e,
-                        vot::BasicInfoComponent &info,
-                        vot::AnimationComponent &ac) {
-                auto hideId = info.name;
-                auto& activeAnim = ac.activeAnim;
-                const auto& anims = ac.animations;
-                const auto& vmd = ac.vmd;
-
-                yic::imguiHub->collapsingHeader(hideId.c_str(), [&]{
-                    ImGui::PushID(hideId.c_str());
-
-                    if (ecs.all_of<vot::MMDTag>(e)){
-                        if (ImGui::BeginCombo("Select Animation", vmd.first.empty() ? "No Animations" : vmd.first.c_str())){
-                            for(const auto & ptVmd : yic::resourceSystem->mLoader->mMmdLoader->ptVmds){
-                                if (ImGui::Selectable(ptVmd.c_str())){
-                                    yic::resourceSystem->mLoader->mMmdLoader->bindVmd(ptVmd, ecs.get<vot::VertexDataComponent>(e), ac);
-                                    yic::logger->info("bind vmd success");
-                                }
-                            }
-                            ImGui::EndCombo();
-                        }
-                    } else {
-                        if (ImGui::BeginCombo("Select Animation", anims.empty() ? "No Animations" : anims[activeAnim].first.c_str())) {
-                            for (auto i = 0; i < anims.size(); i++) {
-                                if (ImGui::Selectable(anims[i].first.c_str())) {
-                                    activeAnim = i;
-                                }
-                            }
-                            ImGui::EndCombo();
-                        }
-                    }
-
-                    if(ImGui::Button("play")){
-                        info.playAnimation = !info.playAnimation;
-                    };
-
-                    ImGui::PopID();
-                });
-
-                if (ImGui::IsItemHovered()){
-
-                }
-            });
-        });
-
-        yic::imguiHub->to(vot::uiWidget::eRenderWidget, [&]{
-            ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each([&](entt::entity e, vot::RenderComponent& rc, const vot::BasicInfoComponent& bic){
-                if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO){
-                    //auto camera = sc::camera_comp(ecs);
-                    auto camera = ecs.get<sc::Camera>(GLOBAL::camera);
-                    auto view = camera.getView();
-                    auto proj = camera.getProj();
-//                    auto view = camera->getView();
-//                    auto proj = camera->getProj();
-                    proj[1][1] = -proj[1][1];
-
-                    auto windowPos = ImGui::GetWindowPos();
-                    auto windowSize = ImGui::GetWindowSize();
-
-                    auto center = rc.center;
-                    auto T = glm::translate(glm::mat4(1.f), center);
-                    auto invT = glm::translate(glm::mat4(1.f), -center);
-
-                    auto temp = invT * rc.zmoMat * T;
-
-                    ImGuizmo::SetDrawlist();
-                    ImGuizmo::SetRect(windowPos.x, windowPos.y, windowSize.x, windowSize.y);
-                    ImGuizmo::Manipulate(glm::value_ptr(view),
-                                         glm::value_ptr(proj),
-                                         GLOBAL::gizmoOperation,
-                                         ImGuizmo::MODE::LOCAL,
-                                         glm::value_ptr(temp)
-                    );
-
-                    rc.zmoMat = T * temp * invT;
-                }
+        yic::imguiHub->to(vot::uiWidget::ePanelWidget, [&] {
+            yic::imguiHub->collapsingHeader("Atmosphere Effects", [&] {
+                ImGui::Checkbox("Volumetric Clouds", &GLOBAL::showVolumetricClouds);
+                ImGui::Checkbox("Volumetric Fog", &GLOBAL::showVolumetricFog);
             });
 
-        });
+        ecs.view<const vot::mark::eVisible, vot::BasicInfoComponent, vot::AnimationComponent>().each(
+            [&](const entt::entity e, vot::BasicInfoComponent &info, vot::AnimationComponent &ac) {
+                const auto hideId = info.name;
 
-        yic::imguiHub->to(vot::uiWidget::eViewWidget, [&]{
-            yic::imguiHub->collapsingHeader("Models", [&]{
-               // ecs.query<const vot::BasicInfoComponent>().each([&](flecs::entity_view e, const vot::BasicInfoComponent& bic){
-                ecs.view<const vot::BasicInfoComponent>().each([&](entt::entity e, const vot::BasicInfoComponent& bic){
-                    if (ImGui::Selectable(bic.name.c_str())){
-                        GLOBAL::pickON = bic.name;
-                    }
+                yic::imguiHub->collapsingHeader(hideId.c_str(), [&] {
+                    vot::scoped::ID(hideId.c_str());
+
+                    if_has<vot::mark::eMMD>(e,
+                                            [&] { drawAnimComboForMMD(e, ac); },
+                                            [&] { drawAnimComboForGeneric(ac); });
+
+                    drawPlayButton(info);
                 });
             });
-
-            yic::imguiHub->collapsingHeader("Shader Files", [&]{
-                for (auto &pt : yic::shaderHot->getBuildOrders()) {
-                    if (ImGui::Selectable(pt.c_str())) {
-                        yic::shaderHot->tempEditor(pt);
-                    }
-                }
-            });
         });
 
+        yic::imguiHub->to(vot::uiWidget::eRenderWidget, [&] {
+            drawGizmo();
+        });
+
+        yic::imguiHub->to(vot::uiWidget::eViewWidget, [&] {
+            drawModelList();
+            drawShaderFileList();
+        });
     }
 
+    auto InspectorPanel::drawAnimComboForMMD(const entt::entity &entity, vot::AnimationComponent &ac) -> void {
+        const auto& [vmd_name, vmd] = ac.vmd;
+        const auto label = fmt::format("Select Animation##{}", static_cast<uint32_t>(entity));
+
+        if (vot::scoped::Combo combo{label.c_str(), vmd_name.empty() ? "No Animations" : vmd_name.c_str()}) {
+            for(const auto & vmdFile : yic::resourceSystem->mLoader->gVmdFiles()){
+                if (ImGui::Selectable(vmdFile.first.c_str())){
+                    yic::resourceSystem->mAnimator->bindVmd(vmdFile, ecs.get<vot::VertexDataComponent>(entity), ac);
+                    if ( vmd)
+                    yic::logger->info("bind vmd success");
+                }
+            }
+        }
+    }
+
+    auto InspectorPanel::drawAnimComboForGeneric(vot::AnimationComponent &ac) -> void {
+        auto& activeAnim = ac.activeAnim;
+        const auto &anims = ac.animations;
+
+        if (vot::scoped::Combo combo{"Select Animation", anims.empty() ? "No Animations" : anims[activeAnim].first.c_str()}){
+            for (int i = 0; i < anims.size(); i++) {
+                if (ImGui::Selectable(anims[i].first.c_str())) {
+                    activeAnim = i;
+                }
+            }
+        }
+    }
+
+    auto InspectorPanel::drawPlayButton(vot::BasicInfoComponent &info) -> void {
+        if(ImGui::Button("play")){
+            info.playAnimation = !info.playAnimation;
+        }
+    }
+
+    auto InspectorPanel::drawGizmo() -> void {
+        ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each([&](entt::entity, vot::RenderComponent& rc, const vot::BasicInfoComponent& bic) {
+            if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO){
+                const auto camera = ecs.get<sc::Camera>(GLOBAL::camera);
+                auto view = camera.getView();
+                auto proj = camera.getProj();
+                proj[1][1] = -proj[1][1];
+
+                const auto windowPos = ImGui::GetWindowPos();
+                const auto windowSize = ImGui::GetWindowSize();
+
+                const auto center = rc.center;
+                const auto T = glm::translate(glm::mat4(1.f), center);
+                const auto invT = glm::translate(glm::mat4(1.f), -center);
+
+                auto temp = invT * rc.zmoMat * T;
+
+                ImGuizmo::SetDrawlist();
+                ImGuizmo::SetRect(windowPos.x, windowPos.y, windowSize.x, windowSize.y);
+                ImGuizmo::Manipulate(glm::value_ptr(view),
+                                     glm::value_ptr(proj),
+                                     GLOBAL::gizmoOperation,
+                                     ImGuizmo::MODE::LOCAL,
+                                     glm::value_ptr(temp)
+                );
+
+                rc.zmoMat = T * temp * invT;
+            }
+        });
+    }
+
+    auto InspectorPanel::drawModelList() -> void {
+        yic::imguiHub->collapsingHeader("Models", [&] {
+            ecs.view<const vot::BasicInfoComponent>().each([&](entt::entity e, const vot::BasicInfoComponent &bic) {
+                if (ImGui::Selectable(bic.name.c_str())) {
+                    GLOBAL::pickON = bic.name;
+                }
+            });
+        });
+    }
+
+    auto InspectorPanel::drawShaderFileList() -> void {
+        yic::imguiHub->collapsingHeader("Shader Files", [&] {
+            for (auto &pt: yic::shaderHot->getBuildOrders()) {
+                if (ImGui::Selectable(pt.c_str())) {
+                    yic::shaderHot->tempEditor(pt);
+                }
+            }
+        });
+    }
 } // sc
