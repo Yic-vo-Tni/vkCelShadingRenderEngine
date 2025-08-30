@@ -46,26 +46,16 @@ namespace sc {
         submissionSystem = std::make_unique<RenderSubmissionSystem>(ecs);
     }
 
-    auto Ecs::prepare() -> void {
-//        yic::systemHub.poll<ev::tModelLoaded>();
-//
-//        handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera));
-//        yic::shaderHot->frame();
-//        inspectorPanel->frame();
-//        yic::resourceSystem->frame();
-//        yic::sceneSystem->frame();
-//        submissionSystem->frame();
-    }
-
     auto Ecs::render() -> void {
         yic::systemHub.poll<ev::tModelLoaded>();
 
-        auto i = yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
+        const auto fastR = yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
+        if (fastR == 0xff) return;
 
         {
-            auto j = yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
-            if (j != 0xff)
-            {
+            handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera), fastR);
+            const auto slowR = yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
+            if (slowR != 0xff) {
                 yic::resourceSystem->frameUpdate();
             }
 
@@ -74,27 +64,25 @@ namespace sc {
 
             yic::sceneSystem->frame();
             submissionSystem->frame();
-
-            if (j != 0xff)
-                yic::indexRing.get(vot::LogicBufferType::eSlow).read_end();
         }
-        yic::indexRing.get(vot::LogicBufferType::eFast).read_end();
     }
 
     auto Ecs::fastLogic() -> void {
-        auto i = yic::indexRing.get(vot::LogicBufferType::eFast).write_begin();
+        const auto fastW = yic::indexRing.get(vot::LogicBufferType::eFast).write_begin();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        if (i == 0xff) return;
+        if (fastW == 0xff) return;
+
         {
-            handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera), i);
+            handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera), fastW);
         }
+
         yic::indexRing.get(vot::LogicBufferType::eFast).write_end();
     }
 
     auto Ecs::slowLogic() -> void {
         yic::systemHub.poll<ev::tModelLoadedSlow>();
-        auto j = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
+        const auto slowW = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
 
         static bool firstRun = true;
         if (firstRun) {
@@ -102,10 +90,11 @@ namespace sc {
             firstRun = false;
         }
 
-        if (j == 0xff ) {
-            return;
+        if (slowW == 0xff ) return;
+
+        {
+            yic::resourceSystem->frame();
         }
-        yic::resourceSystem->frame();
 
         yic::indexRing.get(vot::LogicBufferType::eSlow).write_end();
     }
