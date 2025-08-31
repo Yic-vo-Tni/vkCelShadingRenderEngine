@@ -53,6 +53,7 @@ namespace rs {
                 .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc,
                           vot::AnimationComponent &ac, vot::RenderComponent &rc) {
                     if (info.playAnimation) {
+                            yic::logger->info("sample animation");
                         if (!vc.isMMD) {
                             mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
                         } else {

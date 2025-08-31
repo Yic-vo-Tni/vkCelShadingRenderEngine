@@ -18,6 +18,8 @@ namespace GLOBAL{
 
     inline bool showVolumetricClouds{false};
     inline bool showVolumetricFog{false};
+
+    inline std::pair<float, float> mousePick{-1.f, -1.f};
 }
 
 #endif //VKCELSHADINGRENDERER_GLOBAL_H

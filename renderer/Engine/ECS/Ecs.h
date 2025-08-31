@@ -20,7 +20,6 @@ namespace sc {
         auto slowLogic() -> void;
     private:
         auto prepose() -> void;
-
     private:
         auto buildGlobalCamera() -> void;
         auto handleCameraMovement(auto& cameraEntity, auto& i) -> void;

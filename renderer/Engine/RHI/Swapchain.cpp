@@ -49,7 +49,7 @@ namespace rhi {
         auto presentMode = [&]{
             using mode = vk::PresentModeKHR;
 
-            for(const auto& m : { mode::eFifoLatestReady, mode::eMailbox, mode::eImmediate}){
+            for(const auto& m : { mode::eMailbox, mode::eFifoLatestReady, mode::eImmediate}){
                 if (std::ranges::find_if(presentModes, [&m](const mode& mode){ return mode == m;}) != presentModes.end()){
                     yic::logger->info(vk::to_string((m)));
                     return m;

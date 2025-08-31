@@ -3,10 +3,14 @@
 //
 
 #include "InspectorPanel.h"
+
+#include "RenderLibrary.h"
+#include "Core/DispatchSystem/SystemHub.h"
 #include "Editor/ImGuiHub.h"
 #include "RS/ResourceSystem.h"
 #include "Editor/ShaderHotReload/ShaderHotReload.h"
 #include "ECS/Camera/Camera.h"
+#include "RHI/Command.h"
 #include "Utils/Auxiliary.h"
 
 namespace sc {
@@ -14,6 +18,8 @@ namespace sc {
     InspectorPanel::InspectorPanel(entt::registry& registry) : ecs(registry){}
 
     auto InspectorPanel::frame() -> void {
+
+
         yic::imguiHub->to(vot::uiWidget::ePanelWidget, [&] {
             yic::imguiHub->collapsingHeader("Atmosphere Effects", [&] {
                 ImGui::Checkbox("Volumetric Clouds", &GLOBAL::showVolumetricClouds);
@@ -37,6 +43,7 @@ namespace sc {
         });
 
         yic::imguiHub->to(vot::uiWidget::eRenderWidget, [&] {
+            mousePick();
             drawGizmo();
         });
 
@@ -75,8 +82,11 @@ namespace sc {
     }
 
     auto InspectorPanel::drawPlayButton(vot::BasicInfoComponent &info) -> void {
-        if(ImGui::Button("play")){
+        const auto label = "play###" + info.name;
+        if(ImGui::Button(label.c_str())){
             info.playAnimation = !info.playAnimation;
+
+            yic::logger->warn("PPPPPPPPPPPPPPPPPPL");
         }
     }
 
@@ -129,5 +139,82 @@ namespace sc {
                 }
             }
         });
+    }
+
+    auto InspectorPanel::mousePick() -> void {
+                const auto [u, v] = GLOBAL::mousePick;
+        if (u < 0.f || v < 0.f) return;
+
+        const auto extent = yic::renderLibrary->RT_IDBuffer->config.extent;
+        auto x = static_cast<int>(u * extent.width);
+        auto y = static_cast<int>(v * extent.height);
+
+        auto dev = yic::systemHub.val<ev::pVkSetupContext>().device;
+        auto physDev = yic::systemHub.val<ev::pVkSetupContext>().physicalDevice;
+
+        vk::Buffer stagBuffer;
+        vk::DeviceMemory stagDeviceMem;
+
+        vk::BufferCreateInfo bufferInfo{};
+        bufferInfo.size  = sizeof(uint32_t);
+        bufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
+        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+        stagBuffer = dev->createBuffer(bufferInfo);
+
+        vk::MemoryRequirements memReq = dev->getBufferMemoryRequirements(stagBuffer);
+
+        vk::PhysicalDeviceMemoryProperties memProps = physDev->getMemoryProperties();
+        uint32_t memoryTypeIndex = UINT32_MAX;
+        for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
+            if ((memReq.memoryTypeBits & (1 << i)) &&
+                (memProps.memoryTypes[i].propertyFlags &
+                (vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent))) {
+                memoryTypeIndex = i;
+                break;
+                }
+        }
+
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize  = memReq.size;
+        allocInfo.memoryTypeIndex = memoryTypeIndex;
+
+        stagDeviceMem = dev->allocateMemory(allocInfo);
+
+        dev->bindBufferMemory(stagBuffer, stagDeviceMem, 0);
+
+        yic::command->drawOneTimeSubmit([&](vot::CommandBuffer& cmd) {
+            auto region = vk::BufferImageCopy()
+                .setBufferOffset(0)
+                .setBufferRowLength(0)
+            .setBufferImageHeight(0)
+            .setImageSubresource(vk::ImageSubresourceLayers()
+                .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1)
+                .setMipLevel(0))
+            .setImageOffset(vk::Offset3D(x, y, 0))
+            .setImageExtent(vk::Extent3D(1, 1, 1));
+
+            cmd.copyImageToBuffer(yic::renderLibrary->RT_IDBuffer->images, vk::ImageLayout::eTransferSrcOptimal, stagBuffer, region);
+        });
+
+        auto entityID = 0u;
+        const void* data = dev->mapMemory(stagDeviceMem, 0, sizeof(uint32_t));
+        std::memcpy(&entityID, data, sizeof(uint32_t));
+        dev->unmapMemory(stagDeviceMem);
+
+        dev->destroy(stagBuffer);
+        dev->free(stagDeviceMem);
+
+        GLOBAL::mousePick = {-1.f, -1.f};
+
+        if (entityID != 0){
+            auto e = static_cast<entt::entity>(entityID);
+            yic::logger->warn(entityID);
+            if (ecs.valid(e)) {
+                GLOBAL::pickON = ecs.get<vot::BasicInfoComponent>(e).name;
+            }
+        }
     }
 } // sc

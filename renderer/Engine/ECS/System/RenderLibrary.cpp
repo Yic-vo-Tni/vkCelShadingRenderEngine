@@ -63,6 +63,29 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/model.frag")));
 
+        GP_IDBuffer.combinePipelineLibrary(vot::PipelineLibrary()
+            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+            .SET0
+            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(IDBufferPushConstant)}))
+
+            .setRenderPass2CI(vot::RenderPass2CI()
+            .setColorAttachmentFormats({vk::Format::eR32Uint})
+            .setRenderingDepth(vk::True))
+
+            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
+            .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos)))
+
+            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+            .setShaderPath("Basic/IDBuffer.vert"))
+
+            .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
+            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(std::nullopt, vk::False)}))
+
+            .setFragmentShaderCI(vot::FragmentShaderCI()
+            .setShaderPath("Basic/IDBuffer.frag"))
+        );
+
         GP_Basic_PMX.combinePipelineLibrary(GP_Basic_Assimp.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
@@ -158,7 +181,7 @@ namespace sc {
     }
 
     auto RenderLibrary::buildRenderTarget() -> void {
-        auto RT_RESOLUTION = vot::Resolutions::eQHDExtent;
+        constexpr auto RT_RESOLUTION = vot::Resolutions::eQHDExtent;
 
         RT_GBuffer = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
@@ -169,6 +192,14 @@ namespace sc {
                 .setExtent(RT_RESOLUTION)
                 .setDstDepthImageLayout(vk::ImageLayout::eRenderingLocalReadKHR)
                 .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Main RT Image");
+
+        RT_IDBuffer = yic::allocator->allocImage(vot::ImageCI()
+                .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
+                .addUsage(vk::ImageUsageFlagBits::eTransferSrc)
+                .setExtent(RT_RESOLUTION)
+                .setFormat(vk::Format::eR32Uint)
+                .setImageCount(frameImageCount)
+                .setDstImageLayout(vk::ImageLayout::eTransferSrcOptimal), "ID buffer RT Image");
 
         RT_ShadowMap = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)

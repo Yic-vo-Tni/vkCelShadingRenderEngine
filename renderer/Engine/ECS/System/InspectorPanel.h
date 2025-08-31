@@ -26,7 +26,7 @@ namespace sc {
         auto drawGizmo() -> void;
         auto drawModelList() -> void;
         auto drawShaderFileList() -> void;
-
+        auto mousePick() -> void;
     private:
         entt::registry& ecs;
     };

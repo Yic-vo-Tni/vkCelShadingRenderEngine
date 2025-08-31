@@ -294,7 +294,28 @@ namespace rhi {
         }
 
         //if (check(vot::imageFlagBits::eUpdateColorToImGui)){ yic::imguiImage->updateImage(id, imageViews); }
-        if (config.uiWidget.has_value()) { yic::imguiImage->updateImage(id, imageViews); yic::imguiHub->bind(config.uiWidget.value(), [=]{ yic::imguiImage->drawImage(id); }); }
+        if (config.uiWidget.has_value()) {
+            yic::imguiImage->updateImage(id, imageViews);
+            yic::imguiHub->bind(config.uiWidget.value(), [=] {
+                yic::imguiImage->drawImage(id);
+
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    const ImVec2 min = ImGui::GetItemRectMin();
+                    const ImVec2 max = ImGui::GetItemRectMax();
+                    const ImVec2 mouse = ImGui::GetMousePos();
+
+                    float u = (mouse.x - min.x) / (max.x - min.x);
+                    float v = (mouse.y - min.y) / (max.y - min.y);
+
+                    u = std::clamp(u, 0.0f, 1.0f);
+                    v = std::clamp(v, 0.0f, 1.0f);
+
+                    GLOBAL::mousePick = std::pair(u, v);
+
+                    yic::logger->warn("Mouse pick u:{0}, v{1}", u, v);
+                }
+            });
+        }
 
         if (check(vot::imageFlagBits::eDepthStencil)){
             auto feature = vk::FormatFeatureFlagBits::eDepthStencilAttachment;

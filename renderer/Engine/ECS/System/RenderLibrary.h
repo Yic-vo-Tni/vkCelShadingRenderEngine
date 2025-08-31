@@ -11,6 +11,11 @@
 
 namespace sc {
 
+    struct IDBufferPushConstant {
+        glm::mat4 m;
+        uint32_t objId;
+    };
+
     class RenderLibrary {
         using fnUniqueDescirptor = std::function<void()>;
     public:
@@ -26,6 +31,8 @@ namespace sc {
         rhi::GraphicsPipeline GP_ShadowMap_Assimp;
         rhi::GraphicsPipeline GP_ShadowMap_PMX;
         rhi::GraphicsPipeline GP_Dummy;
+        rhi::GraphicsPipeline GP_IDBuffer;
+
         rhi::RayTracingPipeline RP_Shadow;
 
         enum eGBuffer : uint8_t {
@@ -40,6 +47,7 @@ namespace sc {
         vot::Image_sptr RT_Volumetric_Clouds;
         vot::Image_sptr RT_Volumetric_Fog;
         vot::Image_sptr RT_ShadowMap;
+        vot::Image_sptr RT_IDBuffer;
 
         vot::Image_sptr RTX_RayTracing;
 

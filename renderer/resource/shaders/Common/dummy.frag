@@ -11,7 +11,7 @@ void main() {
     }
     v /= 500.0;
 
-    vec3 base = vec3(0.15, 0.15, 0.15); // #262626
+    vec3 base = vec3(0.15, 0.15, 0.15);
 
     float grad = gl_FragCoord.y / 2560.0;
     vec3 color = mix(base * 0.9, base * 1.05, grad);
