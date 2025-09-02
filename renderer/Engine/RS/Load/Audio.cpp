@@ -65,6 +65,39 @@ namespace rs {
             ma_sound_seek_to_pcm_frame(mSounds.find(mActiveSound)->second.get(), frame);
     }
 
+    auto Audio::pause() -> void {
+        if (!mActiveSound.empty()) {
+            auto sound = mSounds.find(mActiveSound)->second.get();
+            ma_sound_get_cursor_in_pcm_frames(sound, &pausedFrame);
+            ma_sound_stop(sound);
+            isPaused = true;
+        }
+    }
+
+    auto Audio::resume() -> void {
+        if (!mActiveSound.empty()) {
+            auto sound = mSounds.find(mActiveSound)->second.get();
+
+            if (isPaused) {
+                ma_sound_seek_to_pcm_frame(sound, pausedFrame);
+                isPaused = false;
+            } else {
+                ma_sound_seek_to_pcm_frame(sound, 0);
+            }
+
+            ma_sound_start(sound);
+        }
+    }
+
+    bool Audio::isPlaying() const {
+        if (mActiveSound.empty()) return false;
+        return ma_sound_is_playing(mSounds.find(mActiveSound)->second.get());
+    }
+
+    bool Audio::isPausedState() const {
+        return isPaused; // 用你现有的状态标记
+    }
+
 //    auto Audio::pos() const -> float {
 //        ma_uint64 frame = ma_sound_get_cursor_in_pcm_frames(&music, 0);
 //        return float(frame) / float(music.pSampleRate);

@@ -26,6 +26,8 @@ Engine::~Engine() {
 }
 
 auto Engine::run() -> void {
+    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+
     mFastLogicThread = std::make_unique<std::thread>([this]{
         {
             std::unique_lock<std::mutex> lock(mInitMutex);
@@ -43,6 +45,8 @@ auto Engine::run() -> void {
             mInitCondVar.notify_all();
         }
 
+        //SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
+
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
             mEcs->fastLogic();
         }
@@ -54,19 +58,22 @@ auto Engine::run() -> void {
             mInitCondVar.wait(lock, [this]{ return mInit;});
         }
 
-        while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+
+        while (!mWindow->shouldClose().load(std::memory_order_relaxed)) {
             mEcs->slowLogic();
         }
     });
 
-    mRenderThread = std::make_unique<std::thread>([this]{
+    mRenderThread = std::make_unique<std::thread>([this] {
         {
             std::unique_lock<std::mutex> lock(mInitMutex);
-            mInitCondVar.wait(lock, [this]{ return mInit;});
+            mInitCondVar.wait(lock, [this] { return mInit; });
         }
 
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
-//            mEcs->prepare();
             mEcs->render();
             mRhi->render();
         }

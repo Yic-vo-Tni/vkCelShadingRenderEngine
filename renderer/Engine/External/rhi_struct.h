@@ -25,6 +25,8 @@ namespace vot {
         return static_cast<uint64_t>(t);
     }
 
+    using u32 = uint32_t;
+    using u64 = uint64_t;
 }
 
 namespace vot::inline ui{
@@ -62,6 +64,17 @@ namespace vot::inline rhi{
         eHostSequentialWrite = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         eDedicated = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
     };
+    inline allocStrategy operator|(allocStrategy lhs, allocStrategy rhs) {
+        using T = std::underlying_type_t<allocStrategy>;
+        return static_cast<allocStrategy>(
+            static_cast<T>(lhs) | static_cast<T>(rhs)
+        );
+    }
+
+    inline allocStrategy& operator|=(allocStrategy& lhs, allocStrategy rhs) {
+        lhs = lhs | rhs;
+        return lhs;
+    }
 
     enum imageFlagBits : uint32_t{
         eNone = 0,

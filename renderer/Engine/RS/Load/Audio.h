@@ -76,16 +76,20 @@ namespace rs {
         auto play() -> void;
         auto stop() -> void;
         auto seek(float seconds) -> void;
-//        auto pos() const -> float;
+        auto pause() -> void;
+        auto resume() -> void;
+        auto isPlaying() const -> bool;
+        auto isPausedState() const -> bool;
 
-    public:
-//        auto& gSounds() { return mSounds; }
+        bool isPaused = false;
     private:
         ma_engine mAudioEngine{};
 
         vot::string mActiveSound{};
         vot::unordered_map<vot::string, std::unique_ptr<ma_sound>> mSounds;
         uint8_t handle = 0;
+
+        ma_uint64 pausedFrame = 0;
     };
 
 } // rs

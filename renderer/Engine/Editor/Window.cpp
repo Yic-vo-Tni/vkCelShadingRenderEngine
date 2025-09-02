@@ -7,6 +7,9 @@
 
 #include <utility>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 namespace yic {
 
     inline auto framebufferSizeCallback = [](GLFWwindow *w, int width, int height) {
@@ -112,6 +115,8 @@ namespace yic {
 
         glfwSetWindowCloseCallback(mWindow, setWindowCloseCallback);
 
+        setWindowIcon(mWindow, tex_path "icon.jpg");
+
         try {
             while(true){
                 if (closeRequested.load(std::memory_order_relaxed) && closeRender.load(std::memory_order_relaxed)) return true;
@@ -201,5 +206,24 @@ namespace yic {
 //            sc::globalCamera.firstMouse = true;
         }
     }
+
+    auto Window::setWindowIcon(GLFWwindow* window, const char* filename) const -> void {
+        int width, height, channels;
+        unsigned char* pixels = stbi_load(filename, &width, &height, &channels, 4);
+        if (!pixels) {
+            printf("Failed to load icon: %s\n", filename);
+            return;
+        }
+
+        GLFWimage images[1];
+        images[0].width  = width;
+        images[0].height = height;
+        images[0].pixels = pixels;
+
+        glfwSetWindowIcon(window, 1, images);
+
+        stbi_image_free(pixels);
+    }
+
 
 } // yic

@@ -25,7 +25,7 @@ namespace rhi {
     TimelineSemaphore::~TimelineSemaphore() = default;
 
     auto TimelineSemaphore::submit(const vot::SubmitInfo& submitInfo) -> void {
-        auto timelineSubmitInfo = vk::TimelineSemaphoreSubmitInfo()
+        const auto timelineSubmitInfo = vk::TimelineSemaphoreSubmitInfo()
                 .setWaitSemaphoreValues(submitInfo.waitValues)
                 .setSignalSemaphoreValues(submitInfo.signalValues);
 

@@ -18,10 +18,9 @@ namespace sc {
     InspectorPanel::InspectorPanel(entt::registry& registry) : ecs(registry){}
 
     auto InspectorPanel::frame() -> void {
-
-
         yic::imguiHub->to(vot::uiWidget::ePanelWidget, [&] {
             yic::imguiHub->collapsingHeader("Atmosphere Effects", [&] {
+                ImGui::Checkbox("Play Anims", &GLOBAL::playAllAnim);
                 ImGui::Checkbox("Volumetric Clouds", &GLOBAL::showVolumetricClouds);
                 ImGui::Checkbox("Volumetric Fog", &GLOBAL::showVolumetricFog);
             });
@@ -31,13 +30,13 @@ namespace sc {
                 const auto hideId = info.name;
 
                 yic::imguiHub->collapsingHeader(hideId.c_str(), [&] {
-                    vot::scoped::ID(hideId.c_str());
+                    vot::scoped::ID id(hideId.c_str());
 
                     if_has<vot::mark::eMMD>(e,
                                             [&] { drawAnimComboForMMD(e, ac); },
                                             [&] { drawAnimComboForGeneric(ac); });
 
-                    drawPlayButton(info);
+                    drawPlayButton(info, ac);
                 });
             });
         });
@@ -81,12 +80,16 @@ namespace sc {
         }
     }
 
-    auto InspectorPanel::drawPlayButton(vot::BasicInfoComponent &info) -> void {
-        const auto label = "play###" + info.name;
-        if(ImGui::Button(label.c_str())){
-            info.playAnimation = !info.playAnimation;
+    auto InspectorPanel::drawPlayButton(vot::BasicInfoComponent &info, vot::AnimationComponent& ac) -> void {
+        const auto playAnimLabel = "play###play_" + info.name;
+        const auto enableAnimLabel = "enableAnim###enable_" + info.name;
 
-            yic::logger->warn("PPPPPPPPPPPPPPPPPPL");
+        ImGui::Checkbox(enableAnimLabel.c_str(), &ac.enableAnim);
+
+        ImGui::SameLine();
+
+        if(ImGui::Button(playAnimLabel.c_str())){
+            info.playAnimation = !info.playAnimation;
         }
     }
 

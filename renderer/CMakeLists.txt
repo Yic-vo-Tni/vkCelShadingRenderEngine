@@ -29,6 +29,7 @@ set(r_shader_path "/renderer/resource/shaders/")
 set(spv_path "${CMAKE_SOURCE_DIR}/renderer/resource/shaders_spv/")
 set(imgui_ini_path "${CMAKE_SOURCE_DIR}/renderer/Engine/Editor/")
 set(webview_path "${CMAKE_SOURCE_DIR}/renderer/resource/webview/")
+set(tex_path "${CMAKE_SOURCE_DIR}/renderer/resource/Texture/")
 set(common_libs
         Vulkan::Vulkan
         imgui

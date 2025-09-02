@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 
 project(VkCelShadingRenderer LANGUAGES CXX )
+
 if (MSVC)
     enable_language(CUDA)
     set(CUDAToolkit_ROOT "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6")
@@ -22,6 +23,13 @@ elseif (MINGW)
 endif ()
 
 add_executable(VkCelShadingRenderer main.cpp)
+
+
+target_link_options(VkCelShadingRenderer PRIVATE $<$<CONFIG:Release>:-mwindows>)
+set_target_properties(VkCelShadingRenderer PROPERTIES
+        LINK_FLAGS_RELEASE "-mwindows"
+)
+
 #add_executable(sabaMiddleWare sabaMiddleWare.cpp)
 #add_executable(nSaba saba.cpp)
 

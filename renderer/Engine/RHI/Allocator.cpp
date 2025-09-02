@@ -115,7 +115,6 @@ namespace rhi {
 
         VkBufferCreateInfo createInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .size = ci.devSize, .usage = static_cast<VkBufferUsageFlags>(ci.flags)};
         VmaAllocationCreateInfo allocInfo{.flags = static_cast<VmaAllocationCreateFlags>(ci.allocStrategy), .usage = static_cast<VmaMemoryUsage>(ci.memoryUsage)};
-//        allocInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
         if (vmaCreateBuffer(mVmaAllocator, &createInfo, &allocInfo, &buf, &alloc, nullptr) != VK_SUCCESS)
             throw std::runtime_error("failed to create buf");

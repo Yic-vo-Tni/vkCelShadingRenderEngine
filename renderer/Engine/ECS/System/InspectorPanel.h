@@ -22,7 +22,7 @@ namespace sc {
     private:
         auto drawAnimComboForMMD(const entt::entity& entity, vot::AnimationComponent& ac) -> void;
         auto drawAnimComboForGeneric(vot::AnimationComponent& ac) -> void;
-        auto drawPlayButton(vot::BasicInfoComponent& info) -> void;
+        auto drawPlayButton(vot::BasicInfoComponent& info, vot::AnimationComponent& ac) -> void;
         auto drawGizmo() -> void;
         auto drawModelList() -> void;
         auto drawShaderFileList() -> void;

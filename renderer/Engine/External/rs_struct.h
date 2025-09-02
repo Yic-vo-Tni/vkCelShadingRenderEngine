@@ -46,9 +46,9 @@ enum VertexType{
 
 template<bool HasBones>
 struct VertexT{
-    glm::vec3 pos;
-    glm::vec3 nor;
-    glm::vec2 uv;
+    glm::vec3 pos{};
+    glm::vec3 nor{};
+    glm::vec2 uv{};
 
     std::conditional_t<HasBones, glm::ivec4, std::monostate> boneIds{-1};
     std::conditional_t<HasBones, glm::vec4, std::monostate> boneWeight{0.f};
@@ -109,6 +109,8 @@ struct RenderComponent{
 
 struct AnimationComponent{
     int boneCount;
+    float animTime{0.f};
+    bool enableAnim{false};
     uint8_t activeAnim{0};
     vot::map<vot::string, BoneInfo> boneMap;
     vot::vector<std::pair<vot::string, std::shared_ptr<::rs::Animation>>> animations;

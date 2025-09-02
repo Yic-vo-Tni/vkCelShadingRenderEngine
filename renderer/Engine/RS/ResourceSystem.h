@@ -22,7 +22,7 @@ namespace rs {
     private:
         entt::registry& ecs;
         double mSaveTime{};
-        float mElapsed{}, mAnimTime{0.f};
+        float mElapsed{};
         int lastFrame{0};
     public:
         std::unique_ptr<Loader> mLoader;

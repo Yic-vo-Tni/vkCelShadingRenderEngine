@@ -36,6 +36,7 @@ namespace yic {
     private:
         auto controller() -> void;
         auto createWindow() -> GLFWwindow*;
+        auto setWindowIcon(GLFWwindow* window, const char* filename) const -> void;
 
     private:
         int mWidth{}, mHeight{};

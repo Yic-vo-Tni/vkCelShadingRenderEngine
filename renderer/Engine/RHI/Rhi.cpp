@@ -87,7 +87,7 @@ namespace rhi {
         mSwapchain = std::make_unique<Swapchain>();
 
         PipeRSManager = PipeRSManager::make();
-        yic::command = rhi::CommandManager::make();
+        yic::command = CommandManager::make();
         yic::timeline = rhi::TimelineSemaphore::make();
         yic::allocator = rhi::Allocator::make();
         yic::desSystem = rhi::DescriptorSystem::make();

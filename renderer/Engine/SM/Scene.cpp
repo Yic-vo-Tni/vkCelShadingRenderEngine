@@ -51,10 +51,10 @@ namespace sm {
         elapsedTime += (1 / GLOBAL::fps);
 
         auto playAnim = false;
-        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent>()
+        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent, vot::AnimationComponent>()
         .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
-                vot::RenderComponent &rc, vot::RayTracingComponent &rtc) {
-            if (bc.playAnimation){
+                vot::RenderComponent &rc, vot::RayTracingComponent &rtc, vot::AnimationComponent &ac) {
+            if (ac.enableAnim && (GLOBAL::playAllAnim || bc.playAnimation)){
                 bool onlyTransform = true;
             //    if (frameCounter % 90 != 0) onlyTransform = true;
 
