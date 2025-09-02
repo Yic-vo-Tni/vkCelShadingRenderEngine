@@ -14,6 +14,7 @@
 #include "AssimpLoader.h"
 #include "MmdLoader.h"
 #include "Audio.h"
+#include <barrier>
 
 namespace rs {
 
@@ -42,8 +43,8 @@ namespace rs {
     private:
         entt::registry& ecs;
         ev::pVkSetupContext ct{};
-        std::atomic<bool> _readyA{false}, _doneA{false};
-        std::atomic<bool> _readyB{false}, _doneB{false};
+
+        std::barrier<> sync_point;
     public:
         std::unique_ptr<AssimpLoader> mAssimpLoader;
         std::unique_ptr<MmdLoader> mMmdLoader;

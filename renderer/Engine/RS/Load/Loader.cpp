@@ -13,7 +13,7 @@ namespace rs {
 
     constexpr size_t _1GB = 1024 * 1024 * 1024;
 
-    Loader::Loader(entt::registry& registry) : ecs(registry) {
+    Loader::Loader(entt::registry& registry) : ecs(registry), sync_point(2) {
         ct = yic::systemHub.val<ev::pVkSetupContext>();
 
         mAssimpLoader = std::make_unique<AssimpLoader>();
@@ -47,13 +47,6 @@ namespace rs {
     }
 
     auto Loader::LoadModel(const vot::string& pt) -> void {
-        {
-            _readyA.store(false, std::memory_order_relaxed);
-            _doneA.store(false, std::memory_order_relaxed);
-            _readyB.store(false, std::memory_order_relaxed);
-            _doneB.store(false, std::memory_order_relaxed);
-        }
-
         vot::BasicInfoComponent basicInfoComponent{};
         vot::VertexDataComponent vertexDataComponent{};
         vot::RenderComponent renderComponent{};
@@ -68,58 +61,36 @@ namespace rs {
         yic::sceneSystem->syncBLAS(vertexDataComponent, renderComponent, rayTracingComponent);
         GLOBAL::pickON = basicInfoComponent.name;
 
-        auto e = ecs.create();
-        yic::systemHub.publishPolling(ev::tModelLoaded{e});
+        yic::systemHub.publishPolling(ev::tModelLoaded{
+            basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent
+        });
         yic::systemHub.publishPolling(ev::tModelLoadedSlow{});
 
-        {
-            _readyA.wait(false);
-            _readyB.wait(false);
-        }
-
-        ecs.emplace<vot::BasicInfoComponent>(e, basicInfoComponent);
-        ecs.emplace<vot::VertexDataComponent>(e, vertexDataComponent);
-        ecs.emplace<vot::RenderComponent>(e, renderComponent);
-        ecs.emplace<vot::AnimationComponent>(e, animationComponent);
-        ecs.emplace<vot::RayTracingComponent>(e, rayTracingComponent);
-
-        if (vertexDataComponent.isMMD)
-            ecs.emplace<vot::mark::eMMD>(e);
-
-        {
-            _doneA.store(true, std::memory_order_release);
-            _doneA.notify_one();
-
-            _doneB.store(true, std::memory_order_release);
-            _doneB.notify_one();
-        }
     }
 
 
     auto Loader::onModelLoaded(const ev::tModelLoaded& ev) -> void {
-        {
-            _readyA.store(true, std::memory_order_release);
-            _readyA.notify_one();
-        }
+        const auto entity = ecs.create();
+        auto& [basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent] = ev;
 
-        {
-            _doneA.wait(false);
-        }
+        ecs.emplace<vot::BasicInfoComponent>(entity, basicInfoComponent);
+        ecs.emplace<vot::VertexDataComponent>(entity, vertexDataComponent);
+        ecs.emplace<vot::RenderComponent>(entity, renderComponent);
+        ecs.emplace<vot::AnimationComponent>(entity, animationComponent);
+        ecs.emplace<vot::RayTracingComponent>(entity, rayTracingComponent);
+
+        if (vertexDataComponent.isMMD)
+            ecs.emplace<vot::mark::eMMD>(entity);
 
         yic::sceneSystem->reloadTlas();
 
-        ecs.emplace<vot::mark::eVisible>(ev.entity);
+        ecs.emplace<vot::mark::eVisible>(entity);
+
+        sync_point.arrive_and_wait();
     }
 
     auto Loader::onModelLoadedS() -> void {
-        {
-            _readyB.store(true, std::memory_order_release);
-            _readyB.notify_one();
-        }
-
-        {
-            _doneB.wait(false);
-        }
+        sync_point.arrive_and_wait();
     }
 }
 

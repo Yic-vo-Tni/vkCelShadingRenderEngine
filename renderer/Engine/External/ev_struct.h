@@ -89,7 +89,13 @@ namespace ev {
 //    struct sImagePaths{ vot::vector<vot::string> paths; };
     struct tResourcesPaths{ vot::vector<vot::string> paths; };
 
-    struct tModelLoaded{ entt::entity entity; };
+    struct tModelLoaded {
+        vot::BasicInfoComponent bic{};
+        vot::VertexDataComponent vdc{};
+        vot::RenderComponent rc{};
+        vot::AnimationComponent ac{};
+        vot::RayTracingComponent rtc{};
+    };
     struct tModelLoadedSlow{};
 
     struct tUpdateScene{};

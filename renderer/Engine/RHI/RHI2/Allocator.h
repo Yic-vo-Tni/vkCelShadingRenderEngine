@@ -5,9 +5,6 @@
 #ifndef VKCELSHADINGRENDERER_TIMELINE_H
 #define VKCELSHADINGRENDERER_TIMELINE_H
 
-#define TBB_PREVIEW_CONCURRENT_LRU_CACHE 1
-#include <oneapi/tbb/concurrent_lru_cache.h>
-
 namespace rhi2 {
     template<typename Key, typename Value>
     class ThreadSafeLRUCache {

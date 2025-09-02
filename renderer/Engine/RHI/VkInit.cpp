@@ -19,7 +19,8 @@ namespace rhi {
     }
 
 
-    VkInit::VkInit(VkInit::CreateInfo createInfo) : mCreateInfo(std::move(createInfo)),
+    VkInit::VkInit(VkInit::CreateInfo createInfo) :
+    mCreateInfo(std::move(createInfo)),
                                                     mInstance(createInstance()),
                                                     mDebugMessenger(createDebugMessenger()),
                                                     mPhysicalDevice(pickPhysicalDevice()),

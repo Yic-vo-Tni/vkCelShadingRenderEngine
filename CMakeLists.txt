@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.29)
 
 project(VkCelShadingRenderer LANGUAGES CXX )
 
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+#set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g -DNDEBUG -fsanitize=address,undefined")
+#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -fsanitize=address,undefined")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG ")
+
 if (MSVC)
     enable_language(CUDA)
     set(CUDAToolkit_ROOT "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6")
