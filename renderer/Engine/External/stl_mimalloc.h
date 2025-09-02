@@ -83,6 +83,18 @@ namespace vot{
         vector<T> vec{};
     };
 
+    struct pmr_mimalloc_resource final : std::pmr::memory_resource {
+        void* do_allocate(const size_t bytes, const size_t alignment) override {
+            return mi_malloc_aligned(bytes, alignment);
+        }
+        void do_deallocate(void* p, size_t, size_t) override {
+            mi_free(p);
+        }
+        bool do_is_equal(const memory_resource& other) const noexcept override {
+            return this == &other;
+        }
+    };
+
 }
 
 

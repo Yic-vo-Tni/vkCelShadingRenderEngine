@@ -7,6 +7,7 @@
 
 #include "Buffer.h"
 #include "Image.h"
+#include "RHI2/Allocator.h"
 
 namespace rhi {
 
@@ -98,11 +99,12 @@ namespace rhi {
         VmaAllocator mVmaAllocator{};
 
     private:
-        auto acquireStagingBuffer(vk::DeviceSize deviceSize) -> stagingBufferHandle;
-        auto releaseStagingBuffer(stagingBufferHandle handle) -> void;
-        std::atomic<uint8_t> mStagBufferCounter{};
-        std::atomic<uint8_t> mDestroyCount{};
-        oneapi::tbb::concurrent_map<vk::DeviceSize , oneapi::tbb::concurrent_queue<stagingBufferHandle>> mStagingBuffers;
+        auto acquireCache(vk::DeviceSize deviceSize) -> stagingBufferHandle;
+        // auto releaseStagingBuffer(stagingBufferHandle handle) -> void;
+        // std::atomic<uint8_t> mStagBufferCounter{};
+        // std::atomic<uint8_t> mDestroyCount{};
+        // oneapi::tbb::concurrent_map<vk::DeviceSize , oneapi::tbb::concurrent_queue<stagingBufferHandle>> mStagingBuffers;
+        rhi2::ThreadSafeLRUCache<vk::DeviceSize, stagingBufferHandle> mCaches;
     };
 
 } // r// hi

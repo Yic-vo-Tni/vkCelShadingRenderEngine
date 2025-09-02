@@ -24,9 +24,6 @@ namespace vot {
     uint64_t to_u64(T t) {
         return static_cast<uint64_t>(t);
     }
-
-    using u32 = uint32_t;
-    using u64 = uint64_t;
 }
 
 namespace vot::inline ui{
@@ -464,7 +461,6 @@ struct DescriptorHandle{
     };
 
     struct ImageCI{
-        //imageFlags imageFlags = eColor;
         imageFlags imageFlags = eDefault;
         uint8_t imageCount = 1;
         uint8_t colorAttachmentCount = 1;

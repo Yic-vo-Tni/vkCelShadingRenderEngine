@@ -30,18 +30,8 @@ set_target_properties(VkCelShadingRenderer PROPERTIES
         LINK_FLAGS_RELEASE "-mwindows"
 )
 
-#add_executable(sabaMiddleWare sabaMiddleWare.cpp)
-#add_executable(nSaba saba.cpp)
-
-target_link_libraries(VkCelShadingRenderer PRIVATE renderer)
-
-#target_include_directories(sabaMiddleWare PUBLIC
-#        renderer/third
-#        subprojects/saba/src
-#)
-#target_link_libraries(sabaMiddleWare PRIVATE "Saba")
-
-#target_link_libraries(nSaba PRIVATE renderer)
 
 add_subdirectory(subprojects)
 add_subdirectory(renderer)
+
+target_link_libraries(VkCelShadingRenderer PRIVATE renderer)

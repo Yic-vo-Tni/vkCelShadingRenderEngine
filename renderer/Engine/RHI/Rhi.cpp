@@ -10,6 +10,7 @@
 #include "Allocator.h"
 #include "Descriptor.h"
 #include "DescriptorSystem.h"
+#include "RHI2/Allocator.h"
 
 namespace rhi {
     Rhi::Rhi() {
@@ -90,15 +91,16 @@ namespace rhi {
         yic::command = CommandManager::make();
         yic::timeline = rhi::TimelineSemaphore::make();
         yic::allocator = rhi::Allocator::make();
+        yic::allocator2 = rhi2::Allocator::make();
         yic::desSystem = rhi::DescriptorSystem::make();
         yic::imguiImage = rhi::ImGuiDescriptorManager::make();
-
     }
 
     Rhi::~Rhi() {
         if_debug yic::logger->warn("~ rhi");
         mSwapchain->clear();
         yic::allocator->clear();
+        rhi2::Allocator::destroy();
         yic::timeline->clear();
         yic::command->clear();
         yic::desSystem->clear();

@@ -129,4 +129,9 @@ namespace vot::inline rhi{
 #define SS_OPT(Type, Property, CamelCaseProperty) \
     std::optional<Type> Property; \
     auto& set##CamelCaseProperty(const Type& value) { (Property) = value; return *this; }
+
+namespace vot::details {
+    using u32 = uint32_t;
+    using u64 = uint64_t;
+}
 #endif //VKCELSHADINGRENDERER_PCH_H

@@ -40,7 +40,6 @@ namespace sc {
         glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        //vot::Buffer_sptr buf{};
         vot::Buffer_sptr buf[3];
     public:
         bool firstMouse = true;
@@ -49,7 +48,7 @@ namespace sc {
         ~Camera(){
             clear();
         }
-        [[nodiscard]] inline auto& getPosition()  { return position;}
+        [[nodiscard]] auto& getPosition()  { return position;}
         [[nodiscard]] inline auto& getCameraFront() const { return cameraFront;}
         [[nodiscard]] inline auto& getCameraUp() const { return cameraUp;}
         [[nodiscard]] inline auto& getDynamicSpeed() const { return dynamicSpeed;}
@@ -83,7 +82,6 @@ namespace sc {
             computeViewMatrix();
             computeProjMatrix();
 
-            //mVp = mProj * mView;
             mVpMatrix.vp = mProj * mView;
             mVpMatrix.pos_pad = glm::vec4(position.x, position.y, position.z, 0.f);
             mVpMatrix.front_pad = glm::vec4(cameraFront.x, cameraFront.y, cameraFront.z, 0.f);
@@ -114,14 +112,14 @@ namespace sc {
         }
 
 
-        auto rotateCamera(float angle, float axis_x, float axis_y, float axis_z) -> void{
-            glm::quat newRotate = glm::angleAxis(glm::radians(angle), glm::vec3 (axis_x, axis_y, axis_z));
+        auto rotateCamera(const float angle, const float axis_x, const float axis_y, const float axis_z) -> void{
+            const glm::quat newRotate = glm::angleAxis(glm::radians(angle), glm::vec3 (axis_x, axis_y, axis_z));
             orientation = newRotate * orientation;
         }
 
-        void mouseCallback(double xPos_d, double yPos_d) {
-            auto xPos = static_cast<float>(xPos_d);
-            auto yPos = static_cast<float>(yPos_d);
+        void mouseCallback(const double xPos_d, const double yPos_d) {
+            const auto xPos = static_cast<float>(xPos_d);
+            const auto yPos = static_cast<float>(yPos_d);
             if (firstMouse){
                 lastX = xPos;
                 lastY = yPos;
@@ -137,6 +135,7 @@ namespace sc {
 
             Yaw_t += xOffset;
             pitch_t += yOffset;
+
             rotate(xOffset, yOffset);
             updateCameraFront(Yaw_t, pitch_t);
         }
@@ -150,33 +149,24 @@ namespace sc {
         }
 
     private:
-        void rotate(float yaw, float pitch) {
-            glm::vec3 localUp = glm::rotate(orientation, glm::vec3(0.f, 1.f, 0.f));
-            glm::quat mPitch = glm::angleAxis(glm::radians(-pitch), glm::vec3(1.f, 0.f, 0.f));
-            glm::quat mYaw = glm::angleAxis(glm::radians(yaw), localUp);
+        void rotate(const float yaw, const float pitch) {
+            const glm::vec3 localUp = glm::rotate(orientation, glm::vec3(0.f, 1.f, 0.f));
+            const glm::quat mPitch = glm::angleAxis(glm::radians(-pitch), glm::vec3(1.f, 0.f, 0.f));
+            const glm::quat mYaw = glm::angleAxis(glm::radians(yaw), localUp);
             orientation = mPitch * mYaw * orientation;
             orientation = glm::normalize(orientation);
         }
 
         void updateCameraFront(float yaw, float pitch) {
             glm::vec3 front;
-            front.x = float(cos(glm::radians(yaw)) * cos(glm::radians(pitch)));
-            front.y = float(sin(glm::radians(pitch)));
-            front.z = float(sin(glm::radians(yaw)) * cos(glm::radians(pitch)));
+            front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+            front.y = sin(glm::radians(pitch));
+            front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
             cameraFront = glm::normalize(front);
         }
 
     };
 
-
-//inline static constexpr const char* eGlobalCamera = "global_camera";
-//
-//inline auto camera_comp(flecs::world& ecs){
-//    return ecs.entity(eGlobalCamera).get<sc::Camera>();
-//}
-//inline entt::entity eGlobalCamera;
-
-//#define camera_comp ecs.entity(sc::eGlobalCamera).get<sc::Camera>()
 
 } // sc
 

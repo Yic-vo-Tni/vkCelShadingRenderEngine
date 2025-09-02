@@ -3,6 +3,7 @@
 //
 
 #include "Allocator.h"
+#include "RHI2/Allocator.h"
 
 #include "Core/DispatchSystem/SystemHub.h"
 #include "TimelineSemaphore.h"
@@ -22,11 +23,12 @@
 
 namespace rhi {
 
-
-    Allocator::Allocator() {
+    Allocator::Allocator() : mCaches(32, [&](const stagingBufferHandle& handle) {
+        vmaDestroyBuffer(mVmaAllocator, std::get<0>(handle), std::get<1>(handle));
+    }) {
         ct = yic::systemHub.val<ev::pVkSetupContext>();
 
-        VmaAllocatorCreateInfo vmaAllocatorCreateInfo{
+        const VmaAllocatorCreateInfo vmaAllocatorCreateInfo{
             .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
             .physicalDevice = *ct.physicalDevice,
             .device = *ct.device,
@@ -34,16 +36,11 @@ namespace rhi {
         };
 
         vmaCreateAllocator(&vmaAllocatorCreateInfo, &mVmaAllocator);
+
     }
 
     auto Allocator::clear() -> void {
-        for(auto& [key, stgBuf] : mStagingBuffers){
-            stagingBufferHandle handle;
-            while(stgBuf.try_pop(handle)){
-                vmaDestroyBuffer(mVmaAllocator, std::get<0>(handle), std::get<1>(handle));
-                mDestroyCount ++;
-            }
-        }
+        mCaches.clear();
 
         vmaDestroyAllocator(mVmaAllocator);
     }
@@ -68,7 +65,7 @@ namespace rhi {
             auto [buf, alloc] = createBuffer(ci);
 
             return std::make_shared<vot::Buffer>(buf, alloc, nullptr, mVmaAllocator, [this, deviceSize, buf](const void* src){
-                auto stagingBufferHandle = acquireStagingBuffer(deviceSize);
+                auto stagingBufferHandle = acquireCache(deviceSize);
                 auto& [stgBuf, stagAlloc, s] = stagingBufferHandle;
 
                 mapBuffer(stagAlloc, deviceSize, src, false);
@@ -78,10 +75,10 @@ namespace rhi {
                     resetBuffer(stgBuf, cmd);
                 });
 
-                releaseStagingBuffer(stagingBufferHandle);
+             //   releaseStagingBuffer(stagingBufferHandle);
             }, id);
         }
-        auto stagingBufferHandle = acquireStagingBuffer(deviceSize);
+        auto stagingBufferHandle = acquireCache(deviceSize);
         auto& [stagingBuffer, stagingAlloc, size] = stagingBufferHandle;
 
         mapBuffer(stagingAlloc, deviceSize, data, false);
@@ -92,10 +89,10 @@ namespace rhi {
             copyBuffer(stagingBuffer, buf, deviceSize, cmd);
             resetBuffer(stagingBuffer, cmd);
         });
-        releaseStagingBuffer(stagingBufferHandle);
+      //  releaseStagingBuffer(stagingBufferHandle);
 
         return std::make_shared<vot::Buffer>(buf, alloc, nullptr, mVmaAllocator, [this, deviceSize, buf](const void* src){
-            auto stagingBufferHandle = acquireStagingBuffer(deviceSize);
+            auto stagingBufferHandle = acquireCache(deviceSize);
             auto& [stgBuf, stagAlloc, s] = stagingBufferHandle;
 
             mapBuffer(stagAlloc, deviceSize, src, false);
@@ -105,7 +102,7 @@ namespace rhi {
                 resetBuffer(stgBuf, cmd);
             });
 
-            releaseStagingBuffer(stagingBufferHandle);
+         //   releaseStagingBuffer(stagingBufferHandle);
         }, id);
     }
 
@@ -165,26 +162,21 @@ namespace rhi {
     }
 
     auto
-    Allocator::acquireStagingBuffer(vk::DeviceSize deviceSize) -> stagingBufferHandle {
-        auto it = mStagingBuffers.lower_bound(deviceSize);
+    Allocator::acquireCache(vk::DeviceSize deviceSize) -> stagingBufferHandle {
+        stagingBufferHandle handle;
+        if (!mCaches.get(deviceSize, handle)) {
+            auto [buf, alloc] = createBuffer({.devSize = deviceSize, .flags = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
+                                              .memoryUsage = vot::memoryUsage::eCpuOnly, .allocStrategy = vot::allocStrategy::eMapped});
 
-        while(it != mStagingBuffers.end()){
-            stagingBufferHandle handle;
-            while(it->second.try_pop(handle)){
-                return handle;
-            }
-            it++;
+            handle = {buf, alloc, deviceSize};
+            mCaches.put(deviceSize, handle);
         }
-
-        auto [buf, alloc] = createBuffer({.devSize = deviceSize, .flags = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
-                                          .memoryUsage = vot::memoryUsage::eCpuOnly, .allocStrategy = vot::allocStrategy::eMapped});
-        mStagBufferCounter++;
-        return {buf, alloc, deviceSize};
+        return handle;
     }
 
-    auto Allocator::releaseStagingBuffer(Allocator::stagingBufferHandle handle) -> void {
-        mStagingBuffers[std::get<2>(handle)].push(handle);
-    }
+    // auto Allocator::releaseStagingBuffer(Allocator::stagingBufferHandle handle) -> void {
+    //     mStagingBuffers[std::get<2>(handle)].push(handle);
+    // }
 
     auto Allocator::copyBuffer(VkBuffer stagingBuffer, VkBuffer destBuffer, VkDeviceSize deviceSize,
                                vot::CommandBuffer &cmd) -> void {
@@ -238,7 +230,7 @@ namespace rhi {
             }
         }, pt);
 
-        auto stagingBufferHandle = acquireStagingBuffer(imageSize);
+        auto stagingBufferHandle = acquireCache(imageSize);
         auto& [buf, alloc, devSize] = stagingBufferHandle;
 
         mapBuffer(alloc, imageSize, pixels.data(), false);
@@ -252,7 +244,7 @@ namespace rhi {
             resetBuffer(buf, cmd);
         });
 
-        releaseStagingBuffer(stagingBufferHandle);
+       // releaseStagingBuffer(stagingBufferHandle);
 
         return image_sptr;
     }
@@ -363,7 +355,7 @@ namespace rhi {
     auto Allocator::uploadImage(const vk::Image& image, void* data, vk::Extent3D extent, vk::Format format) -> void {
         size_t pixelSize = (format == vk::Format::eR16Sfloat ? 2 : 4);
         size_t totalBytes = extent.width * extent.height * extent.depth * pixelSize;
-        auto stagingBufferHandle = acquireStagingBuffer(totalBytes);
+        auto stagingBufferHandle = acquireCache(totalBytes);
         auto& [stagingBuffer, stagingAlloc, devSize] = stagingBufferHandle;
 
         mapBuffer(stagingAlloc, totalBytes, data, false);
@@ -397,7 +389,7 @@ namespace rhi {
                     .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
         });
 
-        releaseStagingBuffer(stagingBufferHandle);
+       // releaseStagingBuffer(stagingBufferHandle);
     }
 
     auto Allocator::createImage(const vot::ImageCI &config) -> imageHandle {
@@ -498,4 +490,5 @@ namespace rhi {
     }
 
 
-} // rhi
+
+} // rhi2

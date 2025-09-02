@@ -1,12 +1,11 @@
 //
 // Created by lenovo on 9/1/2025.
-//
+
 
 #include "Allocator.h"
 #include "Core/DispatchSystem/SystemHub.h"
 #include "RHI/Command.h"
-#define VMA_DEBUG_DETECT_MEMORY_LEAKS 0
-#define VMA_IMPLEMENTATION
+
 #include "vma/vk_mem_alloc.h"
 
 namespace rhi2 {
@@ -16,8 +15,9 @@ namespace rhi2 {
     constexpr vk::DeviceSize k64Mb = 64 * 1024 * 1024;
     constexpr vk::DeviceSize k512Mb = 512 * 1024 * 1024;
 
-    Allocator::Allocator() {
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
+    Allocator::Allocator() : ct(yic::systemHub.val<ev::pVkSetupContext>()), mBufferCaches(32, [&](const std::shared_ptr<BufferMata>& bufferMata) {
+
+    }) {
 
         const VmaAllocatorCreateInfo vmaAllocatorCreateInfo{
             .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
@@ -28,17 +28,32 @@ namespace rhi2 {
 
         vmaCreateAllocator(&vmaAllocatorCreateInfo, &mVmaAllocator);
 
+        VkBufferCreateInfo bufInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        bufInfo.size = 64;
+        bufInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+        VmaAllocationCreateInfo allocInfo{};
+        allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+        uint32_t memTypeIndex = 0;
+        if (vmaFindMemoryTypeIndexForBufferInfo(mVmaAllocator, &bufInfo, &allocInfo, &memTypeIndex) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to find memory type index for transient pool");
+        }
+
         VmaPoolCreateInfo transientInfo{};
         transientInfo.blockSize = k16Mb;
         transientInfo.flags = VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT;
+        transientInfo.memoryTypeIndex = memTypeIndex;
         vmaCreatePool(mVmaAllocator, &transientInfo, &mTransientPool);
 
         VmaPoolCreateInfo smallInfo{};
         smallInfo.blockSize = k64Mb;
+        smallInfo.memoryTypeIndex = memTypeIndex;
         vmaCreatePool(mVmaAllocator, &smallInfo, &mStaticMinPool);
 
         VmaPoolCreateInfo bigInfo{};
         bigInfo.blockSize = k512Mb;
+        bigInfo.memoryTypeIndex = memTypeIndex;
         vmaCreatePool(mVmaAllocator, &bigInfo, &mStaticMaxPool);
     }
 
@@ -48,10 +63,15 @@ namespace rhi2 {
             vmaFreeMemory(mVmaAllocator, buffer->allocation);
         }
         mBuffers.clear();
+
+        vmaDestroyPool(mVmaAllocator, mTransientPool);
+        vmaDestroyPool(mVmaAllocator, mStaticMinPool);
+        vmaDestroyPool(mVmaAllocator, mStaticMaxPool);
+
         vmaDestroyAllocator(mVmaAllocator);
     }
 
-    auto Allocator::allocBuffer(BufferAttachment bufferCI) -> BufferHandle {
+    auto Allocator::allocBuffer(BufferAttachment bufferCI) -> handle::buffer {
         switch (bufferCI.type) {
             case BufferAttachment::eForceHost:    return allocBufferMin(bufferCI);
             case BufferAttachment::eForceStaging: return allocBufferMax(bufferCI);
@@ -63,11 +83,11 @@ namespace rhi2 {
         return allocBufferMax(bufferCI);
     }
 
-    auto Allocator::unLoad(const BufferHandle &handle) -> void {
+    auto Allocator::unLoad(const handle::buffer &handle) -> void {
 
     }
 
-    auto Allocator::updateT(const BufferHandle& handle, const void* data, const vk::DeviceSize& size, const vk::DeviceSize& offset) -> void {
+    auto Allocator::updateT(const handle::buffer& handle, const void* data, const vk::DeviceSize& size, const vk::DeviceSize& offset) -> void {
         if (offset + size > handle.mata->attach.size) { yic::logger->warn("failed to update buffer, the data is over, buffer name:{0}", handle.mata->attach.debugName); return; }
 
         if (handle.mata->attach.type == BufferAttachment::eForceHost) {
@@ -81,66 +101,67 @@ namespace rhi2 {
                 vmaUnmapMemory(mVmaAllocator, handle.mata->allocation);
             }
         } else {
-            auto stagingBuffer = acquireStagingBuffer(size);
+            const auto stagingBuffer = acquireBufferCache(size);
 
             if (data != nullptr) {
-                if (stagingBuffer.attach.allocStrategy == vot::eMapped) {
-                    stagingBuffer.mapped = mapBufferPersistent(stagingBuffer, data, size);
+                if (stagingBuffer->attach.allocStrategy == vot::eMapped) {
+                    stagingBuffer->mapped = mapBufferPersistent(*stagingBuffer, data, size);
                 } else {
-                    stagingBuffer.mapped = updateTransient(stagingBuffer, data, size, handle.mata->attach.unmap);
+                    stagingBuffer->mapped = updateTransient(*stagingBuffer, data, size, handle.mata->attach.unmap);
                 }
             }
 
             yic::command->drawOneTimeSubmit([&](vot::CommandBuffer& cmd) {
-                copyBuffer(stagingBuffer, *handle.mata, size, cmd);
-                resetBuffer(stagingBuffer, cmd);
+                copyBuffer(*stagingBuffer, *handle.mata, size, cmd);
+                resetBuffer(*stagingBuffer, cmd);
             });
-            releaseStagingBuffer(stagingBuffer);
+            //releaseStagingBuffer(stagingBuffer);
         }
     }
 
-    auto Allocator::allocBufferMin(const BufferAttachment &ci) -> BufferHandle {
-        auto mata = createBuffer(ci);
-        mata->attach = ci;
+    auto Allocator::allocBufferMin(const BufferAttachment &attach) -> handle::buffer {
+        auto mata = createBuffer(attach);
+        mata->attach = attach;
         mata->attach.type = BufferAttachment::eForceHost;
 
-        if (ci.data != nullptr) {
+        if (attach.data != nullptr) {
             if (mata->attach.allocStrategy == vot::eMapped) {
-                mata->mapped = mapBufferPersistent(*mata, ci.data, ci.size);
+                mata->mapped = mapBufferPersistent(*mata, attach.data, attach.size);
             } else {
-                mata->mapped = updateTransient(*mata, ci.data, ci.size, ci.unmap);
+                mata->mapped = updateTransient(*mata, attach.data, attach.size, attach.unmap);
             }
         }
 
-        const auto handle = BufferHandle{.mata = mata.get()};
+        const auto handle = handle::buffer{.mata = mata.get()};
         mBuffers.push_back(std::move(mata));
 
         return handle;
     }
 
-    auto Allocator::allocBufferMax(BufferAttachment &ci) -> BufferHandle {
-        ci.usage |= vk::BufferUsageFlagBits::eTransferDst;
-        ci.type = BufferAttachment::eForceStaging;
+    auto Allocator::allocBufferMax(BufferAttachment &attach) -> handle::buffer {
+        attach.usage |= vk::BufferUsageFlagBits::eTransferDst;
+        attach.type = BufferAttachment::eForceStaging;
 
-        auto stagingBuffer = acquireStagingBuffer(ci.size);
+        //auto stagingBuffer = acquireStagingBuffer(attach.size);
+        auto stagingBuffer = acquireBufferCache(attach.size);
 
-        if (ci.data != nullptr) {
-            if (stagingBuffer.attach.allocStrategy == vot::eMapped) {
-                stagingBuffer.mapped = mapBufferPersistent(stagingBuffer, ci.data, ci.size);
+        if (attach.data != nullptr) {
+            if (stagingBuffer->attach.allocStrategy == vot::eMapped) {
+                stagingBuffer->mapped = mapBufferPersistent(*stagingBuffer, attach.data, attach.size);
             } else {
-                stagingBuffer.mapped = updateTransient(stagingBuffer, ci.data, ci.size, ci.unmap);
+                stagingBuffer->mapped = updateTransient(*stagingBuffer, attach.data, attach.size, attach.unmap);
             }
         }
-        auto mata = createBuffer(ci);
-        mata->attach = ci;
+        auto mata = createBuffer(attach);
+        mata->attach = attach;
 
         yic::command->drawOneTimeSubmit([&](vot::CommandBuffer& cmd) {
-            copyBuffer(stagingBuffer, *mata, ci.size, cmd);
-            resetBuffer(stagingBuffer, cmd);
+            copyBuffer(*stagingBuffer, *mata, attach.size, cmd);
+            resetBuffer(*stagingBuffer, cmd);
         });
-        releaseStagingBuffer(stagingBuffer);
+        // releaseStagingBuffer(stagingBuffer);
 
-        const auto handle = BufferHandle{.mata = mata.get()};
+        const auto handle = handle::buffer{.mata = mata.get()};
         mBuffers.push_back(std::move(mata));
 
         return handle;
@@ -167,12 +188,23 @@ namespace rhi2 {
         return std::make_shared<BufferMata>(buffer, allocation, nullptr, attach);
     }
 
-    auto Allocator::mapBufferPersistent(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size) const -> void * {
-        void* mapped = bufferMata.allocation->GetMappedData();
-        if (data) {
-            memcpy(mapped, data, size);
+    auto Allocator::mapBufferPersistent(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size) -> void * {
+        if (bufferMata.mapped) {
+            memcpy(static_cast<char *>(bufferMata.mapped), data, size);
+        } else {
+            void *mapped;
+            if (vmaMapMemory(mVmaAllocator, bufferMata.allocation, &mapped) != VK_SUCCESS)
+                throw std::runtime_error("Failed to map buffer");
+            memcpy(static_cast<char *>(mapped), data, size);
+            //vmaUnmapMemory(mVmaAllocator, bufferMata.allocation);
+
+            return mapped;
         }
-        return mapped;
+        // void* mapped = bufferMata.allocation->GetMappedData();
+        // if (data) {
+        //     memcpy(mapped, data, size);
+        // }
+        return nullptr;
     }
 
     auto Allocator::updateTransient(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size, const bool unmap) const -> void * {
@@ -190,6 +222,19 @@ namespace rhi2 {
         return mapped;
     }
 
+    auto Allocator::copyBuffer(const BufferMata &src, const BufferMata &dst, const vk::DeviceSize &size,
+        const vot::CommandBuffer &cmd) -> void {
+        const vk::BufferCopy copy{0, 0, size};
+        cmd.copyBuffer((vk::Buffer)src.buffer, (vk::Buffer)dst.buffer, copy);
+    }
+
+
+    auto Allocator::resetBuffer(const BufferMata &bufferMata, vot::CommandBuffer &cmd) -> void {
+        constexpr vk::MemoryBarrier copyBarrier{vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead};
+        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, copyBarrier, {}, {});
+        cmd.fillBuffer(bufferMata.buffer, 0, VK_WHOLE_SIZE, 0);
+    }
+
     auto Allocator::pickPool(const BufferAttachment& attach) const -> VmaPool {
         switch (attach.vmaPoolType) {
             case VmaPoolType::eTransient: return mTransientPool;
@@ -198,16 +243,51 @@ namespace rhi2 {
             case VmaPoolType::eStaticAuto: {
 
                 if (attach.size < k256Kb) return mStaticMinPool;
-                else return mStaticMaxPool;
+                return mStaticMaxPool;
             }
             case VmaPoolType::eAuto: {
 
                 if (attach.size < k256Kb) return mStaticMinPool;
-                else return mStaticMaxPool;
+                return mStaticMaxPool;
             }
             default: return VK_NULL_HANDLE;
         }
     }
 
+    auto Allocator::acquireBufferCache(const vk::DeviceSize& size) -> std::shared_ptr<BufferMata> {
+        // auto it = mStagingBuffers.lower_bound(size);
+        //
+        // while(it != mStagingBuffers.end()){
+        //     std::shared_ptr<BufferMata> mata;
+        //     while(it->second.try_pop(mata)){
+        //         return mata;
+        //     }
+        //     ++it;
+        // }
+        //
+        // auto mata = createBuffer(BufferAttachment()
+        //     .setBufferUsageFlags(vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst)
+        //     .setDeviceSize(size)
+        //     .optMemoryUsage(vot::memoryUsage::eCpuOnly)
+        //     .optAllocStrategy(vot::allocStrategy::eMapped)
+        //     .optBufferType(BufferAttachment::eForceHost));
+        // ++mStagBufferCounter;
+        // return mata;
 
+        std::shared_ptr<BufferMata> mata;
+        if (!mBufferCaches.get(size, mata)) {
+            mata = createBuffer(BufferAttachment()
+                .setBufferUsageFlags(vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst)
+                .setDeviceSize(size)
+                .optMemoryUsage(vot::memoryUsage::eCpuOnly)
+                .optAllocStrategy(vot::allocStrategy::eMapped)
+                .optBufferType(BufferAttachment::eForceHost));
+            mBufferCaches.put(size, mata);
+        }
+        return mata;
+    }
+
+    // auto Allocator::releaseStagingBuffer(const std::shared_ptr<BufferMata> &bufferMata) -> void {
+    //     // mStagingBuffers[bufferMata->attach.size].push(bufferMata);
+    // }
 } // rhi2

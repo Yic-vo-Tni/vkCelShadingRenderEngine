@@ -54,15 +54,6 @@ namespace rs {
             _doneB.store(false, std::memory_order_relaxed);
         }
 
-        const auto end = std::chrono::high_resolution_clock::now();
-        static auto last = end;
-        const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - last).count();
-        last = end;
-
-        if (elapsed < 400'000) {
-            std::this_thread::sleep_for(std::chrono::microseconds(400'000 - elapsed));
-        }
-
         vot::BasicInfoComponent basicInfoComponent{};
         vot::VertexDataComponent vertexDataComponent{};
         vot::RenderComponent renderComponent{};
