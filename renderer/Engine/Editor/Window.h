@@ -47,6 +47,7 @@ namespace yic {
         bool isRightMouseDown = false;
         double xLast{}, yLast{};
 
+      //  ev::freeCameraController controller_{};
         std::atomic<bool> closeRequested{false};
         std::atomic<bool> closeRender{false};
 

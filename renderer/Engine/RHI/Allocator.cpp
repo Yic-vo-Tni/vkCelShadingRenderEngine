@@ -26,7 +26,8 @@ namespace rhi {
     Allocator::Allocator() : mCaches(32, [&](const stagingBufferHandle& handle) {
         vmaDestroyBuffer(mVmaAllocator, std::get<0>(handle), std::get<1>(handle));
     }) {
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
+        //ct = yic::systemHub.val<ev::pVkSetupContext>();
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
 
         const VmaAllocatorCreateInfo vmaAllocatorCreateInfo{
             .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
@@ -45,9 +46,9 @@ namespace rhi {
         vmaDestroyAllocator(mVmaAllocator);
     }
 
-    auto Allocator::allocBuffer(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags,
-                                vot::memoryUsage usage, const vot::string &id, bool unmap) -> vot::Buffer_sptr {
-        BufferCI ci{ .devSize = deviceSize, .flags = flags, .memoryUsage = usage, .allocStrategy = unmap ? vot::allocStrategy::eMinTime : vot::allocStrategy::eMapped};
+    auto Allocator::allocBuffer(const vk::DeviceSize deviceSize, const void *data, const vk::BufferUsageFlags flags,
+                                const vot::memoryUsage usage, const vot::string &id, const bool unmap) -> vot::Buffer_sptr {
+        const BufferCI ci{ .devSize = deviceSize, .flags = flags, .memoryUsage = usage, .allocStrategy = unmap ? vot::allocStrategy::eMinTime : vot::allocStrategy::eMapped};
 
         auto [buf, alloc] = createBuffer(ci);
         auto mapped = mapBuffer(alloc, deviceSize, data, unmap);
@@ -57,10 +58,10 @@ namespace rhi {
         }, id);
     }
 
-    auto Allocator::allocBufferStaging(vk::DeviceSize deviceSize, const void *data, vk::BufferUsageFlags flags,
-                                       vot::memoryUsage usage, vot::allocStrategy strategy,
+    auto Allocator::allocBufferStaging(vk::DeviceSize deviceSize, const void *data, const vk::BufferUsageFlags flags,
+                                       const vot::memoryUsage usage, const vot::allocStrategy strategy,
                                        const vot::string &id) -> vot::Buffer_sptr {
-        BufferCI ci{ .devSize = deviceSize, .flags = vk::BufferUsageFlagBits::eTransferDst | flags, .memoryUsage = usage, .allocStrategy = strategy};
+        const BufferCI ci{ .devSize = deviceSize, .flags = vk::BufferUsageFlagBits::eTransferDst | flags, .memoryUsage = usage, .allocStrategy = strategy};
         if (data == nullptr){
             auto [buf, alloc] = createBuffer(ci);
 
@@ -118,8 +119,8 @@ namespace rhi {
         return {buf, alloc};
     }
 
-    auto Allocator::mapBuffer(VmaAllocation &alloc, VkDeviceSize devSize, const void *data,
-                              bool unmap) -> void * {
+    auto Allocator::mapBuffer(const VmaAllocation &alloc, const VkDeviceSize devSize, const void *data,
+                              const bool unmap) -> void * {
         void* mapped = nullptr;
 
         try {

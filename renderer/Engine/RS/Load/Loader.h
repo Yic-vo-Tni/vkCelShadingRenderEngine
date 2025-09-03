@@ -24,7 +24,7 @@ namespace rs {
         ~Loader();
 
     public:
-      auto gVmdFiles() const { return mMmdLoader->vmdFiles; }
+      [[nodiscard]] auto gVmdFiles() const { return mMmdLoader->vmdFiles; }
 
     private:
         auto asyncLoadA() -> void;
@@ -33,7 +33,6 @@ namespace rs {
         auto onResourcePaths(const vot::string& pt) -> void;
         auto LoadModel(const vot::string& pt) -> void;
         auto onModelLoaded(const ev::tModelLoaded& ev) -> void;
-        auto onModelLoadedS() -> void;
 
         auto check(const vot::string& pt, const vot::vector<vot::string>& suffixes) -> bool {
             return std::ranges::any_of(suffixes, [&](const vot::string& suffix){
@@ -43,8 +42,6 @@ namespace rs {
     private:
         entt::registry& ecs;
         ev::pVkSetupContext ct{};
-
-        std::barrier<> sync_point;
     public:
         std::unique_ptr<AssimpLoader> mAssimpLoader;
         std::unique_ptr<MmdLoader> mMmdLoader;

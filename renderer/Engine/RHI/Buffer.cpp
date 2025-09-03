@@ -12,7 +12,8 @@ Buffer::Buffer(vk::Buffer buffer, VmaAllocation alloc, void *data, VmaAllocator 
                const vot::string &id) : buffer(buffer), allocation(alloc), mapped(data),
                                         allocator(vmaAllocator),
                                         Identifiable(id) {
-    device = *yic::systemHub.val<ev::pVkSetupContext>().device;
+    //device = *yic::systemHub.val<ev::pVkSetupContext>().device;
+    device = *yic::systemHub.va<ev::pVkSetupContext>().device;
 }
 
 Buffer::Buffer(vk::Buffer buffer, VmaAllocation alloc, void *data, VmaAllocator &vmaAllocator,
@@ -21,7 +22,8 @@ Buffer::Buffer(vk::Buffer buffer, VmaAllocation alloc, void *data, VmaAllocator 
                                                                                     allocator(vmaAllocator),
                                                                                     updateFn(std::move(updateFn)),
                                                                                     Identifiable(id) {
-    device = *yic::systemHub.val<ev::pVkSetupContext>().device;
+    //device = *yic::systemHub.val<ev::pVkSetupContext>().device;
+    device = *yic::systemHub.va<ev::pVkSetupContext>().device;
 }
 
 Buffer::~Buffer() {
@@ -37,8 +39,10 @@ Buffer::~Buffer() {
 Accel::Accel(vk::Buffer buf, VmaAllocation alloc, VmaAllocator &allocatorRef, vk::AccelerationStructureKHR accel,
              vot::string id): buffer(buf), vmaAllocation(alloc), mAllocator(allocatorRef), accel(accel),
                               Identifiable(std::move(id)) {
-    device = *yic::systemHub.val<ev::pVkSetupContext>().device;
-    dyDispatch = *yic::systemHub.val<ev::pVkSetupContext>().dynamicDispatcher;
+    //device = *yic::systemHub.val<ev::pVkSetupContext>().device;
+    //dyDispatch = *yic::systemHub.val<ev::pVkSetupContext>().dynamicDispatcher;
+    device = *yic::systemHub.va<ev::pVkSetupContext>().device;
+    dyDispatch = *yic::systemHub.va<ev::pVkSetupContext>().dynamicDispatcher;
 }
 
 Accel::~Accel() {

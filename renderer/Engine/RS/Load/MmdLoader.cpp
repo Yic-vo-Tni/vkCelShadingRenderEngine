@@ -65,15 +65,15 @@ namespace rs {
         const auto uv = pmx->GetUpdateUVs();
 
         for(auto& pmr : vdc.mmdVertices_pmr){
-            pmr = std::pmr::vector<vot::MMDVertex>{&mVertexPool};
+            pmr = std::pmr::vector<vot::VertexT<vot::eMMD>>{&mVertexPool};
             pmr.resize(pmx->GetVertexCount());
         }
 
-        vot::vector<vot::MMDVertex> vertices;
+        vot::vector<vot::VertexT<vot::eMMD>> vertices;
         vot::AABB aabb{};
         vertices.resize(pmx->GetVertexCount());
         for(auto i = 0; i < pmx->GetVertexCount(); i++){
-            vertices[i] = vot::MMDVertex{pos[i], nor[i], uv[i]};
+            vertices[i] = vot::VertexT<vot::eMMD>{pos[i], nor[i], uv[i]};
             aabb.min = glm::min(aabb.min, pos[i]);
             aabb.max = glm::max(aabb.max, pos[i]);
         }
@@ -81,7 +81,7 @@ namespace rs {
         rc.baseMat = glm::translate(glm::mat4 (1.f), -rc.center);
 
         for(auto& v : rc.vertexBuffer){
-            v = yic::allocator->allocBufferStaging(pmx->GetVertexCount() * sizeof(vot::MMDVertex), vertices.data(),
+            v = yic::allocator->allocBufferStaging(pmx->GetVertexCount() * sizeof(vot::VertexT<vot::eMMD>), vertices.data(),
                 vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eVertexBuffer, "pmx vert");
         }
     }

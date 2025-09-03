@@ -10,13 +10,14 @@
 #include "Allocator.h"
 
 namespace rhi {
-    Swapchain::Swapchain() : ct(yic::systemHub.val<ev::pVkSetupContext>()),
+    Swapchain::Swapchain() : ct(yic::systemHub.va<ev::pVkSetupContext>()),
                              mSurface(createSurface()),
                              mSurfaceFormat(chooseSurfaceFormat(vk::Format::eR8G8B8A8Unorm)),
                              mSwapchain(createSwapchain(nullptr)),
                              mFrameEntries(createFrameEntries()){
         yic::systemHub.sto(ev::pVkRenderContext{
             .swapchain = &mSwapchain,
+            .currentExtent = &mExtent,
             .frameEntries = &mFrameEntries,
             .surfaceFormat = &mSurfaceFormat,
             .activeImageIndex = &mImageIndex,
@@ -42,7 +43,7 @@ namespace rhi {
         auto extent = yic::systemHub.valEvent<ev::oWindowSizeChange>().extent.value_or(vk::Extent2D(0.f));
 
         mExtent = capabilities.currentExtent.width == (uint32_t) - 1 ? extent : capabilities.currentExtent;
-        yic::systemHub.sto(ev::pVkRenderContext{.currentExtent = &mExtent});
+        //yic::systemHub.sto(ev::pVkRenderContext{.currentExtent = &mExtent});
         auto imageCount = std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount,
                                      capabilities.maxImageCount ? capabilities.maxImageCount : UINT32_MAX);
 
@@ -77,7 +78,7 @@ namespace rhi {
     auto Swapchain::createSurface() const -> vk::SurfaceKHR {
         VkSurfaceKHR temp{};
 
-        if (glfwCreateWindowSurface(*ct.instance, yic::systemHub.val<ev::pWindowContext>().window, nullptr, &temp) == VK_SUCCESS){
+        if (glfwCreateWindowSurface(*ct.instance, yic::systemHub.va<ev::pWindowContext>().window, nullptr, &temp) == VK_SUCCESS){
             return temp;
         } else { throw std::runtime_error("failed to create glfw window");}
     }

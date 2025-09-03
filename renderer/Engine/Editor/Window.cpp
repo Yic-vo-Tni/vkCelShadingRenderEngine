@@ -77,7 +77,7 @@ namespace yic {
             for(auto i = 0; i < count; i++){
                 pts[i] = paths[i];
             }
-            yic::systemHub.publishAsync(ev::tResourcesPaths{ pts });
+            yic::systemHub.pub_async(ev::tResourcesPaths{ pts });
         }
     };
 
@@ -97,6 +97,8 @@ namespace yic {
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RELEASE, GLFW_TRUE);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+        yic::systemHub.sto(ev::vFreeCameraController{}); // init
 
         return glfwCreateWindow(mWidth, mHeight, mName.c_str(), nullptr, nullptr);
     }
@@ -137,15 +139,9 @@ namespace yic {
 
 
     auto Window::controller()  -> void {
-        auto keyPress = [&](int key){
-            return (glfwGetKey(mWindow, key) == GLFW_PRESS);
-        };
-        auto glfwMouseButtonPress = [&](int button){
-            return (glfwGetMouseButton(mWindow, button) == GLFW_PRESS);
-        };
-        auto glfwMouseButtonRelease = [&](int button){
-            return (glfwGetMouseButton(mWindow, button) == GLFW_RELEASE);
-        };
+        auto keyPress = [&](const int key){ return (glfwGetKey(mWindow, key) == GLFW_PRESS); };
+        auto glfwMouseButtonPress = [&](const int button){ return (glfwGetMouseButton(mWindow, button) == GLFW_PRESS); };
+        auto glfwMouseButtonRelease = [&](const int button){ return (glfwGetMouseButton(mWindow, button) == GLFW_RELEASE); };
 
 
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS){
@@ -154,57 +150,61 @@ namespace yic {
         }
 
         if (!isRightMouseDown) {
-            if (keyPress(GLFW_KEY_S)) {
-                GLOBAL::gizmoOperation = ImGuizmo::SCALE;
-            }
-            if (keyPress(GLFW_KEY_R)) {
-                GLOBAL::gizmoOperation = ImGuizmo::ROTATE;
-            }
-            if (keyPress(GLFW_KEY_T)) {
-                GLOBAL::gizmoOperation = ImGuizmo::TRANSLATE;
-            }
-
+            if (keyPress(GLFW_KEY_S)) { GLOBAL::gizmoOperation = ImGuizmo::SCALE; }
+            if (keyPress(GLFW_KEY_R)) { GLOBAL::gizmoOperation = ImGuizmo::ROTATE; }
+            if (keyPress(GLFW_KEY_T)) { GLOBAL::gizmoOperation = ImGuizmo::TRANSLATE; }
         }
 
-        if (glfwMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)){
+        {
+            if (auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>(); glfwMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)) {
+                if (glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS) { f_Lock->W = true; }
+                if (glfwGetKey(mWindow, GLFW_KEY_A) == GLFW_PRESS) { f_Lock->A = true; }
+                if (glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS) { f_Lock->S = true; }
+                if (glfwGetKey(mWindow, GLFW_KEY_D) == GLFW_PRESS) { f_Lock->D = true; }
+            }
+        }
+
+        if (glfwMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)) {
+            auto controller = yic::systemHub.vaL<ev::vFreeCameraController>();
             isRightMouseDown = true;
 
-            if (glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS){
-                yic::systemHub.sto(ev::freeCameraController{.W = true});
-            }
-            if (glfwGetKey(mWindow, GLFW_KEY_A) == GLFW_PRESS){
-                yic::systemHub.sto(ev::freeCameraController{.A = true});
-            }
-            if (glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS){
-                yic::systemHub.sto(ev::freeCameraController{.S = true});
-            }
-            if (glfwGetKey(mWindow, GLFW_KEY_D) == GLFW_PRESS){
-                yic::systemHub.sto(ev::freeCameraController{.D = true});
-            }
-
-            if (firstClick){
+            if (firstClick) {
                 glfwSetCursorPos(mWindow, xLast, yLast);
                 firstClick = false;
             }
+
             glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xPos, double yPos){
-                yic::systemHub.sto(ev::freeCameraController{.cursor = true, .xPos = xPos, .yPos = yPos});
-            });
-            glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xOffset, double yOffset){
-                yic::systemHub.sto(ev::freeCameraController{.scroll = true, .xOffset = xOffset, .yOffset = yOffset});
+
+            glfwSetCursorPosCallback(mWindow, [](GLFWwindow *window, double xPos, double yPos) {
+                auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();
+                f_Lock->cursor = true;
+                f_Lock->xPos = xPos;
+                f_Lock->yPos = yPos;
             });
 
+            glfwSetScrollCallback(mWindow, [](GLFWwindow *window, double xOffset, double yOffset) {
+                auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();
+                f_Lock->scroll = true;
+                f_Lock->xOffset = xOffset;
+                f_Lock->yOffset = yOffset;
+            });
         }
-        if (glfwMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)){
+
+        if (glfwMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)) {
+            auto controller = yic::systemHub.vaL<ev::vFreeCameraController>();
+
             glfwGetCursorPos(mWindow, &xLast, &yLast);
+
             glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
             glfwSetCursorPosCallback(mWindow, setCursorPosCallback);
             glfwSetScrollCallback(mWindow, setScrollBack);
+
             firstClick = true;
             isRightMouseDown = false;
-            yic::systemHub.sto(ev::freeCameraController{.firstM = true});
-//            sc::globalCamera.firstMouse = true;
+            controller->firstM = true;
         }
+
     }
 
     auto Window::setWindowIcon(GLFWwindow* window, const char* filename) const -> void {

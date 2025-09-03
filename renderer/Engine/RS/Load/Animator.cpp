@@ -74,7 +74,7 @@ namespace rs {
         const auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).logic_cur();
 
         for(auto i = 0; i < vc.pmx->GetVertexCount(); i++){
-            vc.mmdVertices_pmr[index][i] = vot::MMDVertex{pos[i], nor[i], uv[i]};
+            vc.mmdVertices_pmr[index][i] = vot::VertexT<vot::eMMD>{pos[i], nor[i], uv[i]};
         }
     }
 

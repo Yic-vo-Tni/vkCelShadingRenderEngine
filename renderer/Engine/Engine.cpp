@@ -17,7 +17,7 @@ Engine::~Engine() {
     mCondVar.wait(lock, [this]{ return mDestroy.load(); });
 
     yic::qFamily->acquireQueueUnSafe(vot::queueType::eGraphics).waitIdle();
-    yic::systemHub.val<ev::pVkSetupContext>().device->waitIdle();
+    yic::systemHub.va<ev::pVkSetupContext>().device->waitIdle();
 
     ui::ShaderHotReload::destroy();
     mEcs.reset();

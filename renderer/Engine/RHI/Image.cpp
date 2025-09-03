@@ -15,10 +15,10 @@ namespace vot::inline rhi {
                  const smart_vector <VmaAllocation> &allocations, VmaAllocator &allocator, const vot::ImageCI& c, const string &id)
                  : images(images), imageViews(imageViews), allocations(allocations),
                  allocator(allocator), config(c), Identifiable(id){
-        device = *yic::systemHub.val<ev::pVkSetupContext>().device;
-        dispatchLoaderDynamic = *yic::systemHub.val<ev::pVkSetupContext>().dynamicDispatcher;
+        device = *yic::systemHub.va<ev::pVkSetupContext>().device;
+        dispatchLoaderDynamic = *yic::systemHub.va<ev::pVkSetupContext>().dynamicDispatcher;
         if (!index)
-            index = yic::systemHub.val<ev::pVkRenderContext>().activeImageIndex;
+            index = yic::systemHub.va<ev::pVkRenderContext>().activeImageIndex;
     }
 
 Image::Image(const vot::smart_vector<vk::Image> &images, const vot::smart_vector<vk::ImageView> &imageViews,
@@ -28,10 +28,10 @@ Image::Image(const vot::smart_vector<vk::Image> &images, const vot::smart_vector
         : images(images), imageViews(imageViews), allocations(allocations),
           depthImage(depthImage), depthImageView(depthImageView), depthAllocation(depthAlloc),
           allocator(allocator), config(c), Identifiable(id) {
-    device = *yic::systemHub.val<ev::pVkSetupContext>().device;
-    dispatchLoaderDynamic = *yic::systemHub.val<ev::pVkSetupContext>().dynamicDispatcher;
+    device = *yic::systemHub.va<ev::pVkSetupContext>().device;
+    dispatchLoaderDynamic = *yic::systemHub.va<ev::pVkSetupContext>().dynamicDispatcher;
     if (!index)
-        index = yic::systemHub.val<ev::pVkRenderContext>().activeImageIndex;
+        index = yic::systemHub.va<ev::pVkRenderContext>().activeImageIndex;
 }
 
     Image::~Image() {

@@ -9,10 +9,10 @@
 #include "Editor/ShaderHotReload/ShaderHotReload.h"
 
 namespace rhi {
-    PipeRSManager::PipeRSManager() : ct(yic::systemHub.val<ev::pVkSetupContext>()) {}
+    PipeRSManager::PipeRSManager() : ct(yic::systemHub.va<ev::pVkSetupContext>()) {}
     PipeRSManager::~PipeRSManager() = default;
 
-    GraphicsPipeline::GraphicsPipeline() : ct(yic::systemHub.val<ev::pVkSetupContext>()) { }
+    GraphicsPipeline::GraphicsPipeline() : ct(yic::systemHub.va<ev::pVkSetupContext>()) { }
 
     GraphicsPipeline::~GraphicsPipeline() {
         std::visit([&](auto &&arg) {
@@ -151,7 +151,7 @@ namespace rhi {
                 .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
         if (mPipelineLibrary.renderPass2CI.colorAttachmentFormats_dynamicRenderingEx.empty())
-            mPipelineLibrary.renderPass2CI.setColorAttachmentFormats({yic::systemHub.val<ev::pVkRenderContext>().surfaceFormat->format});
+            mPipelineLibrary.renderPass2CI.setColorAttachmentFormats({yic::systemHub.va<ev::pVkRenderContext>().surfaceFormat->format});
         auto info = mPipelineLibrary.renderPass2CI.getPipelineRenderingCreateInfo();
 
         if (!mPipelineLibrary.renderPass)

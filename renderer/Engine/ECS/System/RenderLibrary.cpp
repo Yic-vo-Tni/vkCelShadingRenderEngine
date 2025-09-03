@@ -17,7 +17,7 @@ namespace sc {
 #define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR)
 
     RenderLibrary::RenderLibrary() {
-        frameImageCount = yic::systemHub.val<ev::pVkRenderContext>().frameEntries->size();
+        frameImageCount = yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size();
         buildPipelines();
         buildRenderTarget();
         buildUniqueDSHandle();
@@ -45,12 +45,12 @@ namespace sc {
             .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-            .addVertexInputBindingDescription(0, sizeof(vot::Vertex), vk::VertexInputRate::eVertex)
-            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))
-            .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, nor))
-            .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::Vertex, uv))
-            .addVertexInputAttributeDescription(3, 0, vk::Format::eR32G32B32A32Sint, offsetof(vot::Vertex, boneIds))
-            .addVertexInputAttributeDescription(4, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(vot::Vertex, boneWeight)))
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eAssimp>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, pos))
+            .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, nor))
+            .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, uv))
+            .addVertexInputAttributeDescription(3, 0, vk::Format::eR32G32B32A32Sint, offsetof(vot::VertexT<vot::eAssimp>, boneIds))
+            .addVertexInputAttributeDescription(4, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, boneWeight)))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Basic/model.vert"))
@@ -73,8 +73,8 @@ namespace sc {
             .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-            .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
-            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos)))
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eMMD>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eMMD>, pos)))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Basic/IDBuffer.vert"))
@@ -93,10 +93,10 @@ namespace sc {
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-            .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
-            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))
-            .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, nor))
-            .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::Vertex, uv)))
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eMMD>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eMMD>, pos))
+            .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eMMD>, nor))
+            .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::VertexT<vot::eMMD>, uv)))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Basic/pmx.vert"))
@@ -112,8 +112,8 @@ namespace sc {
             .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-            .addVertexInputBindingDescription(0, sizeof(vot::Vertex), vk::VertexInputRate::eVertex)
-            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos)))
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eAssimp>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, pos)))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("ShadowMap/DirectionLight.vert"))
@@ -123,8 +123,8 @@ namespace sc {
 
         GP_ShadowMap_PMX.combinePipelineLibrary(GP_ShadowMap_Assimp.acquirePipelineLibrary()
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
-            .addVertexInputBindingDescription(0, offsetof(vot::Vertex, boneIds), vk::VertexInputRate::eVertex)
-            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::Vertex, pos))));
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eMMD>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eMMD>, pos))));
 
         GP_Volumetric_Overcast_Clouds.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()

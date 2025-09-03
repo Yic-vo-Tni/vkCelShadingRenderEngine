@@ -25,34 +25,51 @@ namespace vot::inline rs{
 
 struct DescriptorSet0{ vot::DescriptorHandle handles[3]; };
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 nor;
-    glm::vec2 uv;
+// struct Vertex {
+//     glm::vec3 pos;
+//     glm::vec3 nor;
+//     glm::vec2 uv;
+//
+//     glm::ivec4 boneIds{-1};
+//     glm::vec4 boneWeight{0.f};
+// };
+//
+// struct MMDVertex {
+//     glm::vec3 pos;
+//     glm::vec3 nor;
+//     glm::vec2 uv;
+// };
 
-    glm::ivec4 boneIds{-1};
-    glm::vec4 boneWeight{0.f};
-};
-
-struct MMDVertex {
-    glm::vec3 pos;
-    glm::vec3 nor;
-    glm::vec2 uv;
-};
-
-enum VertexType{
+enum VertexType {
     eMMD = 0, eAssimp = 1
 };
 
-template<bool HasBones>
-struct VertexT{
-    glm::vec3 pos{};
-    glm::vec3 nor{};
-    glm::vec2 uv{};
+template<VertexType Type>
+struct VertexT {
+    glm::vec3 pos;
+    glm::vec3 nor;
+    glm::vec2 uv;
 
-    std::conditional_t<HasBones, glm::ivec4, std::monostate> boneIds{-1};
-    std::conditional_t<HasBones, glm::vec4, std::monostate> boneWeight{0.f};
+    std::conditional_t<Type == VertexType::eAssimp, glm::ivec4, std::monostate> boneIds;
+    std::conditional_t<Type == VertexType::eAssimp, glm::vec4, std::monostate> boneWeight;
 };
+
+// struct VertexSkinning : public VertexT {
+//     glm::ivec4 boneIds{-1};
+//     glm::vec4 boneWeight{0.f};
+// };
+
+
+
+// template<bool HasBones>
+// struct VertexT{
+//     glm::vec3 pos{};
+//     glm::vec3 nor{};
+//     glm::vec2 uv{};
+//
+//     std::conditional_t<HasBones, glm::ivec4, std::monostate> boneIds{-1};
+//     std::conditional_t<HasBones, glm::vec4, std::monostate> boneWeight{0.f};
+// };
 
 struct AABB {
     glm::vec3 max;
@@ -83,14 +100,26 @@ struct BasicInfoComponent{
     bool playAnimation = false;
 };
 
-struct VertexDataComponent{
+struct VertexDataComponent {
     bool isMMD{false};
-    std::pmr::vector<Vertex> vertices_pmr[3];
-    std::pmr::vector<MMDVertex> mmdVertices_pmr[3];
+    std::array<std::pmr::vector<VertexT<eAssimp> >, 3> vertices_pmr;
+    std::array<std::pmr::vector<VertexT<eMMD> >, 3> mmdVertices_pmr;
     std::pmr::vector<uint32_t> indices_pmr;
     std::pmr::vector<uint32_t> adjIndices_pmr;
     std::shared_ptr<saba::MMDModel> pmx = nullptr;
 };
+// template<VertexType Type>
+// struct VertexDataComponent {
+//     std::array<std::pmr::vector<VertexT<Type> >, 3> vertices_pmr;
+//     std::pmr::vector<uint32_t> indices_pmr;
+//     std::pmr::vector<uint32_t> adjIndices_pmr;
+//     std::shared_ptr<saba::MMDModel> pmx = nullptr;
+// };
+//
+// using VertexDataComponentVariant = std::variant<
+//     VertexDataComponent<VertexType::eAssimp>,
+//     VertexDataComponent<VertexType::eMMD>
+//     >;
 
 struct RenderComponent{
     glm::mat4 baseMat{1.f};

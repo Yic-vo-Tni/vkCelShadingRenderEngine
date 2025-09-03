@@ -108,9 +108,7 @@ struct Locked<T, oneapi::tbb::queuing_rw_mutex> : public nonCopyable {
 
     T* operator->() {
         return &ref;
-    }\
-
-
+    }
 
 };
 

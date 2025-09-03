@@ -152,8 +152,8 @@ namespace sc {
         auto x = static_cast<int>(u * extent.width);
         auto y = static_cast<int>(v * extent.height);
 
-        auto dev = yic::systemHub.val<ev::pVkSetupContext>().device;
-        auto physDev = yic::systemHub.val<ev::pVkSetupContext>().physicalDevice;
+        auto dev = yic::systemHub.va<ev::pVkSetupContext>().device;
+        auto physDev = yic::systemHub.va<ev::pVkSetupContext>().physicalDevice;
 
         vk::Buffer stagBuffer;
         vk::DeviceMemory stagDeviceMem;

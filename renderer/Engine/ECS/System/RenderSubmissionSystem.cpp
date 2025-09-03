@@ -16,8 +16,8 @@
 namespace sc {
 
     RenderSubmissionSystem::RenderSubmissionSystem(entt::registry& registry) : ecs{registry}{
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
-        rt = yic::systemHub.val<ev::pVkRenderContext>();
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
+        rt = yic::systemHub.va<ev::pVkRenderContext>();
 
         RHandle = yic::command->acquire(vot::threadSpecificCmdPool::eMainRender);
 

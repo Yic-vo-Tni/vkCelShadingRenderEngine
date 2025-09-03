@@ -13,8 +13,8 @@ namespace rs {
 
     constexpr size_t _1GB = 1024 * 1024 * 1024;
 
-    Loader::Loader(entt::registry& registry) : ecs(registry), sync_point(2) {
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
+    Loader::Loader(entt::registry& registry) : ecs(registry) {
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
 
         mAssimpLoader = std::make_unique<AssimpLoader>();
         mMmdLoader = std::make_unique<MmdLoader>();
@@ -26,12 +26,11 @@ namespace rs {
     Loader::~Loader() = default;
 
     auto Loader::asyncLoadA() -> void {
-        yic::systemHub.subscribe([&](const ev::tResourcesPaths &pts) {
+        yic::systemHub.sub([&](const ev::tResourcesPaths &pts) {
             for (const auto &pt: pts.paths)  onResourcePaths(pt);
         });
 
-        yic::systemHub.subscribePolling([&](const ev::tModelLoaded& ev){ onModelLoaded(ev); });
-        yic::systemHub.subscribePolling([&](const ev::tModelLoadedSlow&){ onModelLoadedS(); });
+        yic::systemHub.sub_queued(2, [&](const ev::tModelLoaded& ev){ onModelLoaded(ev); });
     }
 
     auto Loader::onResourcePaths(const vot::string &pt) -> void {
@@ -61,10 +60,9 @@ namespace rs {
         yic::sceneSystem->syncBLAS(vertexDataComponent, renderComponent, rayTracingComponent);
         GLOBAL::pickON = basicInfoComponent.name;
 
-        yic::systemHub.publishPolling(ev::tModelLoaded{
+        yic::systemHub.pub_enqueue(ev::tModelLoaded{
             basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent
         });
-        yic::systemHub.publishPolling(ev::tModelLoadedSlow{});
 
     }
 
@@ -85,13 +83,8 @@ namespace rs {
         yic::sceneSystem->reloadTlas();
 
         ecs.emplace<vot::mark::eVisible>(entity);
-
-        sync_point.arrive_and_wait();
     }
 
-    auto Loader::onModelLoadedS() -> void {
-        sync_point.arrive_and_wait();
-    }
 }
 
 

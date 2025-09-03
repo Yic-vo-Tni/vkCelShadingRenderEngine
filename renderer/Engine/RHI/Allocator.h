@@ -82,7 +82,7 @@ namespace rhi {
         }
     private:
         auto createBuffer(const BufferCI& ci) -> bufferHandle;
-        auto mapBuffer(VmaAllocation& alloc, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
+        auto mapBuffer(const VmaAllocation& alloc, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
         static auto copyBuffer(VkBuffer stagingBuffer, VkBuffer destBuffer, VkDeviceSize deviceSize, vot::CommandBuffer& cmd) -> void;
         static auto resetBuffer(VkBuffer& buffer, vot::CommandBuffer& cmd) -> void;
 
@@ -100,10 +100,7 @@ namespace rhi {
 
     private:
         auto acquireCache(vk::DeviceSize deviceSize) -> stagingBufferHandle;
-        // auto releaseStagingBuffer(stagingBufferHandle handle) -> void;
-        // std::atomic<uint8_t> mStagBufferCounter{};
-        // std::atomic<uint8_t> mDestroyCount{};
-        // oneapi::tbb::concurrent_map<vk::DeviceSize , oneapi::tbb::concurrent_queue<stagingBufferHandle>> mStagingBuffers;
+
         rhi2::ThreadSafeLRUCache<vk::DeviceSize, stagingBufferHandle> mCaches;
     };
 

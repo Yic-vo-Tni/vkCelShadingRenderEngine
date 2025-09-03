@@ -14,7 +14,7 @@
 namespace rs {
 
     AssimpLoader::AssimpLoader() {
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
     }
 
     AssimpLoader::~AssimpLoader() = default;
@@ -68,7 +68,7 @@ namespace rs {
             auto annotate = [&](const vot::string &id) { return " model: " + ctx.fileName + " " + id + " buf"; };
 
             for(auto& vb : rc.vertexBuffer){
-                vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::Vertex),
+                vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::VertexT<vot::eAssimp>),
                                                                  vc.vertices_pmr[0].data(),
                                                                  usage | vk::BufferUsageFlagBits::eVertexBuffer,
                                                                  annotate("vert"));
@@ -195,10 +195,12 @@ namespace rs {
             auto weights = bone->mWeights;
             auto numWeights = bone->mNumWeights;
 
+            for (auto& pmr : vc.vertices_pmr) {
+
             for(auto wIndex = 0u; wIndex < numWeights; wIndex++){
                 auto vertId = weights[wIndex].mVertexId;
                 auto weight = weights[wIndex].mWeight;
-                auto& vert = vc.vertices_pmr[vertexOffset + vertId][0]; /////////// bug
+                auto& vert = pmr[vertexOffset + vertId]; /////////// bug
 
                 for(auto x = 0; x < 4; ++x){
                     if (vert.boneIds[x] < 0){
@@ -208,12 +210,13 @@ namespace rs {
                     }
                 }
             }
+            }
         }
     }
 
     auto AssimpLoader::extractVertex(const aiMesh *aiMesh, const uint32_t &vertexOffset, vot::VertexDataComponent &vc) -> void {
         for(auto j = 0; j < aiMesh->mNumVertices; ++j){
-            vot::Vertex v{};
+            vot::VertexT<vot::eAssimp> v{};
 
             if (aiMesh->HasPositions()) {
                 auto &pos = aiMesh->mVertices[j];
@@ -236,7 +239,13 @@ namespace rs {
             for(auto& pmr : vc.vertices_pmr){
                 pmr[j + vertexOffset] = v;
             }
+            // for(auto z = 0; z < vc.vertices_pmr.size(); z++){
+            //     yic::logger->warn( i);
+            //     // pmr[j + vertexOffset] = v;
+            //     i++;
+            // }
             //vc.vertices_pmr[j + vertexOffset] = v;
+           // yic::logger->warn("go");
         }
     }
 
@@ -248,7 +257,7 @@ namespace rs {
     auto AssimpLoader::assignBuffer(const ImportContext& ctx, vot::VertexDataComponent& vc) -> void {
         //vc.vertices_pmr = std::pmr::vector<vot::Vertex>{&mVertexPool};
         for(auto& pmr : vc.vertices_pmr){
-            pmr = std::pmr::vector<vot::Vertex>{&mVertexPool};
+            pmr = std::pmr::vector<vot::VertexT<vot::eAssimp>>{&mVertexPool};
         }
         vc.indices_pmr = std::pmr::vector<uint32_t>{&mIndexPool};
         vc.adjIndices_pmr = std::pmr::vector<uint32_t>{&mAdjacencyIndexPool};

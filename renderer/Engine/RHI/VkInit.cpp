@@ -35,6 +35,7 @@ namespace rhi {
             .physicalDevice = &mPhysicalDevice,
             .device = &mDevice,
         });
+
     }
     VkInit::~VkInit() {
         mDevice.destroy();

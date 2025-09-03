@@ -4,8 +4,10 @@
 
 #ifndef VKCELSHADINGRENDERER_EVENTHANDLE_H
 #define VKCELSHADINGRENDERER_EVENTHANDLE_H
+#include <barrier>
 
 namespace hide {
+
 
     class IEventHandle{
     public:
@@ -16,16 +18,12 @@ namespace hide {
 
 
     template<typename Event>
-    class EventHandle : public IEventHandle{
+    class EventHandle final : public IEventHandle{
     protected:
         using Handler = std::function<void(const Event&)>;
     public:
         auto subscribe(Handler handler) -> void {
             handlers.push_back(std::move(handler));
-        }
-
-        auto subscribePolling(Handler handler) -> void{
-            pollingHandlers.push_back(std::move(handler));
         }
 
         auto publish(const Event& e) -> void {
@@ -35,12 +33,14 @@ namespace hide {
             }
         }
 
-//        auto publish_(Event&& e) -> void {
-//            event = std::move(e);
-//            for(auto& handler : handlers){
-//                handler(event.value());
-//            }
-//        }
+        auto setParticipantCount(const size_t count) {
+            participantCount = count;
+            syncBarrier = std::make_unique<std::barrier<>>(participantCount);
+        }
+
+        auto subscribePolling(Handler handler) -> void{
+            pollingHandlers.push_back(std::move(handler));
+        }
 
 
         auto publishPolling(const Event& e) -> void{
@@ -48,13 +48,22 @@ namespace hide {
             queue.push(e);
         }
 
-        auto poll() -> void{
-            while(!queue.empty()){
-                auto& e = queue.front();
-                for(auto& handler : pollingHandlers){
-                    handler(e);
+        auto poll() -> void {
+            while (!queue.empty()) {
+                auto &e = queue.front();
+
+                syncBarrier->arrive_and_wait();
+
+                if (bool expected = false; executed.compare_exchange_strong(expected, true)) {
+                    for (auto &handler: pollingHandlers) {
+                        handler(e);
+                    }
+                    queue.pop();
                 }
-                queue.pop();
+
+                syncBarrier->arrive_and_wait();
+
+                executed.store(false);
             }
         }
 
@@ -90,10 +99,13 @@ namespace hide {
         }
 
     protected:
+        std::atomic<bool> executed{false};
         std::optional<Event> event;
         vot::queue<Event> queue;
         vot::vector<Handler> handlers;
         vot::vector<Handler> pollingHandlers;
+        std::unique_ptr<std::barrier<>> syncBarrier;
+        size_t participantCount = 0;
     };
 
     template<typename Event>

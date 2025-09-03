@@ -15,8 +15,8 @@ namespace sm {
 
     SceneSystem::SceneSystem(entt::registry& registry) : ecs(registry) {
     //SceneSystem::SceneSystem(flecs::world &ecs) : ecs(ecs) {
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
-        rt = yic::systemHub.val<ev::pVkRenderContext>();
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
+        rt = yic::systemHub.va<ev::pVkRenderContext>();
 
         loadScene();
     }
@@ -45,8 +45,6 @@ namespace sm {
     }
 
     auto SceneSystem::frame() -> void {
-        // static int frameCounter = 0;
-        // frameCounter++;
         static double elapsedTime = 0.0;
         elapsedTime += (1 / GLOBAL::fps);
 
@@ -56,7 +54,6 @@ namespace sm {
                 vot::RenderComponent &rc, vot::RayTracingComponent &rtc, vot::AnimationComponent &ac) {
             if (ac.enableAnim && (GLOBAL::playAllAnim || bc.playAnimation)){
                 bool onlyTransform = true;
-            //    if (frameCounter % 90 != 0) onlyTransform = true;
 
                 if (elapsedTime >= 2.0) { onlyTransform = false; elapsedTime = 0.0;}
 
@@ -65,37 +62,71 @@ namespace sm {
                 playAnim = true;
             }
         });
+
+
+
+        // ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent<vot::eMMD>, vot::RenderComponent, vot::RayTracingComponent, vot::AnimationComponent>()
+        // .each([&](const entt::entity, const vot::BasicInfoComponent &bc, vot::VertexDataComponent<vot::eMMD> &vc,
+        //         const vot::RenderComponent &rc, vot::RayTracingComponent &rtc, const vot::AnimationComponent &ac) {
+        //     if (ac.enableAnim && (GLOBAL::playAllAnim || bc.playAnimation)){
+        //         bool onlyTransform = true;
+        //
+        //         if (elapsedTime >= 2.0) { onlyTransform = false; elapsedTime = 0.0;}
+        //
+        //         syncBLAS(vc, rc, rtc, onlyTransform);
+        //
+        //         playAnim = true;
+        //     }
+        // });
+        //
+        // ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent<vot::eAssimp>, vot::RenderComponent, vot::RayTracingComponent, vot::AnimationComponent>()
+        // .each([&](const entt::entity, const vot::BasicInfoComponent &bc, vot::VertexDataComponent<vot::eAssimp> &vc,
+        //         const vot::RenderComponent &rc, vot::RayTracingComponent &rtc, const vot::AnimationComponent &ac) {
+        //     if (ac.enableAnim && (GLOBAL::playAllAnim || bc.playAnimation)){
+        //         bool onlyTransform = true;
+        //
+        //         if (elapsedTime >= 2.0) { onlyTransform = false; elapsedTime = 0.0;}
+        //
+        //         syncBLAS(vc, rc, rtc, onlyTransform);
+        //
+        //         playAnim = true;
+        //     }
+        // });
+
         if (GLOBAL::visibleZMO || playAnim) {
             syncTLAS();
         }
     }
 
-    auto SceneSystem::syncBLAS(const vot::VertexDataComponent &vc, vot::RenderComponent &rc,
-                                vot::RayTracingComponent &rtc, bool update) -> void {
-        auto vertAddr = rc.vertexBuffer[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()]->bufferAddr();
-        auto indexAddr = rc.indexBuffer->bufferAddr();
+    auto SceneSystem::syncBLAS(const vot::VertexDataComponent &vc, const vot::RenderComponent &rc,
+                                vot::RayTracingComponent &rtc, const bool update) -> void {
+    // auto SceneSystem::syncBLAS(const std::variant<vot::VertexDataComponent<vot::eAssimp>, vot::VertexDataComponent<vot::eMMD>> &vdc_v, const vot::RenderComponent &rc,
+    //                         vot::RayTracingComponent &rtc, const bool update) -> void {
+        const auto vertAddr = rc.vertexBuffer[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()]->bufferAddr();
+        const auto indexAddr = rc.indexBuffer->bufferAddr();
 
-        uint32_t maxVert{}, numTri{};
+        uint32_t maxVert{}, numTri{}, stride{};
+        vk::IndexType indexType{};
+
         if (vc.isMMD){
-            maxVert = (uint32_t ) vc.pmx->GetVertexCount();
-            numTri = (uint32_t ) vc.pmx->GetIndexCount() / 3;
+            maxVert = static_cast<uint32_t>(vc.pmx->GetVertexCount());
+            numTri = static_cast<uint32_t>(vc.pmx->GetIndexCount()) / 3;
+            stride = sizeof(vot::VertexT<vot::eMMD>);
+            indexType = rc.indexType;
         } else {
-            maxVert = (uint32_t) vc.vertices_pmr[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()].size();
-            numTri = (uint32_t) vc.indices_pmr.size() / 3;
+            maxVert = static_cast<uint32_t>(vc.vertices_pmr[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()].size());
+            numTri = static_cast<uint32_t>(vc.indices_pmr.size()) / 3;
+            stride = sizeof (vot::VertexT<vot::eAssimp>);
+            indexType = vk::IndexType::eUint32;
         }
 
-        auto asGeomTriData = vk::AccelerationStructureGeometryTrianglesDataKHR()
+        const auto asGeomTriData = vk::AccelerationStructureGeometryTrianglesDataKHR()
                 .setVertexFormat(vk::Format::eR32G32B32Sfloat)
                 .setVertexData(vertAddr)
                 .setMaxVertex(maxVert)
-                .setIndexData(indexAddr);
-        if (vc.isMMD){
-            asGeomTriData.setVertexStride(offsetof(vot::Vertex, boneIds))
-            .setIndexType(rc.indexType);
-        } else {
-            asGeomTriData.setVertexStride(sizeof (vot::Vertex))
-            .setIndexType(vk::IndexType::eUint32);
-        }
+                .setIndexData(indexAddr)
+                .setVertexStride(stride)
+                .setIndexType(indexType);
 
         auto asGeom = vk::AccelerationStructureGeometryKHR()
                 .setFlags(vk::GeometryFlagBitsKHR::eOpaque)

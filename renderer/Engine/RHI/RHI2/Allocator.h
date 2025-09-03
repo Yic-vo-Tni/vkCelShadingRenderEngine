@@ -18,9 +18,10 @@ namespace rhi2 {
         std::unordered_map<Key, typename std::list<Node>::iterator> map;
         std::function<void(Value&)> destroyFn;
         mutable std::shared_mutex mutex;
-
+        std::atomic<int> activeCount{0};
     public:
         explicit ThreadSafeLRUCache(const size_t cap, const std::function<void(Value&)>& destroyFn) : capacity(cap), destroyFn(destroyFn) {}
+        ~ThreadSafeLRUCache() { clear(); }
 
         bool get(const Key &key, Value &out) {
             std::unique_lock lock(mutex);
@@ -34,28 +35,44 @@ namespace rhi2 {
         void put(const Key &key, Value val) {
             std::unique_lock lock(mutex);
             auto it = map.find(key);
+
             if (it != map.end()) {
-                it->second->value = std::move(val);
-                lruList.splice(lruList.begin(), lruList, it->second);
-            } else {
-                if (lruList.size() >= capacity) {
-                    auto &back = lruList.back();
-                    destroyFn(back.value);
-                    map.erase(back.key);
-                    lruList.pop_back();
-                }
-                lruList.push_front({key, std::move(val)});
-                map[key] = lruList.begin();
+                destroyFn(it->second->value);
+                --activeCount;
+                lruList.erase(it->second);
+                map.erase(it);
             }
+
+            if (lruList.size() >= capacity) {
+                auto& back = lruList.back();
+                destroyFn(back.value);
+                --activeCount;
+                map.erase(back.key);
+                lruList.pop_back();
+            }
+
+            lruList.push_front({key, std::move(val)});
+            map[key] = lruList.begin();
+            ++activeCount;
         }
 
         void clear() {
             std::unique_lock lock(mutex);
-            for (auto &node : lruList) {
+            for (auto& node : lruList) {
                 destroyFn(node.value);
+                --activeCount;
             }
             map.clear();
             lruList.clear();
+
+            if (activeCount != 0) {
+                std::cerr << "[LRUCache] Warning: " << activeCount.load()
+                          << " items not released!" << std::endl;
+            }
+        }
+
+        int getActiveCount() const {
+            return activeCount.load();
         }
     };
 

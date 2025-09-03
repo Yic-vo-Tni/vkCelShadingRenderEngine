@@ -15,7 +15,7 @@ namespace rhi2 {
     constexpr vk::DeviceSize k64Mb = 64 * 1024 * 1024;
     constexpr vk::DeviceSize k512Mb = 512 * 1024 * 1024;
 
-    Allocator::Allocator() : ct(yic::systemHub.val<ev::pVkSetupContext>()), mBufferCaches(32, [&](const std::shared_ptr<BufferMata>& bufferMata) {
+    Allocator::Allocator() : ct(yic::systemHub.va<ev::pVkSetupContext>()), mBufferCaches(32, [&](const std::shared_ptr<BufferMata>& bufferMata) {
 
     }) {
 

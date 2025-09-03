@@ -5,6 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_SCENE_H
 #define VKCELSHADINGRENDERER_SCENE_H
 
+#include "Core/Management/TripleBufferIndexManager.h"
 #include "RHI/Descriptor.h"
 
 namespace sm {
@@ -37,11 +38,24 @@ namespace sm {
 
         auto frame() -> void;
 
-        auto syncBLAS(const vot::VertexDataComponent &vc, vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
+        auto syncBLAS(const vot::VertexDataComponent &vc, const vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
                        bool update = false) -> void;
+        // auto syncBLAS(const std::variant<vot::VertexDataComponent<vot::eAssimp>, vot::VertexDataComponent<vot::eMMD>> &vdc, const vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
+        //                bool update = false) -> void;
+
+        // template<vot::VertexType type>
+        // auto syncBLAST(const vot::VertexDataComponent<type> &vdc, vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
+        //                bool update = false) -> void {
+        //     auto maxVert = static_cast<uint32_t>(vdc.vertices_pmr[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()].size());
+        //     auto numTri = static_cast<uint32_t>(vdc.indices_pmr.size()) / 3;
+        // };
+
         auto syncTLAS() -> void;
         auto acquireActiveScene() { return mActiveScene; }
     private:
+        // auto syncBLAS(const std::pair<uint32_t, uint32_t>& num, vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
+        //        bool update = false) -> void;
+
         auto updateDS() -> void;
     private:
 //        flecs::world& ecs;
@@ -52,6 +66,7 @@ namespace sm {
         Scene* mActiveScene{};
         vot::unordered_map<vot::string, Scene> mScenes;
     };
+
 
 } // sm
 

@@ -16,7 +16,7 @@ namespace rhi {
     }
 
 
-    RayTracingPipeline::RayTracingPipeline() : ct(yic::systemHub.val<ev::pVkSetupContext>()) {
+    RayTracingPipeline::RayTracingPipeline() : ct(yic::systemHub.va<ev::pVkSetupContext>()) {
         vk::PhysicalDeviceProperties2 properties2{};
         properties2.pNext = &mRTProperties;
         ct.physicalDevice->getProperties2(&properties2);

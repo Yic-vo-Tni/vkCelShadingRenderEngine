@@ -33,10 +33,10 @@ namespace sc {
     };
 
     auto Ecs::prepose() -> void {
-        ct = yic::systemHub.val<ev::pVkSetupContext>();
-        rt = yic::systemHub.val<ev::pVkRenderContext>();
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
+        rt = yic::systemHub.va<ev::pVkRenderContext>();
 
-        yic::systemHub.sto(ev::freeCameraController{false, false, false, false, false, false, false});
+        // yic::systemHub.sto(ev::freeCameraController{false, false, false, false, false, false, false});
 
         yic::resourceSystem = rs::ResourceSystem::make(ecs);
         yic::sceneSystem = sm::SceneSystem::make(ecs);
@@ -47,7 +47,7 @@ namespace sc {
     }
 
     auto Ecs::render() -> void {
-        yic::systemHub.poll<ev::tModelLoaded>();
+        yic::systemHub.dispatch<ev::tModelLoaded>();
 
         const auto fastR = yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
         if (fastR == 0xff) return;
@@ -81,7 +81,7 @@ namespace sc {
     }
 
     auto Ecs::slowLogic() -> void {
-        yic::systemHub.poll<ev::tModelLoadedSlow>();
+        yic::systemHub.dispatch<ev::tModelLoaded>();
         const auto slowW = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
 
         static bool firstRun = true;
@@ -115,30 +115,30 @@ namespace sc {
 
     auto Ecs::handleCameraMovement(auto &cameraEntity, auto& i) -> void {
         sc::Camera& c = cameraEntity;
-        auto& f = yic::systemHub.val<ev::freeCameraController>();
-        if (f.W == true)
-            c.getPosition() += 0.1f * c.getCameraFront();
-        if (f.S == true)
-            c.getPosition() -= 0.1f * c.getCameraFront();
-        if (f.A == true)
-            c.getPosition() -= 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
-        if (f.D == true)
-            c.getPosition() += 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
-        if (f.cursor == true)
-            c.mouseCallback(f.xPos.value(), f.yPos.value());
-        if (f.scroll == true)
-            c.scrollCallback(f.xOffset.value(), f.yOffset.value());
-        if (f.firstM == true)
-            c.firstMouse = true;
+        {
+            auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();
+            if (f_Lock->W == true) c.getPosition() += 0.1f * c.getCameraFront();
+            if (f_Lock->S == true) c.getPosition() -= 0.1f * c.getCameraFront();
+            if (f_Lock->A == true) c.getPosition() -= 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
+            if (f_Lock->D == true) c.getPosition() += 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
+            if (f_Lock->cursor == true) c.mouseCallback(f_Lock->xPos, f_Lock->yPos);
+            if (f_Lock->scroll == true) c.scrollCallback(f_Lock->xOffset, f_Lock->yOffset);
+            if (f_Lock->firstM == true) c.firstMouse = true;
 
-        yic::systemHub.sto(ev::freeCameraController{false, false, false, false, false, false, false});
+            f_Lock->W = false;
+            f_Lock->S = false;
+            f_Lock->A = false;
+            f_Lock->D = false;
+            f_Lock->cursor = false;
+            f_Lock->scroll = false;
+            f_Lock->firstM = false;
+        }
 
-        //c.computeViewProjMatrix();
         c.updateCamera(i);
     }
 
     auto Ecs::calFnTimeConsuming(const std::function<void()> &fn) -> void {
-        auto b = oneapi::tbb::tick_count::now();
+        const auto b = oneapi::tbb::tick_count::now();
 
         fn();
 

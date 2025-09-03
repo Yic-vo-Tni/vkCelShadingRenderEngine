@@ -5,59 +5,52 @@
 #ifndef VKCELSHADINGRENDERER_EV_STRUCT_H
 #define VKCELSHADINGRENDERER_EV_STRUCT_H
 
-#define HANA(...) BOOST_HANA_DEFINE_STRUCT(__VA_ARGS__)
-
 #include "rhi_struct.h"
 #include "rs_struct.h"
 
 namespace ev {
 
     struct pWindowContext {
-        HANA(pWindowContext,
-             (GLFWwindow * , window),
-             (vk::Extent2D*, extent));
+        GLFWwindow *window = nullptr;
+        vk::Extent2D *extent = nullptr;
     };
 
     struct pVkSetupContext {
-        HANA(pVkSetupContext,
-             (vk::Instance * , instance),
-             (vk::detail::DispatchLoaderDynamic * , dynamicDispatcher),
-             (vk::DebugUtilsMessengerEXT * , debugMessenger),
-             (vk::PhysicalDevice * , physicalDevice),
-             (vk::Device * , device));
+        vk::Instance *instance = nullptr;
+        vk::detail::DispatchLoaderDynamic *dynamicDispatcher = nullptr;
+        vk::DebugUtilsMessengerEXT *debugMessenger = nullptr;
+        vk::PhysicalDevice *physicalDevice = nullptr;
+        vk::Device *device = nullptr;
     };
 
-
-    struct oWindowSizeChange{
-        HANA(oWindowSizeChange,
-             (std::optional<vk::Extent2D>, extent));
+    struct oWindowSizeChange {
+        std::optional<vk::Extent2D> extent{};
     };
 
     struct pVkRenderContext {
-        HANA(pVkRenderContext,
-             (vk::SwapchainKHR * , swapchain),
-             (vk::Extent2D * , currentExtent),
-             (vot::vector<vot::FrameEntry> * , frameEntries),
-             (vk::SurfaceFormatKHR * , surfaceFormat),
-             (uint32_t * , activeImageIndex),
-             (vk::CommandBuffer * , cmd),
-             (vk::RenderPass * , renderPass),
-             (vot::vector<vk::Framebuffer> * , framebuffers));
+        vk::SwapchainKHR *swapchain = nullptr;
+        vk::Extent2D *currentExtent = nullptr;
+        vot::vector<vot::FrameEntry> *frameEntries = nullptr;
+        vk::SurfaceFormatKHR *surfaceFormat = nullptr;
+        uint32_t *activeImageIndex = nullptr;
+        vk::CommandBuffer *cmd = nullptr;
+        vk::RenderPass *renderPass = nullptr;
+        vot::vector<vk::Framebuffer> *framebuffers = nullptr;
     };
 
-    struct freeCameraController{
-        HANA(freeCameraController,
-             (std::optional<bool>, W),
-             (std::optional<bool>, A),
-             (std::optional<bool>, S),
-             (std::optional<bool>, D),
-             (std::optional<bool>, cursor),
-             (std::optional<bool>, scroll),
-             (std::optional<bool>, firstM),
-             (std::optional<double>, xPos),
-             (std::optional<double>, yPos),
-             (std::optional<double>, xOffset),
-             (std::optional<double>, yOffset));
+    struct vFreeCameraController {
+        bool W = false;
+        bool A = false;
+        bool S = false;
+        bool D = false;
+        bool cursor = false;
+        bool scroll = false;
+        bool firstM = false;
+
+        double xPos = 0.0;
+        double yPos = 0.0;
+        double xOffset = 0.0;
+        double yOffset = 0.0;
     };
 
 
@@ -84,9 +77,6 @@ namespace ev {
         double yoffset;
     };
 
-
-//    struct sModelPaths{ vot::vector<vot::string> paths; };
-//    struct sImagePaths{ vot::vector<vot::string> paths; };
     struct tResourcesPaths{ vot::vector<vot::string> paths; };
 
     struct tModelLoaded {
@@ -96,7 +86,6 @@ namespace ev {
         vot::AnimationComponent ac{};
         vot::RayTracingComponent rtc{};
     };
-    struct tModelLoadedSlow{};
 
     struct tUpdateScene{};
 }

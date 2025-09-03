@@ -8,7 +8,7 @@
 #include "Core/DispatchSystem/SystemHub.h"
 
 namespace rhi {
-    DescriptorSystem::DescriptorSystem() : ct(yic::systemHub.val<ev::pVkSetupContext>()) {
+    DescriptorSystem::DescriptorSystem() : ct(yic::systemHub.va<ev::pVkSetupContext>()) {
         buildDescriptorPool();
     }
 

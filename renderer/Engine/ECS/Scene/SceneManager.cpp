@@ -9,7 +9,8 @@
 namespace sc {
 
 
-    SceneManager::SceneManager() : ct(yic::systemHub.val<ev::pVkSetupContext>()){
+    //SceneManager::SceneManager() : ct(yic::systemHub.val<ev::pVkSetupContext>()){
+    SceneManager::SceneManager() : ct(yic::systemHub.va<ev::pVkSetupContext>()){
         mRtOffImage = yic::allocator->allocImage(vot::ImageCI()
                 .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RayTracing off Image");
 

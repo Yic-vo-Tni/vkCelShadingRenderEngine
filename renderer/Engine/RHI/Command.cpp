@@ -8,13 +8,13 @@
 #include "TimelineSemaphore.h"
 
 namespace rhi {
-    CommandManager::CommandManager() : ct(yic::systemHub.val<ev::pVkSetupContext>()),
-                                       mActiveImageIndex(yic::systemHub.val<ev::pVkRenderContext>().activeImageIndex) {
+    CommandManager::CommandManager() : ct(yic::systemHub.va<ev::pVkSetupContext>()),
+                                       mActiveImageIndex(yic::systemHub.va<ev::pVkRenderContext>().activeImageIndex) {
         for(auto i = 0; i < mMaxPoolCount; i++){
             allocCommandBuffer();
         }
 
-        mFrameCount = (uint32_t )yic::systemHub.val<ev::pVkRenderContext>().frameEntries->size();
+        mFrameCount = (uint32_t )yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size();
         mThreadCommandPools.resize(vot::threadSpecificCmdPool::eCount);
         mThreadCommandbuffers.resize(vot::threadSpecificCmdPool::eCount);
         for(auto i = 0; i < vot::threadSpecificCmdPool::eCount; i++){

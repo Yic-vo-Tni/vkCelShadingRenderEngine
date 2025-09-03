@@ -18,7 +18,7 @@ namespace rhi {
         graphicsQueue = yic::qFamily->acquireQueueUnSafe(vot::queueType::eGraphics, 0);
 
         handle = vot::create("create timeline") = [&]{
-            return yic::systemHub.val<ev::pVkSetupContext>().device->createSemaphore(semaphoreCreateInfo);
+            return yic::systemHub.va<ev::pVkSetupContext>().device->createSemaphore(semaphoreCreateInfo);
         };
     }
 
@@ -84,6 +84,6 @@ namespace rhi {
     }
 
     auto TimelineSemaphore::clear() -> void {
-        yic::systemHub.val<ev::pVkSetupContext>().device->destroy(handle);
+        yic::systemHub.va<ev::pVkSetupContext>().device->destroy(handle);
     }
 } // rhi
