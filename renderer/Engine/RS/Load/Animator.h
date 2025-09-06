@@ -19,8 +19,7 @@ namespace rs {
         auto sampleAnimation(float deltaTime, vot::AnimationComponent& ac) -> void;
         // vmd
         auto bindVmd(const std::pair<vot::string, saba::VMDFile>& vmdFile, const vot::VertexDataComponent& vc, vot::AnimationComponent& ac) -> void;
-        auto sampleVmd(vot::VertexDataComponent& vc) -> void;
-        auto syncVmd(const vot::VertexDataComponent& vc, const vot::RenderComponent& rc) -> void;
+        auto sampleVmd(vot::VertexDataComponent& vc, const vot::RenderComponent& rc) -> void;
 
     private:
         // assimp

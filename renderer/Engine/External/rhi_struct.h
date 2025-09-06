@@ -136,9 +136,14 @@ struct DescriptorHandle{
     uint32_t setCount{};
     uint32_t startIndex{};
     vk::DescriptorSet* pSet = nullptr;
+
+    auto va() const { return pSet[0]; }
+    auto span() const { return std::span{pSet, setCount}; }
 };
 
     struct IPipeline{
+        virtual ~IPipeline() = default;
+
         virtual auto acquire() -> vk::Pipeline& = 0;
         virtual auto acquirePipelineBindPoint() -> vk::PipelineBindPoint = 0;
     };

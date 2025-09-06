@@ -42,7 +42,7 @@ namespace rs {
         mSaveTime = time;
         mElapsed = static_cast<float>(elapsed);
 
-        const auto view = ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent>();
+        const auto view = ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent, vot::RenderComponent>();
         const auto count = std::distance(view.begin(), view.end());
 
         {
@@ -57,11 +57,13 @@ namespace rs {
                                                   auto &info = view.get<const vot::BasicInfoComponent>(entity);
                                                   auto &vc = view.get<vot::VertexDataComponent>(entity);
                                                   auto &ac = view.get<vot::AnimationComponent>(entity);
+                                                  auto &rc = view.get<vot::RenderComponent>(entity);
 
                                                   if (!ac.enableAnim) continue;
 
                                                   auto playLogic = [&] {
-                                                      if (!vc.isMMD) {
+                                                     // if (!vc.isMMD) {
+                                                      if (vc.type == vot::eAssimp) {
                                                           mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
                                                       } else {
                                                           const auto t = ac.animTime += static_cast<float>(elapsed);
@@ -70,7 +72,7 @@ namespace rs {
                                                               ac.vmd.second.get(), t * 30.f, mElapsed);
                                                           vc.pmx->EndAnimation();
 
-                                                          mAnimator->sampleVmd(vc);
+                                                          mAnimator->sampleVmd(vc, rc);
                                                       }
                                                   };
 
@@ -102,10 +104,11 @@ namespace rs {
                 .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc,
                           vot::AnimationComponent &ac, vot::RenderComponent &rc) {
                     if (ac.enableAnim && (GLOBAL::playAllAnim || info.playAnimation)) {
-                        if (!vc.isMMD) {
+                        //if (!vc.isMMD) {
+                        if (vc.type == vot::eAssimp) {
                             mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
                         } else {
-                            mAnimator->syncVmd(vc, rc);
+                            //mAnimator->syncVmd(vc, rc);
                         }
                     }
                 });

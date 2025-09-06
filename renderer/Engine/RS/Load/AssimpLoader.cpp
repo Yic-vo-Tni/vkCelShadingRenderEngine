@@ -21,10 +21,10 @@ namespace rs {
 
     auto AssimpLoader::Load(const vot::string &pt, vot::BasicInfoComponent &basicInfoComponent,
                                  vot::VertexDataComponent &vertexDataComponent,
-                                 vot::RenderComponent &renderComponent, vot::AnimationComponent &animationComponent) -> vot::string {
+                                 vot::RenderComponent &renderComponent, vot::AnimationComponent &animationComponent, const vot::LoadOptions& options) -> vot::string {
         auto ctx = importScene(pt);
 
-        extractMesh(ctx, vertexDataComponent, renderComponent, animationComponent);
+        extractMesh(ctx, vertexDataComponent, renderComponent, animationComponent, options);
         extractAnim(ctx, animationComponent);
 
         return basicInfoComponent.name = ctx.fileName;
@@ -42,16 +42,16 @@ namespace rs {
                 .fileName = p.stem().string().data(), .pt = pt, };
     }
 
-    auto AssimpLoader::extractMesh(ImportContext& ctx, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac) -> void {
+    auto AssimpLoader::extractMesh(ImportContext& ctx, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac, const vot::LoadOptions& options) -> void {
         auto scene = ctx.scene;
         uint32_t vertexOffset = 0, indexOffset = 0;
         extractCenter(ctx, rc);
         assignBuffer(ctx, vc);
 
         yic::logger->info("scene has {0} num meshes", scene->mNumMeshes);
-        for(auto aiMesh : std::span<aiMesh*>(scene->mMeshes, scene->mNumMeshes)){
-            auto aiMat = scene->mMaterials[aiMesh->mMaterialIndex];
-            extractVertex(aiMesh, vertexOffset, vc);
+        for(const auto aiMesh : std::span<aiMesh*>(scene->mMeshes, scene->mNumMeshes)){
+            const auto aiMat = scene->mMaterials[aiMesh->mMaterialIndex];
+            extractVertex(aiMesh, vertexOffset, vc, options);
             extractBone(aiMesh, vertexOffset, vc, ac);
             extractIndex(aiMesh, vertexOffset, indexOffset, vc);
 
@@ -70,7 +70,7 @@ namespace rs {
             for(auto& vb : rc.vertexBuffer){
                 vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::VertexT<vot::eAssimp>),
                                                                  vc.vertices_pmr[0].data(),
-                                                                 usage | vk::BufferUsageFlagBits::eVertexBuffer,
+                                                                 usage | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
                                                                  annotate("vert"));
             }
             rc.indexBuffer = yic::allocator->allocBufferStaging(vc.indices_pmr.size() * sizeof(uint32_t),
@@ -91,8 +91,10 @@ namespace rs {
 
             for(const auto& img : rc.diffuseTextures){
                 layout.emplace(vot::DescriptorLayout2::_1d{
-                        img->imageInfo(),
-                        ac.boneMatBuffer->bufferInfo(),
+                    img->imageInfo(),
+                    ac.boneMatBuffer->bufferInfo(),
+                    rc.vertexBuffer[vot::VertexDataComponent::eTPose]->bufferInfo(),
+                    rc.vertexBuffer[vot::VertexDataComponent::eAnim]->bufferInfo(),
                 });
             }
 
@@ -118,8 +120,6 @@ namespace rs {
             boneNode.name = src->mName.data;
             boneNode.transformation = miku::AssimpGLMConverter(src->mTransformation);
             boneNode.childrenCount = src->mNumChildren;
-
-//            yic::logger->info("Bone Node Name: {}, Transformation: {}", boneNode.name, glm::to_string(boneNode.transformation));
 
             for(auto i = 0u; i < src->mNumChildren; i++){
                 vot::BoneNode node;
@@ -200,7 +200,7 @@ namespace rs {
             for(auto wIndex = 0u; wIndex < numWeights; wIndex++){
                 auto vertId = weights[wIndex].mVertexId;
                 auto weight = weights[wIndex].mWeight;
-                auto& vert = pmr[vertexOffset + vertId]; /////////// bug
+                auto& vert = pmr[vertexOffset + vertId];
 
                 for(auto x = 0; x < 4; ++x){
                     if (vert.boneIds[x] < 0){
@@ -214,12 +214,15 @@ namespace rs {
         }
     }
 
-    auto AssimpLoader::extractVertex(const aiMesh *aiMesh, const uint32_t &vertexOffset, vot::VertexDataComponent &vc) -> void {
+    auto AssimpLoader::extractVertex(const aiMesh *aiMesh, const uint32_t &vertexOffset, vot::VertexDataComponent &vc, const vot::LoadOptions& options) -> void {
         for(auto j = 0; j < aiMesh->mNumVertices; ++j){
             vot::VertexT<vot::eAssimp> v{};
 
             if (aiMesh->HasPositions()) {
                 auto &pos = aiMesh->mVertices[j];
+                if (options.scale.has_value()) {
+                    pos *= *options.scale;
+                }
                 std::memcpy(&v.pos, &pos, sizeof(glm::vec3));
             }
             if (aiMesh->HasNormals()) {
@@ -237,6 +240,7 @@ namespace rs {
             }
 
             for(auto& pmr : vc.vertices_pmr){
+
                 pmr[j + vertexOffset] = v;
             }
             // for(auto z = 0; z < vc.vertices_pmr.size(); z++){
@@ -255,10 +259,9 @@ namespace rs {
     }
 
     auto AssimpLoader::assignBuffer(const ImportContext& ctx, vot::VertexDataComponent& vc) -> void {
-        //vc.vertices_pmr = std::pmr::vector<vot::Vertex>{&mVertexPool};
-        for(auto& pmr : vc.vertices_pmr){
+         for(auto& pmr : vc.vertices_pmr){
             pmr = std::pmr::vector<vot::VertexT<vot::eAssimp>>{&mVertexPool};
-        }
+         }
         vc.indices_pmr = std::pmr::vector<uint32_t>{&mIndexPool};
         vc.adjIndices_pmr = std::pmr::vector<uint32_t>{&mAdjacencyIndexPool};
 
@@ -269,10 +272,10 @@ namespace rs {
             indexCount += aiMesh->mNumFaces * 3;
         }
 
-//        vc.vertices_pmr.resize(vertexCount);
         for(auto& pmr : vc.vertices_pmr){
             pmr.resize(vertexCount);
         }
+
         vc.indices_pmr.resize(indexCount);
         vc.adjIndices_pmr.resize(indexCount * 2);
     }

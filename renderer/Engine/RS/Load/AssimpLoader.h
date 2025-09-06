@@ -35,15 +35,15 @@ namespace rs {
 
         auto Load(const vot::string &pt, vot::BasicInfoComponent& basicInfoComponent,
                        vot::VertexDataComponent &vertexDataComponent,
-                       vot::RenderComponent &renderComponent, vot::AnimationComponent &animationComponent) -> vot::string;
+                       vot::RenderComponent &renderComponent, vot::AnimationComponent &animationComponent, const vot::LoadOptions& options = {}) -> vot::string;
     private:
-        auto extractMesh(ImportContext& mic, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac) -> void;
+        auto extractMesh(ImportContext& mic, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac, const vot::LoadOptions& options) -> void;
         auto extractAnim(ImportContext& mic, vot::AnimationComponent& ac) -> void;
     private:
         auto importScene(const vot::string& pt) -> ImportContext;
         auto extractCenter(const ImportContext& ctx, vot::RenderComponent& rc) -> void;
         auto assignBuffer(const ImportContext& ctx, vot::VertexDataComponent& vc) -> void;
-        auto extractVertex(const aiMesh* aiMesh, const uint32_t& vertexOffset, vot::VertexDataComponent& vc) -> void;
+        auto extractVertex(const aiMesh* aiMesh, const uint32_t& vertexOffset, vot::VertexDataComponent& vc, const vot::LoadOptions& options) -> void;
         auto extractBone(const aiMesh* aiMesh, const uint32_t& vertexOffset, vot::VertexDataComponent& vc, vot::AnimationComponent& ac) -> void;
         auto extractIndex(const aiMesh* aiMesh, const uint32_t& vertexOffset, const uint32_t& indexOffset, vot::VertexDataComponent& vc) -> void;
         auto extractDiffTex(ImportContext& ctx, const aiMaterial* aiMat, const vot::SubMesh& subMesh, vot::RenderComponent& rc) -> void;
@@ -59,8 +59,8 @@ namespace rs {
             if (!node->mParent) {
                 return miku::AssimpGLMConverter(node->mTransformation);
             }
-            glm::mat4 parentGlobal = computeNodeGlobalTransform(node->mParent);
-            glm::mat4 local = miku::AssimpGLMConverter(node->mTransformation);
+            const glm::mat4 parentGlobal = computeNodeGlobalTransform(node->mParent);
+            const glm::mat4 local = miku::AssimpGLMConverter(node->mTransformation);
             return parentGlobal * local;
         }
 

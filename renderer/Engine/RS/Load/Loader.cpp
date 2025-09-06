@@ -53,8 +53,13 @@ namespace rs {
         vot::RayTracingComponent rayTracingComponent{};
 
         if (check(pt, {".pmx"})) {
+            vertexDataComponent.type = vot::eMMD;
             mMmdLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent);
-        } else if (check(pt, {".obj", ".fbx", ".gltf", ".glb"})) {
+        } else if (check(pt, {".obj", ".fbx"})) {
+            vertexDataComponent.type = vot::eAssimp;
+            mAssimpLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
+        } else if (check(pt, {".gltf", ".glb"})) {
+            vertexDataComponent.type = vot::eAssimp;
             mAssimpLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
         }
         yic::sceneSystem->syncBLAS(vertexDataComponent, renderComponent, rayTracingComponent);
@@ -77,7 +82,9 @@ namespace rs {
         ecs.emplace<vot::AnimationComponent>(entity, animationComponent);
         ecs.emplace<vot::RayTracingComponent>(entity, rayTracingComponent);
 
-        if (vertexDataComponent.isMMD)
+        // if (vertexDataComponent.isMMD)
+        //     ecs.emplace<vot::mark::eMMD>(entity);
+        if (vertexDataComponent.type == vot::eMMD)
             ecs.emplace<vot::mark::eMMD>(entity);
 
         yic::sceneSystem->reloadTlas();

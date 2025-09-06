@@ -52,7 +52,7 @@ namespace rs {
             yic::logger->error("failed to load pmx model");
         } else { yic::logger->info("load pmx model"); }
 
-        vdc.isMMD = true;
+        //vdc.isMMD = true;
         pmx->InitializeAnimation();
 
         return std::move(pmx);
@@ -64,7 +64,7 @@ namespace rs {
         const auto nor = pmx->GetUpdateNormals();
         const auto uv = pmx->GetUpdateUVs();
 
-        for(auto& pmr : vdc.mmdVertices_pmr){
+        for(auto& pmr : vdc.mmd_vertices_pmr){
             pmr = std::pmr::vector<vot::VertexT<vot::eMMD>>{&mVertexPool};
             pmr.resize(pmx->GetVertexCount());
         }

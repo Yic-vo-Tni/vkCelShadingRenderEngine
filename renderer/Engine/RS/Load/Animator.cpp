@@ -17,7 +17,14 @@ namespace rs {
         auto& anim = ac.animations[ac.activeAnim].second;
         auto& boneMats = ac.boneMats;
         auto& boneMatBuf = ac.boneMatBuffer;
-        mAnimTime += anim->getTicksPerSecond() * deltaTime;
+
+        float tps = anim->getTicksPerSecond();
+        if (tps < 1e-3f) {
+            tps = 25.f;
+        } else if (tps > 120.f) {
+            tps /= 10.f;
+        }
+        mAnimTime += tps * deltaTime;
         mAnimTime = fmod(mAnimTime, anim->getDuration());
 
         std::function<void(const vot::BoneNode* node, glm::mat4 parentTransform)> calculateBoneTransform = [&](const vot::BoneNode* node, glm::mat4 parentTransform) -> void{
@@ -65,7 +72,7 @@ namespace rs {
         ac.vmd = std::pair(vmdFile.first, std::move(vmd));
     }
 
-    auto Animator::sampleVmd(vot::VertexDataComponent& vc) -> void {
+    auto Animator::sampleVmd(vot::VertexDataComponent& vc, const vot::RenderComponent& rc) -> void {
         vc.pmx->Update();
         const auto pos = vc.pmx->GetUpdatePositions();
         const auto nor = vc.pmx->GetUpdateNormals();
@@ -73,15 +80,11 @@ namespace rs {
 
         const auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).logic_cur();
 
-        for(auto i = 0; i < vc.pmx->GetVertexCount(); i++){
-            vc.mmdVertices_pmr[index][i] = vot::VertexT<vot::eMMD>{pos[i], nor[i], uv[i]};
+        for (auto i = 0; i < vc.pmx->GetVertexCount(); i++) {
+            vc.mmd_vertices_pmr[vot::VertexDataComponent::eAnim][i] = vot::VertexT<vot::eMMD>{pos[i], nor[i], uv[i]};
         }
-    }
 
-
-    auto Animator::syncVmd(const vot::VertexDataComponent &vc, const vot::RenderComponent &rc) -> void {
-        const auto index = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
-        rc.vertexBuffer[index]->update(vc.mmdVertices_pmr[index]);
+        rc.vertexBuffer[index]->update(vc.mmd_vertices_pmr[vot::VertexDataComponent::eAnim]);
     }
 
 } // rs

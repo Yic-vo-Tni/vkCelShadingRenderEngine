@@ -1,0 +1,76 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+//struct Vertex{
+//    vec4 pos;
+//    vec4 nor;
+//    vec4 uv;
+//    ivec4 boneIds;
+//    vec4 boneWeights;
+//};
+
+struct Vertex{
+    vec4 pos_norx;
+    vec4 noryz_uv;
+    ivec4 boneIds;
+    vec4 boneWeights;
+};
+
+
+layout(std430, set = 1, binding = 2) readonly buffer vertexBuffer{
+    Vertex vertices[];
+};
+
+layout(std430, set = 1, binding = 3) buffer updateVertexBuffer{
+    Vertex updateVertices[];
+};
+
+layout(std430, set = 1, binding = 1) buffer BoneBuffer{
+    mat4 boneMats[];
+};
+
+layout(push_constant) uniform PushConstants{
+  uint max_id;
+};
+
+layout(local_size_x = 64) in;
+
+mat4 rotateY(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat4(
+    vec4(c, 0, s, 0),
+    vec4(0, 1, 0, 0),
+    vec4(-s, 0, c, 0),
+    vec4(0, 0, 0, 1)
+    );
+}
+
+
+void main(){
+    uint id = gl_GlobalInvocationID.x;
+    if(id >= max_id) return;
+    Vertex v = vertices[id];
+
+    vec3 pos = v.pos_norx.xyz;
+    vec3 nor = vec3(v.pos_norx.w, v.noryz_uv.x, v.noryz_uv.y);
+    vec2 uv  = v.noryz_uv.zw;
+
+    vec4 skinnedPos = vec4(0.0);
+    vec4 skinnedNor = vec4(0.0);
+
+    for (int i = 0; i < 4; i++) {
+        int boneId = v.boneIds[i];
+        float w    = v.boneWeights[i];
+        if (boneId < 0 || w <= 0.0) continue;
+
+        skinnedPos += w * (boneMats[boneId] * vec4(pos, 1.0));
+        skinnedNor += w * (boneMats[boneId] * vec4(nor, 0.0));
+    }
+
+    if (skinnedPos == vec4(0.0)) skinnedPos = vec4(pos, 1.0);
+    if (skinnedNor == vec4(0.0)) skinnedNor = vec4(nor, 0.0);
+
+    updateVertices[id].pos_norx = vec4(skinnedPos.xyz, normalize(skinnedNor.xyz).x);
+    updateVertices[id].noryz_uv = vec4(normalize(skinnedNor.xyz).yz, uv);
+}

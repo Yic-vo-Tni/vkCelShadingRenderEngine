@@ -41,10 +41,10 @@ namespace rhi {
         vk::PhysicalDevicePresentModeFifoLatestReadyFeaturesEXT presentModeFifoLatestReadyFeatures{vk::True};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
-           //   .addInstanceLayers("VK_LAYER_KHRONOS_validation")
-                .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
-                .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
-                .addInstanceExtensions(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)
+         .addInstanceLayers("VK_LAYER_KHRONOS_validation")
+         .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
+         .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
+         .addInstanceExtensions(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)
 
                 .addPhysicalFeatures(vk::PhysicalDeviceFeatures2KHR().features
                                              .setShaderInt64(vk::True)
@@ -94,6 +94,7 @@ namespace rhi {
       //  yic::allocator2 = rhi2::Allocator::make();
         yic::desSystem = rhi::DescriptorSystem::make();
         yic::imguiImage = rhi::ImGuiDescriptorManager::make();
+
     }
 
     Rhi::~Rhi() {

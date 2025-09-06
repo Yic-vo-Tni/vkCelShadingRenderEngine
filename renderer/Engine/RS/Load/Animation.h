@@ -27,6 +27,7 @@ namespace rs {
         [[nodiscard]] auto findBone(const vot::string& name) -> Bone*;
     private:
     private:
+     //   double durationSec{0.f};
         float mDuration;
         float mTicksPerSecond;
         vot::vector<Bone> mBones;

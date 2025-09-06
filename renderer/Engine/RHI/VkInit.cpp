@@ -72,7 +72,13 @@ namespace rhi {
             return mInstance.createDebugUtilsMessengerEXT(vk::DebugUtilsMessengerCreateInfoEXT()
             .setMessageSeverity(s::eVerbose | s::eWarning | s::eError)
             .setMessageType(t::eGeneral | t::ePerformance | t::eValidation)
-            .setPfnUserCallback(debugCallback), nullptr, mDynamicDispatcher);
+            .setPfnUserCallback([](vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
+                                   vk::DebugUtilsMessageTypeFlagsEXT type,
+                                   const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                                   void *pUserData) -> vk::Bool32 {
+                                       std::cerr << "Validation: " << pCallbackData->pMessage << std::endl;
+                return vk::False;
+            }), nullptr, mDynamicDispatcher);
         };
     }
 

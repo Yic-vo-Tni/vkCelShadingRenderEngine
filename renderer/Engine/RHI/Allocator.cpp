@@ -11,8 +11,9 @@
 #include "Utils/FileOperation.h"
 #include "Descriptor.h"
 
-#define VMA_DEBUG_DETECT_MEMORY_LEAKS 0
 #define VMA_IMPLEMENTATION
+#define VMA_DEBUG_DETECT_LEAKS 0
+#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 0
 #include "vma/vk_mem_alloc.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -42,6 +43,15 @@ namespace rhi {
 
     auto Allocator::clear() -> void {
         mCaches.clear();
+
+        VmaTotalStatistics totalStats{};
+        vmaCalculateStatistics(mVmaAllocator, &totalStats);
+
+        std::cout
+            << "Total allocations: " << totalStats.total.statistics.allocationCount
+            << ", total bytes: " << totalStats.total.statistics.allocationBytes
+            << std::endl;
+
 
         vmaDestroyAllocator(mVmaAllocator);
     }

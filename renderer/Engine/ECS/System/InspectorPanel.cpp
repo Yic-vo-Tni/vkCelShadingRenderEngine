@@ -145,29 +145,26 @@ namespace sc {
     }
 
     auto InspectorPanel::mousePick() -> void {
-                const auto [u, v] = GLOBAL::mousePick;
+        const auto [u, v] = GLOBAL::mousePick;
         if (u < 0.f || v < 0.f) return;
 
         const auto extent = yic::renderLibrary->RT_IDBuffer->config.extent;
-        auto x = static_cast<int>(u * extent.width);
-        auto y = static_cast<int>(v * extent.height);
+        const auto x = static_cast<int>(u * static_cast<float>(extent.width));
+        const auto y = static_cast<int>(v * static_cast<float>(extent.height));
 
-        auto dev = yic::systemHub.va<ev::pVkSetupContext>().device;
-        auto physDev = yic::systemHub.va<ev::pVkSetupContext>().physicalDevice;
-
-        vk::Buffer stagBuffer;
-        vk::DeviceMemory stagDeviceMem;
+        const auto dev = yic::systemHub.va<ev::pVkSetupContext>().device;
+        const auto physDev = yic::systemHub.va<ev::pVkSetupContext>().physicalDevice;
 
         vk::BufferCreateInfo bufferInfo{};
         bufferInfo.size  = sizeof(uint32_t);
         bufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
         bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
-        stagBuffer = dev->createBuffer(bufferInfo);
+        const auto stagBuffer = dev->createBuffer(bufferInfo);
 
-        vk::MemoryRequirements memReq = dev->getBufferMemoryRequirements(stagBuffer);
+        const vk::MemoryRequirements memReq = dev->getBufferMemoryRequirements(stagBuffer);
 
-        vk::PhysicalDeviceMemoryProperties memProps = physDev->getMemoryProperties();
+        const vk::PhysicalDeviceMemoryProperties memProps = physDev->getMemoryProperties();
         uint32_t memoryTypeIndex = UINT32_MAX;
         for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
             if ((memReq.memoryTypeBits & (1 << i)) &&
@@ -182,7 +179,7 @@ namespace sc {
         allocInfo.allocationSize  = memReq.size;
         allocInfo.memoryTypeIndex = memoryTypeIndex;
 
-        stagDeviceMem = dev->allocateMemory(allocInfo);
+        const auto stagDeviceMem = dev->allocateMemory(allocInfo);
 
         dev->bindBufferMemory(stagBuffer, stagDeviceMem, 0);
 

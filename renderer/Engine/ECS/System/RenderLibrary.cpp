@@ -37,7 +37,9 @@ namespace sc {
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
             .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
-            .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex)
+            .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
+            .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+            .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
 
             .setRenderPass2CI(vot::RenderPass2CI()
@@ -86,6 +88,11 @@ namespace sc {
             .setShaderPath("Basic/IDBuffer.frag"))
         );
 
+        GP_IDBuffer_Assimp.combinePipelineLibrary(GP_IDBuffer.acquirePipelineLibrary()
+            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eAssimp>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, pos))));
+
         GP_Basic_PMX.combinePipelineLibrary(GP_Basic_Assimp.acquirePipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
@@ -129,7 +136,6 @@ namespace sc {
         GP_Volumetric_Overcast_Clouds.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
             .SET0
-          //  .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(float)}))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
@@ -178,6 +184,13 @@ namespace sc {
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR));
 
+        CP_Skinning.build("Basic/skinning.comp", vot::PipelineDescriptorSetLayoutCI2()
+            .SET0
+            .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
+            .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+            .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eCompute, 0, sizeof(std::uint32_t)}));
     }
 
     auto RenderLibrary::buildRenderTarget() -> void {

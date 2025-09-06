@@ -18,35 +18,35 @@ layout (location = 4) in vec4 boneWeight;
 layout(set = 0, binding = 0) uniform GlobalUniforms { CameraMatrixUniform camera; } ;
 layout(push_constant) uniform PushConstants{ mat4 M;};
 
-layout(std430, set = 1, binding = 1) readonly buffer BoneStorage {
-    mat4 boneMatrices[];
-};
+//layout(std430, set = 1, binding = 1) readonly buffer BoneStorage {
+//    mat4 boneMatrices[];
+//};
 
 
-vec4 applyBoneTransform(vec4 pos){
-    vec4 r = vec4(0.f);
-    for(int i = 0; i < 4; i++){
-
-        int id = boneIds[i];
-        if (id < 0) continue;
-        r += boneWeight[i] * (boneMatrices[boneIds[i]] * pos);
-    }
-    if( r == vec4(0.f)){
-        return pos;
-    }
-    return r;
-}
+//vec4 applyBoneTransform(vec4 pos){
+//    vec4 r = vec4(0.f);
+//    for(int i = 0; i < 4; i++){
+//
+//        int id = boneIds[i];
+//        if (id < 0) continue;
+//        r += boneWeight[i] * (boneMatrices[boneIds[i]] * pos);
+//    }
+//    if( r == vec4(0.f)){
+//        return pos;
+//    }
+//    return r;
+//}
 
 void main() {
-    vec4 pos = applyBoneTransform(vec4(inPos, 1.f));
-    vec3 nor = normalize(applyBoneTransform(vec4(inNor, 1.f))).xyz;
+    //vec4 pos = applyBoneTransform(vec4(inPos, 1.f));
+    //vec3 nor = normalize(applyBoneTransform(vec4(inNor, 1.f))).xyz;
+    vec4 pos = (vec4(inPos, 1.f));
     pos = camera.viewProj * M * pos;
 
-//    outPos = (M * pos).xyz;
     outPos = (M * vec4(inPos, 1.0)).xyz;
-    mat3 normalMatrix = transpose(inverse(mat3(M)));
-    outNor = normalize(normalMatrix * inNor);
-//    outNor = inNor;
+    //mat3 normalMatrix = transpose(inverse(mat3(M)));
+    //outNor = normalize(normalMatrix * inNor);
+    outNor = normalize(inNor);
     outUV = inUv;
     gl_Position = pos;
 }

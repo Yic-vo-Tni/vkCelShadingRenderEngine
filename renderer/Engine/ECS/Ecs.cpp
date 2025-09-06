@@ -27,6 +27,8 @@ namespace sc {
     Ecs::~Ecs() {
         yic::logger->warn("~ ecs");
 
+        ct.device->waitIdle();
+        ecs.clear<>();
         RenderLibrary::destroy();
         rs::ResourceSystem::destroy();
         sm::SceneSystem::destroy();

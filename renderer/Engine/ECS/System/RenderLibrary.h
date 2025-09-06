@@ -7,7 +7,7 @@
 
 #include "RHI/Pipeline/GraphicsPipeline.h"
 #include "RHI/Pipeline/RayTracingPipeline.h"
-#include "RHI/Descriptor.h"
+#include "RHI/Pipeline/ComputePipeline.h"
 
 namespace sc {
 
@@ -31,9 +31,12 @@ namespace sc {
         rhi::GraphicsPipeline GP_ShadowMap_Assimp;
         rhi::GraphicsPipeline GP_ShadowMap_PMX;
         rhi::GraphicsPipeline GP_Dummy;
+        rhi::GraphicsPipeline GP_IDBuffer_Assimp;
         rhi::GraphicsPipeline GP_IDBuffer;
 
         rhi::RayTracingPipeline RP_Shadow;
+
+        rhi::ComputePipeline CP_Skinning;
 
         enum eGBuffer : uint8_t {
             eAlbedo = 0,
