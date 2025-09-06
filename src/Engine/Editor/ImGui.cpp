@@ -21,16 +21,12 @@ namespace ui {
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
         io.IniFilename = imgui_ini_path "ImGui.ini";
-        //const char* fontPt = R"(H:\VkCelShadingRenderer\src\resource\TTF\JetBrainsMono-Regular.ttf)";
-        const char* fontPt = tex_path "../TTF/JetBrainsMono-Regular.ttf";
+        const auto fontPt = tex_path "../TTF/JetBrainsMono-Regular.ttf";
         io.Fonts->AddFontFromFileTTF(fontPt, 18.f);
 
-        // auto wt = yic::systemHub.val<ev::pWindowContext>();
-        // auto ct = yic::systemHub.val<ev::pVkSetupContext>();
-        // auto rt = yic::systemHub.val<ev::pVkRenderContext>();
-        auto wt = yic::systemHub.va<ev::pWindowContext>();
-        auto ct = yic::systemHub.va<ev::pVkSetupContext>();
-        auto rt = yic::systemHub.va<ev::pVkRenderContext>();
+        const auto wt = yic::systemHub.va<ev::pWindowContext>();
+        const auto ct = yic::systemHub.va<ev::pVkSetupContext>();
+        const auto rt = yic::systemHub.va<ev::pVkRenderContext>();
         mWindow = wt.window;
 
         mCurrentExtent = rt.currentExtent;
@@ -55,8 +51,8 @@ namespace ui {
             .QueueFamily = yic::qFamily->acquireQueueIndex(vot::queueType::eGraphics),
             .Queue = yic::qFamily->acquireQueueUnSafe(vot::queueType::eGraphics),
             .DescriptorPool = mDescriptorPool,
-            .MinImageCount = (uint32_t)rt.frameEntries->size(),
-            .ImageCount = (uint32_t)rt.frameEntries->size(),
+            .MinImageCount = static_cast<uint32_t>(rt.frameEntries->size()),
+            .ImageCount = static_cast<uint32_t>(rt.frameEntries->size()),
             .UseDynamicRendering = true,
             .PipelineRenderingCreateInfo = {
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -85,7 +81,6 @@ namespace ui {
         ImGui::DestroyContext();
 
         mWidgets.clear();
-        //yic::systemHub.val<ev::pVkSetupContext>().device->destroy(mDescriptorPool);
         yic::systemHub.va<ev::pVkSetupContext>().device->destroy(mDescriptorPool);
     }
 
@@ -93,20 +88,27 @@ namespace ui {
  //       auto window = yic::systemHub.val<ev::pWindowContext>().window;
 
         {
-            auto readIndex = yic::glT::keyInputActive.load(std::memory_order_acquire);
-            auto& keyInput = yic::glTBuffers[readIndex].keyInput;
-            ImGui_ImplGlfw_KeyCallback(mWindow, keyInput.key, keyInput.scancode, keyInput.action, keyInput.mods);
+            const auto readIndex = yic::glT::keyInputActive.load(std::memory_order_acquire);
+            const auto&[key, action, scancode, mods] = yic::glTBuffers[readIndex].keyInput;
+            ImGui_ImplGlfw_KeyCallback(mWindow, key, scancode, action, mods);
         }
         {
-            auto readIndex = yic::glT::mouseInputActive.load(std::memory_order_acquire);
-            auto& mouseInput = yic::glTBuffers[readIndex].mouseInput;
-            ImGui_ImplGlfw_MouseButtonCallback(mWindow, mouseInput.button, mouseInput.action, mouseInput.mods);
+            const auto readIndex = yic::glT::mouseInputActive.load(std::memory_order_acquire);
+            const auto&[button, action, mods] = yic::glTBuffers[readIndex].mouseInput;
+            ImGui_ImplGlfw_MouseButtonCallback(mWindow, button, action, mods);
         }
         {
-            auto readIndex = yic::glT::cursorPosInputActive.load(std::memory_order_acquire);
-            auto& cursorPosInput = yic::glTBuffers[readIndex].cursorPosInput;
-            ImGui_ImplGlfw_CursorPosCallback(mWindow, cursorPosInput.xpos, cursorPosInput.ypos);
+            const auto readIndex = yic::glT::cursorPosInputActive.load(std::memory_order_acquire);
+            const auto&[xpos, ypos] = yic::glTBuffers[readIndex].cursorPosInput;
+            ImGui_ImplGlfw_CursorPosCallback(mWindow, xpos, ypos);
         }
+        {
+            const auto readIndex = yic::glT::scrollInputActive.load(std::memory_order_acquire);
+            const auto&[xoffset, yoffset] = yic::glTBuffers[readIndex].scrollInput;
+            ImGui_ImplGlfw_ScrollCallback(mWindow, xoffset, yoffset);
+            yic::glTBuffers[readIndex].scrollInput = {0, 0};
+        }
+
 
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -118,7 +120,7 @@ namespace ui {
 
         base();
 
-        for(auto& w : mWidgets){
+        for(const auto& w : mWidgets){
             ImGui::Begin(w->getName().c_str());
             w->rec();
             ImGui::End();
@@ -130,8 +132,8 @@ namespace ui {
 
     auto ImGuiLauncher::base() -> void {
         if (mCurrentExtent->width != mExtent.width || mCurrentExtent->height != mExtent.width) {
-            ImVec2 imguiWindowSize((float) mCurrentExtent->width, (float) mCurrentExtent->height);
-            ImVec2 imguiWindowPos(0, 0);
+            const ImVec2 imguiWindowSize(static_cast<float>(mCurrentExtent->width), static_cast<float>(mCurrentExtent->height));
+            constexpr ImVec2 imguiWindowPos(0, 0);
             ImGui::SetNextWindowSize(imguiWindowSize);
             ImGui::SetNextWindowPos(imguiWindowPos);
             mExtent = *mCurrentExtent;
@@ -180,7 +182,8 @@ namespace ui {
         colors[ImGuiCol_SliderGrab] = ImVec4{0.44f, 0.37f, 0.61f, 0.54f};
         colors[ImGuiCol_SliderGrabActive] = ImVec4{0.74f, 0.58f, 0.98f, 0.54f};
 
-        colors[ImGuiCol_FrameBg] = ImVec4{0.13f, 0.13, 0.17, 1.0f};
+        //colors[ImGuiCol_FrameBg] = ImVec4{0.13f, 0.13, 0.17, 1.0f};
+        colors[ImGuiCol_FrameBg] = ImVec4{0.16f, 0.16, 0.22, 1.0f};
         colors[ImGuiCol_FrameBgHovered] = ImVec4{0.19f, 0.2f, 0.25f, 1.0f};
         colors[ImGuiCol_FrameBgActive] = ImVec4{0.16f, 0.16f, 0.21f, 1.0f};
 

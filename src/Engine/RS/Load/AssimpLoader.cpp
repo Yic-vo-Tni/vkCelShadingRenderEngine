@@ -244,16 +244,8 @@ namespace rs {
             }
 
             for(auto& pmr : vc.vertices_pmr){
-
                 pmr[j + vertexOffset] = v;
             }
-            // for(auto z = 0; z < vc.vertices_pmr.size(); z++){
-            //     yic::logger->warn( i);
-            //     // pmr[j + vertexOffset] = v;
-            //     i++;
-            // }
-            //vc.vertices_pmr[j + vertexOffset] = v;
-           // yic::logger->warn("go");
         }
     }
 

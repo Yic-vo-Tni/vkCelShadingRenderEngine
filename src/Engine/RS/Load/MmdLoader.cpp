@@ -13,9 +13,15 @@
 #include "Runetime/System/RenderLibrary.h"
 
 namespace rs {
+    MmdLoader::MmdLoader() {
+        mResDir = saba::PathUtil::GetExecutablePath();
+        mResDir = saba::PathUtil::GetDirectoryName(mResDir);
+        mResDir = saba::PathUtil::Combine(mResDir, "resource");
+        mMmdDir = saba::PathUtil::Combine(mResDir, "mmd");
+    }
 
     auto MmdLoader::Load(const vot::string &pt, vot::BasicInfoComponent &bic,
-                            vot::VertexDataComponent &vdc, vot::RenderComponent &rc) -> vot::string {
+                         vot::VertexDataComponent &vdc, vot::RenderComponent &rc) -> vot::string {
         auto pmx = initPmx(pt, bic, vdc);
 
         buildVertices(pmx.get(), vdc, rc);
@@ -39,11 +45,6 @@ namespace rs {
     }
 
     auto MmdLoader::initPmx(const vot::string &pt, vot::BasicInfoComponent &bic, vot::VertexDataComponent &vdc) -> std::unique_ptr<saba::PMXModel> {
-        mResDir = saba::PathUtil::GetExecutablePath();
-        mResDir = saba::PathUtil::GetDirectoryName(mResDir);
-        mResDir = saba::PathUtil::Combine(mResDir, "resource");
-        mMmdDir = saba::PathUtil::Combine(mResDir, "mmd");
-
         const std::filesystem::path path(pt);
         bic.name = path.stem().string();
 

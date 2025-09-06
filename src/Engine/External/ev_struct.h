@@ -88,6 +88,8 @@ namespace ev {
     };
 
     struct tUpdateScene{};
+
+    struct tDestroyVMA{};
 }
 
 

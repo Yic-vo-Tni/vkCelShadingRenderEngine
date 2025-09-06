@@ -28,7 +28,17 @@ namespace sc {
         yic::logger->warn("~ ecs");
 
         ct.device->waitIdle();
+
+        yic::systemHub.pub(ev::tDestroyVMA{});
+
+        yic::systemHub.setEvent(ev::tModelLoaded{});
+
+        yic::systemHub.pub(ev::tDestroyVMA{});
+
         ecs.clear<>();
+
+        yic::systemHub.pub(ev::tDestroyVMA{});
+
         RenderLibrary::destroy();
         rs::ResourceSystem::destroy();
         sm::SceneSystem::destroy();

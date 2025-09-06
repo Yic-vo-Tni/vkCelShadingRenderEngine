@@ -12,8 +12,11 @@
 #include "Descriptor.h"
 
 #define VMA_IMPLEMENTATION
-#define VMA_DEBUG_DETECT_LEAKS 0
-#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 0
+#define VMA_DEBUG_DETECT_LEAKS 1
+#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
+#define VMA_ALLOCATOR_CREATE_DEBUG_MARGIN_BIT 0x00000020
+#define VMA_ALLOCATOR_CREATE_DEBUG_DETECT_CORRUPTION_BIT 0x00000040
+#define VMA_ALLOCATOR_CREATE_DEBUG_ALLOCATIONS_BIT 0x00000080
 #include "vma/vk_mem_alloc.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -27,11 +30,14 @@ namespace rhi {
     Allocator::Allocator() : mCaches(32, [&](const stagingBufferHandle& handle) {
         vmaDestroyBuffer(mVmaAllocator, std::get<0>(handle), std::get<1>(handle));
     }) {
-        //ct = yic::systemHub.val<ev::pVkSetupContext>();
         ct = yic::systemHub.va<ev::pVkSetupContext>();
 
         const VmaAllocatorCreateInfo vmaAllocatorCreateInfo{
-            .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+            .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT
+                     | VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT
+                     | VMA_ALLOCATOR_CREATE_DEBUG_MARGIN_BIT
+                     | VMA_ALLOCATOR_CREATE_DEBUG_DETECT_CORRUPTION_BIT
+                     | VMA_ALLOCATOR_CREATE_DEBUG_ALLOCATIONS_BIT,
             .physicalDevice = *ct.physicalDevice,
             .device = *ct.device,
             .instance = *ct.instance,
@@ -39,19 +45,41 @@ namespace rhi {
 
         vmaCreateAllocator(&vmaAllocatorCreateInfo, &mVmaAllocator);
 
+        yic::systemHub.sub([&](ev::tDestroyVMA) {
+            VmaTotalStatistics totalStats{};
+            vmaCalculateStatistics(mVmaAllocator, &totalStats);
+
+            std::cout
+                    << "Total allocations: " << totalStats.total.statistics.allocationCount
+                    << ", total bytes: " << totalStats.total.statistics.allocationBytes
+                    << std::endl;
+        });
+
     }
 
     auto Allocator::clear() -> void {
-        mCaches.clear();
-
         VmaTotalStatistics totalStats{};
         vmaCalculateStatistics(mVmaAllocator, &totalStats);
 
-        std::cout
-            << "Total allocations: " << totalStats.total.statistics.allocationCount
-            << ", total bytes: " << totalStats.total.statistics.allocationBytes
-            << std::endl;
+        // std::cout
+        //     << "Total allocations: " << totalStats.total.statistics.allocationCount
+        //     << ", total bytes: " << totalStats.total.statistics.allocationBytes
+        //     << std::endl;
+        yic::systemHub.pub(ev::tDestroyVMA{});
 
+        mCaches.clear();
+
+        yic::systemHub.pub(ev::tDestroyVMA{});
+        // vmaCalculateStatistics(mVmaAllocator, &totalStats);
+        // std::cout
+        //     << "Total allocations: " << totalStats.total.statistics.allocationCount
+        //     << ", total bytes: " << totalStats.total.statistics.allocationBytes
+        //     << std::endl;
+
+        // char* statsStr = nullptr;
+        // vmaBuildStatsString(mVmaAllocator, &statsStr, VK_TRUE);
+        // yic::logger->warn(statsStr);
+        // vmaFreeStatsString(mVmaAllocator, statsStr);
 
         vmaDestroyAllocator(mVmaAllocator);
     }

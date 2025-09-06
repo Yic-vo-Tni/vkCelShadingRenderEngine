@@ -86,7 +86,8 @@ struct RenderComponent{
     glm::mat4 baseMat{1.f};
     glm::mat4 zmoMat{1.f};
     glm::vec3 center;
-    vot::Buffer_sptr vertexBuffer[3];
+    //vot::Buffer_sptr vertexBuffer[3];
+    std::array<vot::Buffer_sptr, 3> vertexBuffer;
     vot::Buffer_sptr indexBuffer;
     vot::Buffer_sptr adjIndexBuffer;
     vot::vector<vot::Image_sptr> diffuseTextures;
@@ -105,7 +106,6 @@ struct AnimationComponent{
     vot::map<vot::string, BoneInfo> boneMap;
     vot::vector<std::pair<vot::string, std::shared_ptr<::rs::Animation>>> animations;
     std::pair<vot::string, std::shared_ptr<saba::VMDAnimation>> vmd;
-    //vot::vector<glm::mat4> boneMats;
     std::array<vot::vector<glm::mat4>, 3> boneMats;
     vot::Buffer_sptr boneMatBuffer;
     BoneNode boneNode;

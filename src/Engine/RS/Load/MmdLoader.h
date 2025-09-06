@@ -11,7 +11,7 @@ namespace rs {
 
     class MmdLoader {
     public:
-        MmdLoader() = default;
+        MmdLoader();
         ~MmdLoader() = default;
 
         auto Load(const vot::string &pt, vot::BasicInfoComponent& bic,

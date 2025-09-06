@@ -25,9 +25,22 @@ namespace sc {
                 ImGui::Checkbox("Volumetric Fog", &GLOBAL::showVolumetricFog);
             });
 
-        ecs.view<const vot::mark::eVisible, vot::BasicInfoComponent, vot::AnimationComponent>().each(
-            [&](const entt::entity e, vot::BasicInfoComponent &info, vot::AnimationComponent &ac) {
-                const auto hideId = info.name;
+            vot::vector<entt::entity> entities;
+            ecs.view<const vot::mark::eVisible, vot::BasicInfoComponent, vot::AnimationComponent>().each(
+                [&](const entt::entity e, vot::BasicInfoComponent &info, vot::AnimationComponent &ac) {
+                    entities.emplace_back(e);
+                });
+
+            std::ranges::sort(entities, [&](const auto &a, const auto &b) {
+                auto A = ecs.get<vot::AnimationComponent>(a).enableAnim;
+                auto B = ecs.get<vot::AnimationComponent>(b).enableAnim;
+                return A > B;
+            });
+
+            for (auto &e: entities) {
+                auto &bic = ecs.get<vot::BasicInfoComponent>(e);
+                auto &ac = ecs.get<vot::AnimationComponent>(e);
+                const auto hideId = bic.name;
 
                 yic::imguiHub->collapsingHeader(hideId.c_str(), [&] {
                     vot::scoped::ID id(hideId.c_str());
@@ -35,11 +48,25 @@ namespace sc {
                     if_has<vot::mark::eMMD>(e,
                                             [&] { drawAnimComboForMMD(e, ac); },
                                             [&] { drawAnimComboForGeneric(ac); });
-
-                    drawPlayButton(info, ac);
+                    drawPlayButton(bic, ac);
                 });
-            });
+            }
         });
+        // ecs.view<const vot::mark::eVisible, vot::BasicInfoComponent, vot::AnimationComponent>().each(
+        //     [&](const entt::entity e, vot::BasicInfoComponent &info, vot::AnimationComponent &ac) {
+        //         const auto hideId = info.name;
+        //
+        //         yic::imguiHub->collapsingHeader(hideId.c_str(), [&] {
+        //             vot::scoped::ID id(hideId.c_str());
+        //
+        //             if_has<vot::mark::eMMD>(e,
+        //                                     [&] { drawAnimComboForMMD(e, ac); },
+        //                                     [&] { drawAnimComboForGeneric(ac); });
+        //
+        //             drawPlayButton(info, ac);
+        //         });
+        //     });
+        // });
 
         yic::imguiHub->to(vot::uiWidget::eRenderWidget, [&] {
             mousePick();
@@ -81,16 +108,18 @@ namespace sc {
     }
 
     auto InspectorPanel::drawPlayButton(vot::BasicInfoComponent &info, vot::AnimationComponent& ac) -> void {
-        const auto playAnimLabel = "play###play_" + info.name;
-        const auto enableAnimLabel = "enableAnim###enable_" + info.name;
+        const auto playAnimLabel = "PlayAnim###play_" + info.name;
+        const auto enableAnimLabel = "EnableAnim###enable_" + info.name;
 
         ImGui::Checkbox(enableAnimLabel.c_str(), &ac.enableAnim);
 
         ImGui::SameLine();
 
-        if(ImGui::Button(playAnimLabel.c_str())){
-            info.playAnimation = !info.playAnimation;
-        }
+        ImGui::Checkbox(playAnimLabel.c_str(), &info.playAnimation);
+
+        // if(ImGui::Button(playAnimLabel.c_str())){
+        //     info.playAnimation = !info.playAnimation;
+        // }
     }
 
     auto InspectorPanel::drawGizmo() -> void {

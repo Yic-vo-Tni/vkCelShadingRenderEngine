@@ -63,8 +63,7 @@ namespace rs {
                                                       } else {
                                                           const auto t = ac.animTime += static_cast<float>(elapsed);
                                                           vc.pmx->BeginAnimation();
-                                                          vc.pmx->UpdateAllAnimation(
-                                                              ac.vmd.second.get(), t * 30.f, mElapsed);
+                                                          vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), t * 30.f, mElapsed);
                                                           vc.pmx->EndAnimation();
 
                                                           mAnimator->sampleVmd(vc, rc);

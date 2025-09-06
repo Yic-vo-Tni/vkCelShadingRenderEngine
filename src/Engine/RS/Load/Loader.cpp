@@ -76,14 +76,13 @@ namespace rs {
         const auto entity = ecs.create();
         auto& [basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent] = ev;
 
-        ecs.emplace<vot::BasicInfoComponent>(entity, basicInfoComponent);
-        ecs.emplace<vot::VertexDataComponent>(entity, vertexDataComponent);
-        ecs.emplace<vot::RenderComponent>(entity, renderComponent);
-        ecs.emplace<vot::AnimationComponent>(entity, animationComponent);
-        ecs.emplace<vot::RayTracingComponent>(entity, rayTracingComponent);
+        ecs.emplace<vot::BasicInfoComponent>(entity, std::move(basicInfoComponent));
+        ecs.emplace<vot::VertexDataComponent>(entity, std::move(vertexDataComponent));
+        ecs.emplace<vot::RenderComponent>(entity, std::move(renderComponent));
+        ecs.emplace<vot::AnimationComponent>(entity, std::move(animationComponent));
+        ecs.emplace<vot::RayTracingComponent>(entity, std::move(rayTracingComponent));
+        
 
-        // if (vertexDataComponent.isMMD)
-        //     ecs.emplace<vot::mark::eMMD>(entity);
         if (vertexDataComponent.type == vot::eMMD)
             ecs.emplace<vot::mark::eMMD>(entity);
 

@@ -38,7 +38,7 @@ namespace rhi2 {
 
             if (it != map.end()) {
                 destroyFn(it->second->value);
-                --activeCount;
+                //--activeCount;
                 lruList.erase(it->second);
                 map.erase(it);
             }
@@ -46,29 +46,29 @@ namespace rhi2 {
             if (lruList.size() >= capacity) {
                 auto& back = lruList.back();
                 destroyFn(back.value);
-                --activeCount;
-                map.erase(back.key);
+             //   --activeCount;
                 lruList.pop_back();
+                map.erase(back.key);
             }
 
             lruList.push_front({key, std::move(val)});
             map[key] = lruList.begin();
-            ++activeCount;
+          //  ++activeCount;
         }
 
         void clear() {
             std::unique_lock lock(mutex);
-            for (auto& node : lruList) {
-                destroyFn(node.value);
-                --activeCount;
+            while (!lruList.empty()) {
+                auto it = std::prev(lruList.end());
+                destroyFn(it->value);
+                lruList.erase(it);
             }
             map.clear();
-            lruList.clear();
 
-            if (activeCount != 0) {
-                std::cerr << "[LRUCache] Warning: " << activeCount.load()
-                          << " items not released!" << std::endl;
-            }
+            // if (activeCount != 0) {
+            //     std::cerr << "[LRUCache] Warning: " << activeCount.load()
+            //               << " items not released!" << std::endl;
+            // }
         }
 
         int getActiveCount() const {

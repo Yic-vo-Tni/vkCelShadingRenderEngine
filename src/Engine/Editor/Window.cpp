@@ -17,7 +17,7 @@ namespace yic {
     };
 
     inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {
-        auto writeIndex = 1 - glT::keyInputActive.load(std::memory_order_acquire);
+        const auto writeIndex = 1 - glT::keyInputActive.load(std::memory_order_acquire);
         glTBuffers[writeIndex].keyInput.key = key;
         glTBuffers[writeIndex].keyInput.scancode = scancode;
         glTBuffers[writeIndex].keyInput.action = action;
@@ -27,12 +27,11 @@ namespace yic {
         if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
             GLOBAL::visibleZMO = !GLOBAL::visibleZMO;
         }
-//        yic::systemHub.enqueueEvent(ev::glKeyInput{key, action, scancode, mods});
 
     };
 
     inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {
-        auto writeIndex = 1 - glT::mouseInputActive.load(std::memory_order_acquire);
+        const auto writeIndex = 1 - glT::mouseInputActive.load(std::memory_order_acquire);
         glTBuffers[writeIndex].mouseInput.button = button;
         glTBuffers[writeIndex].mouseInput.action = action;
         glTBuffers[writeIndex].mouseInput.mods = mods;
@@ -40,15 +39,17 @@ namespace yic {
     };
 
     inline auto setCursorPosCallback = [](GLFWwindow*w, double xpos, double ypos){
-        auto writeIndex = 1 - glT::cursorPosInputActive.load(std::memory_order_acquire);
+        const auto writeIndex = 1 - glT::cursorPosInputActive.load(std::memory_order_acquire);
         glTBuffers[writeIndex].cursorPosInput.xpos = xpos;
         glTBuffers[writeIndex].cursorPosInput.ypos = ypos;
         glT::cursorPosInputActive.store(writeIndex, std::memory_order_release);
     };
 
     inline auto setScrollBack = [](GLFWwindow *w, double xoffset, double yoffset){
-        //yic::systemHub.enqueueEvent(ev::glScrollInput{xoffset, yoffset});
-        //yic::systemHub.publish(ev::glScrollInput{xoffset, yoffset});
+        const auto writeIndex = 1 - glT::scrollInputActive.load(std::memory_order_acquire);
+        glTBuffers[writeIndex].scrollInput.xoffset = xoffset;
+        glTBuffers[writeIndex].scrollInput.yoffset = yoffset;
+        glT::scrollInputActive.store(writeIndex, std::memory_order_release);
     };
 
     inline auto setWindowPosCallback = [](GLFWwindow *w, int xpos, int ypos) {

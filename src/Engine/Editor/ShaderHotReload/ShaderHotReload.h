@@ -5,11 +5,45 @@
 #ifndef VKCELSHADINGRENDERER_SHADERHOTRELOAD_H
 #define VKCELSHADINGRENDERER_SHADERHOTRELOAD_H
 
+#include <complex>
+
 #include "ShaderEditor.h"
+#include "nlohmann/json.hpp"
 #include "RHI/Pipeline/GraphicsPipeline.h"
 #include "RHI/Pipeline/RayTracingPipeline.h"
 
 namespace ui {
+
+    inline auto normalizePath(const std::filesystem::path& p) -> std::string {
+        auto abs = std::filesystem::absolute(p).generic_string();
+        return abs;
+    }
+
+    struct ShaderCache {
+        vot::unordered_map<vot::string, std::time_t> timestamps;
+
+        auto load(const vot::string& file) -> void {
+            if (!std::filesystem::exists(file)) return;
+            std::ifstream in(file.c_str());
+            nlohmann::json j;
+            in >> j;
+            for (auto& [p, t] : j.items()) {
+                auto path = normalizePath(p);
+                timestamps[path.data()] = t.get<std::time_t>();
+            }
+        }
+
+        auto save(const vot::string& file) -> void {
+            nlohmann::json j;
+            for (auto& [p, t] : timestamps) {
+                auto path = normalizePath(p);
+                j[path] = t;
+            }
+            std::ofstream out(file.c_str());
+            out << j.dump(4);
+            out.close();
+        }
+    };
 
     class ShaderHotReload {
         struct PipeInfo{
@@ -20,7 +54,11 @@ namespace ui {
     public:
         MAKE_SINGLETON(ShaderHotReload);
         ShaderHotReload() {
-            compile();
+            ShaderCache cache;
+            cache.load(shader_path "shader_cache.json");
+            checkShaderFilesIsUpdateOrNew(shader_path, cache);
+            cache.save(shader_path "shader_cache.json");
+            // compile();
             shaderEditor = std::make_unique<ShaderEditor>();
         };
         ~ShaderHotReload() = default;
@@ -86,6 +124,39 @@ namespace ui {
 
         const auto& getBuildTasks() { return buildTasks; }
         const auto& getBuildOrders() { return buildOrders; }
+
+    private:
+        auto checkShaderFilesIsUpdateOrNew(const vot::string& shaderDir, ShaderCache& cache) -> void {
+            bool needCompile = false;
+            for (auto& p : std::filesystem::recursive_directory_iterator(shaderDir)) {
+                if (!p.is_regular_file()) continue;
+                    if (!p.is_regular_file()) continue;
+                    auto path = normalizePath(p.path());
+
+                    if (path.find("shader_cache.json") != std::string::npos) continue;
+
+                    auto ftime = std::filesystem::last_write_time(p);
+                    auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(ftime);
+                    std::time_t lastWrite = std::chrono::system_clock::to_time_t(sctp);
+
+                    if (!cache.timestamps.contains(path.data())) {
+                        yic::logger->warn("new file");
+                        needCompile = true;
+                        cache.timestamps[path.data()] = lastWrite;
+                    } else if (lastWrite > cache.timestamps[path.data()] + 1) {
+                        yic::logger->warn("update file: {0}", cache.timestamps[path.data()]);
+                        needCompile = true;
+                        cache.timestamps[path.data()] = lastWrite;
+                    }
+
+
+            }
+            if (needCompile) {
+                yic::logger->warn("compile shader");
+                compile();
+            }
+        }
+
     private:
         vot::vector<vot::string> ptsUpdate;
         //vot::unordered_map<vot::string, Task> pts;
