@@ -9,7 +9,7 @@
 #include "Editor/ImGuiHub.h"
 #include "RS/ResourceSystem.h"
 #include "Editor/ShaderHotReload/ShaderHotReload.h"
-#include "ECS/Camera/Camera.h"
+#include "Runetime/Camera/Camera.h"
 #include "RHI/Command.h"
 #include "Utils/Auxiliary.h"
 

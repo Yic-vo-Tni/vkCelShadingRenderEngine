@@ -10,7 +10,7 @@
 #include "Core/Management/TripleBufferIndexManager.h"
 #include "RHI/Allocator.h"
 #include "RHI/DescriptorSystem.h"
-#include "ECS/System/RenderLibrary.h"
+#include "Runetime/System/RenderLibrary.h"
 
 namespace rs {
 

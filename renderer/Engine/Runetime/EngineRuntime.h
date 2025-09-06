@@ -10,10 +10,10 @@
 
 namespace sc {
 
-    class Ecs {
+    class EngineRuntime {
     public:
-        Ecs();
-        ~Ecs();
+        EngineRuntime();
+        ~EngineRuntime();
 
         auto render() -> void;
         auto fastLogic() -> void;

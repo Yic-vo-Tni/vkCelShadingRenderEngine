@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_ENGINE_H
 
 #include "Editor/Window.h"
-#include "ECS/Ecs.h"
+#include "Runetime/EngineRuntime.h"
 #include "RHI/Rhi.h"
 
 class Engine {
@@ -19,7 +19,7 @@ private:
     std::unique_ptr<yic::Window> mWindow;
 
     std::unique_ptr<rhi::Rhi> mRhi;
-    std::unique_ptr<sc::Ecs> mEcs;
+    std::unique_ptr<sc::EngineRuntime> mEngineRuntime;
     std::atomic_bool mLoopStop = true;
     std::unique_ptr<std::thread> mRenderThread;
     std::unique_ptr<std::thread> mFastLogicThread;

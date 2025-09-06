@@ -2,7 +2,7 @@
 // Created by lenovo on 10/14/2024.
 //
 
-#include "Ecs.h"
+#include "EngineRuntime.h"
 #include "Core/DispatchSystem/SystemHub.h"
 #include "Core/Management/TripleBufferIndexManager.h"
 #include "Camera/Camera.h"
@@ -19,12 +19,12 @@
 
 namespace sc {
 
-    Ecs::Ecs() {
+    EngineRuntime::EngineRuntime() {
         prepose();
         buildGlobalCamera();
     }
 
-    Ecs::~Ecs() {
+    EngineRuntime::~EngineRuntime() {
         yic::logger->warn("~ ecs");
 
         ct.device->waitIdle();
@@ -34,11 +34,9 @@ namespace sc {
         sm::SceneSystem::destroy();
     };
 
-    auto Ecs::prepose() -> void {
+    auto EngineRuntime::prepose() -> void {
         ct = yic::systemHub.va<ev::pVkSetupContext>();
         rt = yic::systemHub.va<ev::pVkRenderContext>();
-
-        // yic::systemHub.sto(ev::freeCameraController{false, false, false, false, false, false, false});
 
         yic::resourceSystem = rs::ResourceSystem::make(ecs);
         yic::sceneSystem = sm::SceneSystem::make(ecs);
@@ -48,7 +46,7 @@ namespace sc {
         submissionSystem = std::make_unique<RenderSubmissionSystem>(ecs);
     }
 
-    auto Ecs::render() -> void {
+    auto EngineRuntime::render() -> void {
         yic::systemHub.dispatch<ev::tModelLoaded>();
 
         yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
@@ -62,7 +60,7 @@ namespace sc {
         }
     }
 
-    auto Ecs::fastLogic() -> void {
+    auto EngineRuntime::fastLogic() -> void {
         const auto fastW = yic::indexRing.get(vot::LogicBufferType::eFast).write_begin();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -75,7 +73,7 @@ namespace sc {
         yic::indexRing.get(vot::LogicBufferType::eFast).write_end();
     }
 
-    auto Ecs::slowLogic() -> void {
+    auto EngineRuntime::slowLogic() -> void {
         yic::systemHub.dispatch<ev::tModelLoaded>();
         const auto slowW = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
 
@@ -94,7 +92,7 @@ namespace sc {
         yic::indexRing.get(vot::LogicBufferType::eSlow).write_end();
     }
 
-    auto Ecs::buildGlobalCamera() -> void {
+    auto EngineRuntime::buildGlobalCamera() -> void {
         GLOBAL::camera = ecs.create();
         auto& cam = ecs.emplace<sc::Camera>(GLOBAL::camera);
         cam.computeViewProjMatrix();
@@ -108,7 +106,7 @@ namespace sc {
         }
     }
 
-    auto Ecs::updateCamera(auto &cameraEntity, auto& i) -> void {
+    auto EngineRuntime::updateCamera(auto &cameraEntity, auto& i) -> void {
         sc::Camera& c = cameraEntity;
         {
             auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();
@@ -132,7 +130,7 @@ namespace sc {
         c.updateCamera(i);
     }
 
-    auto Ecs::calFnTimeConsuming(const std::function<void()> &fn) -> void {
+    auto EngineRuntime::calFnTimeConsuming(const std::function<void()> &fn) -> void {
         const auto b = oneapi::tbb::tick_count::now();
 
         fn();

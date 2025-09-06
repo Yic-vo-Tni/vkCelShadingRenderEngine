@@ -17,7 +17,6 @@ namespace rs {
         MAKE_SINGLETON(ResourceSystem);
 
         auto frame() -> void;
-        auto frameUpdate() -> void;
     public:
     private:
         entt::registry& ecs;

@@ -20,7 +20,7 @@ Engine::~Engine() {
     yic::systemHub.va<ev::pVkSetupContext>().device->waitIdle();
 
     ui::ShaderHotReload::destroy();
-    mEcs.reset();
+    mEngineRuntime.reset();
     mRhi.reset();
     mWindow.reset();
 }
@@ -35,11 +35,11 @@ auto Engine::run() -> void {
             yic::shaderHot = ui::ShaderHotReload::make();
 
             mRhi = std::make_unique<rhi::Rhi>();
-            mEcs = std::make_unique<sc::Ecs>();
+            mEngineRuntime = std::make_unique<sc::EngineRuntime>();
 
-            mEcs->fastLogic();
-            mEcs->fastLogic();
-            mEcs->fastLogic();
+            mEngineRuntime->fastLogic();
+            mEngineRuntime->fastLogic();
+            mEngineRuntime->fastLogic();
 
             mInit = true;
             mInitCondVar.notify_all();
@@ -48,7 +48,7 @@ auto Engine::run() -> void {
         //SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
-            mEcs->fastLogic();
+            mEngineRuntime->fastLogic();
         }
     });
 
@@ -61,7 +61,7 @@ auto Engine::run() -> void {
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)) {
-            mEcs->slowLogic();
+            mEngineRuntime->slowLogic();
         }
     });
 
@@ -74,7 +74,7 @@ auto Engine::run() -> void {
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
-            mEcs->render();
+            mEngineRuntime->render();
             mRhi->render();
         }
         mWindow->renderClosed();
