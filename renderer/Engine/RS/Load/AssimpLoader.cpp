@@ -113,8 +113,12 @@ namespace rs {
 
     auto AssimpLoader::extractBoneNode(const rs::AssimpLoader::ImportContext &ctx,
                                        vot::AnimationComponent &ac) -> void {
-        ac.boneMats.resize(ac.boneCount, glm::mat4 (1.f));
-        ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneMats.size() * sizeof (glm::mat4), ac.boneMats.data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
+        for (auto& boneMats : ac.boneMats) {
+            boneMats.resize(ac.boneCount, glm::mat4 (1.f));
+        }
+        //ac.boneMats.resize(ac.boneCount, glm::mat4 (1.f));
+        //ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneMats.size() * sizeof (glm::mat4), ac.boneMats.data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
+        ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneCount * sizeof (glm::mat4), ac.boneMats[0].data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
 
         std::function<void(vot::BoneNode& boneNode, const aiNode* src)> readHierarchyData = [&](vot::BoneNode& boneNode, const aiNode* src){
             boneNode.name = src->mName.data;

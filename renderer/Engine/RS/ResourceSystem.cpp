@@ -62,9 +62,9 @@ namespace rs {
                                                   if (!ac.enableAnim) continue;
 
                                                   auto playLogic = [&] {
-                                                     // if (!vc.isMMD) {
                                                       if (vc.type == vot::eAssimp) {
-                                                          mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
+                                                         // mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
+                                                         mAnimator->sampleAnimation(mElapsed, ac);
                                                       } else {
                                                           const auto t = ac.animTime += static_cast<float>(elapsed);
                                                           vc.pmx->BeginAnimation();
@@ -100,18 +100,16 @@ namespace rs {
     }
 
     auto ResourceSystem::frameUpdate() -> void {
-        ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent, vot::RenderComponent>()
-                .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc,
-                          vot::AnimationComponent &ac, vot::RenderComponent &rc) {
-                    if (ac.enableAnim && (GLOBAL::playAllAnim || info.playAnimation)) {
-                        //if (!vc.isMMD) {
-                        if (vc.type == vot::eAssimp) {
-                            mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
-                        } else {
-                            //mAnimator->syncVmd(vc, rc);
-                        }
-                    }
-                });
+        // ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent, vot::RenderComponent>()
+        //         .each([&](entt::entity, const vot::BasicInfoComponent &info, vot::VertexDataComponent &vc,
+        //                   vot::AnimationComponent &ac, vot::RenderComponent &rc) {
+        //             if (ac.enableAnim && (GLOBAL::playAllAnim || info.playAnimation)) {
+        //                 if (vc.type == vot::eAssimp) {
+        //                     //mAnimator->sampleAnimation(1.f / GLOBAL::fps, ac);
+        //                 } else {
+        //                 }
+        //             }
+        //         });
     }
 
 

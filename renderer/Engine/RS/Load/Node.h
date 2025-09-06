@@ -137,30 +137,36 @@ namespace rs{
 
 
         int GetPositionIndex(float animationTime) {
+            if (m_NumPositions <= 1) return 0;
+
             for (int index = 0; index < m_NumPositions - 1; ++index) {
                 if (animationTime < m_Positions[index + 1].timeStamp)
                     return index;
             }
-            assert(0);
-            return 0;
+
+            return m_NumPositions - 2;
         }
 
         int GetRotationIndex(float animationTime) {
+            if (m_NumRotations <= 1) return 0;
+
             for (int index = 0; index < m_NumRotations - 1; ++index) {
                 if (animationTime < m_Rotations[index + 1].timeStamp)
                     return index;
             }
-            assert(0);
-            return 0;
+
+            return m_NumRotations - 2;
         }
 
         int GetScaleIndex(float animationTime) {
+            if (m_NumScalings <= 1) return 0;
+
             for (int index = 0; index < m_NumScalings - 1; ++index) {
                 if (animationTime < m_Scales[index + 1].timeStamp)
                     return index;
             }
-            assert(0);
-            return 0;
+
+            return m_NumScalings - 2;
         }
 
 

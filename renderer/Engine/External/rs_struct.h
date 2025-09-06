@@ -105,7 +105,8 @@ struct AnimationComponent{
     vot::map<vot::string, BoneInfo> boneMap;
     vot::vector<std::pair<vot::string, std::shared_ptr<::rs::Animation>>> animations;
     std::pair<vot::string, std::shared_ptr<saba::VMDAnimation>> vmd;
-    vot::vector<glm::mat4> boneMats;
+    //vot::vector<glm::mat4> boneMats;
+    std::array<vot::vector<glm::mat4>, 3> boneMats;
     vot::Buffer_sptr boneMatBuffer;
     BoneNode boneNode;
 };

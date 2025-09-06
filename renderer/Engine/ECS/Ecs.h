@@ -22,7 +22,7 @@ namespace sc {
         auto prepose() -> void;
     private:
         auto buildGlobalCamera() -> void;
-        auto handleCameraMovement(auto& cameraEntity, auto& i) -> void;
+        auto updateCamera(auto& cameraEntity, auto& i) -> void;
         static auto calFnTimeConsuming(const std::function<void()>& fn) -> void;
     private:
         entt::registry ecs;

@@ -152,12 +152,13 @@ namespace sc {
 
         uRenderGraph->begin();
 
-        ecs.view<const vot::mark::eVisible, const vot::RenderComponent, const vot::VertexDataComponent>(entt::exclude<vot::mark::eMMD>)
-        .each([&](entt::entity e, const vot::RenderComponent &rc, const vot::VertexDataComponent& vdc) {
+        ecs.view<const vot::mark::eVisible, const vot::RenderComponent, const vot::VertexDataComponent, const vot::AnimationComponent>(entt::exclude<vot::mark::eMMD>)
+        .each([&](entt::entity e, const vot::RenderComponent &rc, const vot::VertexDataComponent& vdc, const vot::AnimationComponent& ac) {
             const uint32_t max_id = vdc.vertices_pmr[vot::VertexDataComponent::eAnim].size();
             constexpr auto localSize = 64u;
             const auto groupCount = (vdc.vertices_pmr[0].size() + localSize - 1) / localSize;
 
+            ac.boneMatBuffer->update(ac.boneMats[slow]);
             cmd.bindPipeline_(yic::renderLibrary->CP_Skinning);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, yic::renderLibrary->CP_Skinning.acquirePipelineLayout(), 1, rc.dsHandle.va(), {});
             cmd.pushConstants(yic::renderLibrary->CP_Skinning.acquirePipelineLayout(), vk::ShaderStageFlagBits::eCompute, 0, sizeof (std::uint32_t), &max_id);

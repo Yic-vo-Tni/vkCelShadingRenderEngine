@@ -51,16 +51,9 @@ namespace sc {
     auto Ecs::render() -> void {
         yic::systemHub.dispatch<ev::tModelLoaded>();
 
-        const auto fastR = yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
-        if (fastR == 0xff) return;
-
+        yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
+        yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
         {
-            handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera), fastR);
-            const auto slowR = yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
-            if (slowR != 0xff) {
-                yic::resourceSystem->frameUpdate();
-            }
-
             yic::shaderHot->frame();
             inspectorPanel->frame();
 
@@ -76,7 +69,7 @@ namespace sc {
         if (fastW == 0xff) return;
 
         {
-            handleCameraMovement(ecs.get<sc::Camera>(GLOBAL::camera), fastW);
+            updateCamera(ecs.get<sc::Camera>(GLOBAL::camera), fastW);
         }
 
         yic::indexRing.get(vot::LogicBufferType::eFast).write_end();
@@ -115,7 +108,7 @@ namespace sc {
         }
     }
 
-    auto Ecs::handleCameraMovement(auto &cameraEntity, auto& i) -> void {
+    auto Ecs::updateCamera(auto &cameraEntity, auto& i) -> void {
         sc::Camera& c = cameraEntity;
         {
             auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();

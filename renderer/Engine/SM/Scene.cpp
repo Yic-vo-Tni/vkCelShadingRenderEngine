@@ -14,7 +14,6 @@
 namespace sm {
 
     SceneSystem::SceneSystem(entt::registry& registry) : ecs(registry) {
-    //SceneSystem::SceneSystem(flecs::world &ecs) : ecs(ecs) {
         ct = yic::systemHub.va<ev::pVkSetupContext>();
         rt = yic::systemHub.va<ev::pVkRenderContext>();
 
@@ -76,7 +75,6 @@ namespace sm {
         uint32_t maxVert{}, numTri{}, stride{};
         vk::IndexType indexType{};
 
-        //if (vc.isMMD){
         if (vc.type == vot::eMMD){
             maxVert = static_cast<uint32_t>(vc.pmx->GetVertexCount());
             numTri = static_cast<uint32_t>(vc.pmx->GetIndexCount()) / 3;
@@ -85,7 +83,6 @@ namespace sm {
         } else {
             vertAddr = rc.vertexBuffer[vot::VertexDataComponent::eAnim]->bufferAddr();
             maxVert = static_cast<uint32_t>(vc.vertices_pmr[vot::VertexDataComponent::eTPose].size());
-           // maxVert = static_cast<uint32_t>(vc.vertices_pmr[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()].size());
             numTri = static_cast<uint32_t>(vc.indices_pmr.size()) / 3;
             stride = sizeof (vot::VertexT<vot::eAssimp>);
             indexType = vk::IndexType::eUint32;
