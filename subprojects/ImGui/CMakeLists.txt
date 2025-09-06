@@ -8,7 +8,7 @@ file(GLOB_RECURSE srcs "*.h" "*.cpp")
 add_library(imgui STATIC ${srcs})
 
 target_include_directories(imgui PUBLIC
-        ../../renderer/third
+        ../../src/third
 )
 
 target_link_libraries(imgui "Vulkan::Vulkan" dwmapi)

@@ -21,7 +21,8 @@ namespace ui {
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
         io.IniFilename = imgui_ini_path "ImGui.ini";
-        const char* fontPt = R"(H:\VkCelShadingRenderer\renderer\resource\TTF\JetBrainsMono-Regular.ttf)";
+        //const char* fontPt = R"(H:\VkCelShadingRenderer\src\resource\TTF\JetBrainsMono-Regular.ttf)";
+        const char* fontPt = tex_path "../TTF/JetBrainsMono-Regular.ttf";
         io.Fonts->AddFontFromFileTTF(fontPt, 18.f);
 
         // auto wt = yic::systemHub.val<ev::pWindowContext>();

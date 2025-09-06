@@ -37,6 +37,6 @@ set_target_properties(VkCelShadingRenderer PROPERTIES
 
 
 add_subdirectory(subprojects)
-add_subdirectory(renderer)
+add_subdirectory(src)
 
 target_link_libraries(VkCelShadingRenderer PRIVATE renderer)

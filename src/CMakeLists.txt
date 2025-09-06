@@ -24,12 +24,12 @@ find_package(CUDAToolkit REQUIRED)
 
 target_precompile_headers(renderer PUBLIC ${PCHs})
 
-set(shader_path "${CMAKE_SOURCE_DIR}/renderer/resource/shaders/")
-set(r_shader_path "/renderer/resource/shaders/")
-set(spv_path "${CMAKE_SOURCE_DIR}/renderer/resource/shaders_spv/")
-set(imgui_ini_path "${CMAKE_SOURCE_DIR}/renderer/Engine/Editor/")
-set(webview_path "${CMAKE_SOURCE_DIR}/renderer/resource/webview/")
-set(tex_path "${CMAKE_SOURCE_DIR}/renderer/resource/Texture/")
+set(shader_path "${CMAKE_SOURCE_DIR}/src/resource/shaders/")
+set(r_shader_path "/src/resource/shaders/")
+set(spv_path "${CMAKE_SOURCE_DIR}/src/resource/shaders_spv/")
+set(imgui_ini_path "${CMAKE_SOURCE_DIR}/src/Engine/Editor/")
+set(webview_path "${CMAKE_SOURCE_DIR}/src/resource/webview/")
+set(tex_path "${CMAKE_SOURCE_DIR}/src/resource/Texture/")
 set(common_libs
         Vulkan::Vulkan
         imgui
@@ -37,7 +37,7 @@ set(common_libs
         Saba
         ws2_32
 )
-configure_file("Engine/External/config.h.in" "${CMAKE_SOURCE_DIR}/renderer/Engine/External/config.h")
+configure_file("Engine/External/config.h.in" "${CMAKE_SOURCE_DIR}/src/Engine/External/config.h")
 
 
 target_include_directories(renderer PUBLIC

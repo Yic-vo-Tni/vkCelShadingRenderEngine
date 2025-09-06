@@ -300,7 +300,7 @@ namespace sc {
 //        yic::allocator->uploadImage(T_fbmNoise->images, fbm_volume.data(), vk::Extent3D{size, size, size}, vk::Format::eR16Sfloat);
 //        yic::logger->info("T_fbm ok");
 
-        T_blueNoise64 = yic::allocator->loadTexture(R"(H:\VkCelShadingRenderer\renderer\resource\Texture\LDR_LLL1_0.png)");
+        T_blueNoise64 = yic::allocator->loadTexture(tex_path "LDR_LLL1_0.png");
 
 //        GP_Volumetric_Overcast_Clouds.DS = yic::desSystem->allocUpdateDescriptorSets([&]{
 //            vot::DescriptorLayout2 layout{};
