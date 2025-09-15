@@ -33,6 +33,7 @@ namespace sc {
         rhi::GraphicsPipeline GP_Dummy;
         rhi::GraphicsPipeline GP_IDBuffer_Assimp;
         rhi::GraphicsPipeline GP_IDBuffer;
+        rhi::GraphicsPipeline GP_Light;
 
         rhi::RayTracingPipeline RP_Shadow;
 

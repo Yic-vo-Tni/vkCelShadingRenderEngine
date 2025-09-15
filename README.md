@@ -5,6 +5,9 @@
 
 [简体中文](README.zh-CN.md)
 
+🔎 For non-critical bugs, minor optimizations, and TODOs, see  
+[Known Issues & TODOs](KnownIssues.md)
+
 ## Overview
 
 - This repository is a personal record of self-learning and engineering practice, mainly for learning and personal use.
@@ -27,18 +30,36 @@ current codebase.*
 - **System Graph**
 
   Unified management and scheduling of global systems, including subsystems such as the render graph.
+
+> Current understanding: The render graph can automatically allocate and distribute tasks to worker systems, with all
+> construction work submitted outside of the render thread. This further decouples the render thread, aiming for zero
+> blocking. Later, this concept can be extended to other engine modules.
+
 - **Advanced Vulkan Extensions**
 
   GPU-side parallel command buffer construction.
+
+> Current understanding: A new Vulkan workflow with dll + dy_dispatch + swapchain maintain + pipeline library +
+> dynamic rendering + descriptor buffer + GPU command generation + timeline semaphores + VMA 3-pool + mesh shader +
+> shader obj.
+
 - **High-End Rendering Effects**
 
   Voxel grid volumetric fog/clouds and physically-based precomputed atmosphere.
+
+> Current understanding: Abandoning Shadertoy hacks as references and instead studying IQ’s tutorials. The learning
+> route is: small cubic volume → slab → world-space noise → lighting → voxelization.
+
 - **Animation System**
 
   Deconstructing Saba library for future experiments in VR, physics, and cloth simulation.
+
+> Current understanding: Re-implement and refactor by first extracting only the data structures for ECS integration.
+> Keep the rest unchanged for now. Step one is to decouple the data layer from the original library.
+
 - **Optimization && AI**
 
-### Current Project Status
+### Current Project Status （2025.9.6）
 
 > Each item is marked with one of the following statuses:
 >

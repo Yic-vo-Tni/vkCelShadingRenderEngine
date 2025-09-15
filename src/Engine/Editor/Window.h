@@ -51,6 +51,8 @@ namespace yic {
         std::atomic<bool> closeRequested{false};
         std::atomic<bool> closeRender{false};
 
+    //    std::uint32_t deleteState = GLFW_RELEASE, XState = GLFW_RELEASE;
+
 ///
 //        mutable ui::ShaderEditor shaderEditor;
     };

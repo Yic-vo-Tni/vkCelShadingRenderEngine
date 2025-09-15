@@ -111,6 +111,26 @@ float density_func(vec3 pos, float h, float time) {
     dens *= smoothstep(cld_coverage, cld_coverage + 0.35, dens);
     //0.035
     return dens;
+ }
+
+float density_funcA(vec3 pos, float h, float time){
+    float cloudBase = 200.f;
+    float cloudTop = 800.f;
+
+    if(pos.y < cloudBase || pos.y > cloudTop) return 0.f;
+
+    vec3 wind_dir = normalize(vec3(0.3, 0.0, 1.f));
+    float windSpeed = 20.f;
+
+    //vec3 p = (pos + wind_dir * time * windSpeed) * 0.001;
+    vec3 p = vec3(pos.x, 0.0, pos.z) * 0.001 + wind_dir * time * 0.02;
+
+    float dens = fbm_clouds(p * 2.032, 2.6434, 0.5f, 0.5f);
+
+    dens *= smoothstep(cld_coverage, cld_coverage + 0.35, dens);
+
+    //return dens;
+    return fract(pos.y * 0.01);
 }
 
 
@@ -158,13 +178,64 @@ volume_sampler_t begin_volume(vec3 origin, float coeff_absorb) {
     return v;
 }
 
+bool intersectCloudSlab(vec3 ro, vec3 rd, float y0, float y1, out float t0, out float t1)
+{
+    // 处理与平面平行的情况
+    if (abs(rd.y) < 1e-4) {
+        // 相机在层内 → 给一个很短的前进段；不在层内 → 无交
+        if (ro.y > y0 && ro.y < y1) { t0 = 0.0; t1 = 1500.0; return true; }
+        return false;
+    }
+    float ta = (y0 - ro.y) / rd.y;
+    float tb = (y1 - ro.y) / rd.y;
+    t0 = min(ta, tb);
+    t1 = max(ta, tb);
+    // 只考虑前向
+    t1 = max(t1, 0.0);
+    t0 = max(t0, 0.0);
+    return t1 > t0;
+}
+
+vec4 render_cloudsA(ray_t eye, float time) {
+    float y0 = 200.0;
+    float y1 = 800.0;
+
+    // 与 slab 求交
+    float t0 = (y0 - eye.origin.y) / eye.direction.y;
+    float t1 = (y1 - eye.origin.y) / eye.direction.y;
+    if (t0 > t1) { float tmp = t0; t0 = t1; t1 = tmp; }
+    if (t1 < 0.0) return vec4(0.0);
+
+    t0 = max(t0, 0.0);
+    int steps = cld_march_steps;
+    float dt = (t1 - t0) / float(steps);
+    //vec3 pos = eye.origin + eye.direction * (t0 + 0.5 * dt);
+    vec3 pos = (eye.origin + eye.direction * t0) + eye.direction * (0.5 * dt);
+
+    volume_sampler_t cloud = begin_volume(vec3(0, y0, 0), cld_absorb_coeff);
+
+    for (int i = 0; i < steps; ++i) {
+        cloud.pos = pos;
+        cloud.height = (pos.y - y0) / (y1 - y0);
+
+        float dens = density_func(pos, cloud.height, time);
+
+        integrate_volume(cloud, eye.direction, normalize(vec3(7,3,2)), dens, dt, vec3(1.0));
+        pos += eye.direction * dt;
+    }
+
+    return vec4(cloud.C, cloud.alpha);
+}
+
+
+
+
 vec4 render_clouds(ray_t eye, float time) {
     int steps = cld_march_steps;
+    float cutoff = dot(eye.direction, vec3(0, 1, 0));
     float march_step = cld_thick / float(steps);
     vec3 projection = eye.direction / eye.direction.y;
     vec3 iter = projection * march_step;
-    float cutoff = dot(eye.direction, vec3(0, 1, 0));
-    //volume_sampler_t cloud = begin_volume(eye.origin + projection * 100.0, cld_absorb_coeff);
     volume_sampler_t cloud = begin_volume(eye.origin + projection * 300.0, cld_absorb_coeff);
 
     const vec3 hemi_top = vec3(0.96, 0.55, 0.18); // 太阳色/顶部
@@ -172,6 +243,7 @@ vec4 render_clouds(ray_t eye, float time) {
 
 
     for (int i = 0; i < steps; i++) {
+
         cloud.height = (cloud.pos.y - cloud.origin.y) / cld_thick;
         float dens = density_func(cloud.pos, cloud.height, time);
 
@@ -179,7 +251,6 @@ vec4 render_clouds(ray_t eye, float time) {
         const vec3 sun_dir = normalize(vec3(7.0, 3.0, 2.0));
         const float sunset_factor = clamp(1.0 - sun_dir.y, 0.0, 1.0);
         const float sunset_weight = mix(0.0, 0.7, pow(sunset_factor, 1.5));
-        //  vec3 tint_color = mix(vec3(1.0), sun_color, sunset_weight * 0.7);
 
         float hLerp = clamp(cloud.height, 0.f, 1.f);
         vec3 envColor = mix(hemi_bottom, hemi_top, hLerp);
@@ -195,7 +266,8 @@ vec4 render_clouds(ray_t eye, float time) {
         cloud.C += scatter_color * dens * march_step;
 
         integrate_volume(cloud, eye.direction, normalize(sun_dir), dens, march_step, tint_color);
-        //integrate_volume(cloud, eye.direction, normalize(vec3(0, 0, -1)), dens, march_step);
+
+
         cloud.pos += iter;
         if (cloud.alpha > 0.999) break;
     }

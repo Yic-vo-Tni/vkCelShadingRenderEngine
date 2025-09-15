@@ -58,6 +58,7 @@ namespace sc {
 
     auto EngineRuntime::render() -> void {
         yic::systemHub.dispatch<ev::tModelLoaded>();
+        yic::systemHub.dispatch<ev::tDestroyEntity>();
 
         yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
         yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
@@ -85,6 +86,7 @@ namespace sc {
 
     auto EngineRuntime::slowLogic() -> void {
         yic::systemHub.dispatch<ev::tModelLoaded>();
+        yic::systemHub.dispatch<ev::tDestroyEntity>();
         const auto slowW = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
 
         static bool firstRun = true;
@@ -107,11 +109,41 @@ namespace sc {
         auto& cam = ecs.emplace<sc::Camera>(GLOBAL::camera);
         cam.computeViewProjMatrix();
 
+
+        const auto eLight = ecs.create();
+        vot::comp::Light::Array array{
+            .buffer = yic::allocator->allocBuffer(sizeof(vot::comp::Light::Point) * 30, vk::BufferUsageFlagBits::eStorageBuffer, "Light storage"),
+        };
+        array.points.resize(30);
+        vot::comp::Light::Meta meta{
+            .buffer = yic::allocator->allocBuffer(sizeof(std::uint32_t), vk::BufferUsageFlagBits::eUniformBuffer, "Light Meta "),
+        };
+        meta.buffer->update(meta.count);
+
+        ecs.emplace<vot::comp::Light::Array>(eLight, array);
+        ecs.emplace<vot::comp::Light::Meta>(eLight, meta);
+
+        vot::BasicInfoComponent basicInfoComponent{};
+        vot::VertexDataComponent vertexDataComponent{};
+        vot::RenderComponent renderComponent{};
+        vot::AnimationComponent animationComponent{};
+        vot::RayTracingComponent rayTracingComponent{};
+
+        yic::logger->warn(tex_path "../Model/Light/untitled.obj");
+        yic::resourceSystem->mLoader->mAssimpLoader->Load(tex_path "../Model/Light/Sphere.gltf", basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
+
+        ecs.emplace<vot::BasicInfoComponent>(eLight, std::move(basicInfoComponent));
+        ecs.emplace<vot::VertexDataComponent>(eLight, std::move(vertexDataComponent));
+        ecs.emplace<vot::RenderComponent>(eLight, std::move(renderComponent));
+        ecs.emplace<vot::mark::eVisible>(eLight);
+
         GLOBAL::set0 = ecs.create();
         auto& set0 = ecs.emplace<vot::DescriptorSet0>(GLOBAL::set0);
         for(auto i = 0; i < 3; i++){
             set0.handles[i] = yic::desSystem->allocUpdateDescriptorSets([&]{
-                return vot::DescriptorLayout2{ cam.vpBufferInfo(i) };
+                vot::DescriptorLayout2 layout2;
+                layout2.emplace({cam.vpBufferInfo(i), meta.buffer->bufferInfo(), array.buffer->bufferInfo()});
+                return layout2;
             }, yic::renderLibrary->GP_Basic_Assimp, 0, 1);
         }
     }

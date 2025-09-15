@@ -80,6 +80,7 @@ namespace ev {
     struct tResourcesPaths{ vot::vector<vot::string> paths; };
 
     struct tModelLoaded {
+        // bool isLight{false};
         vot::BasicInfoComponent bic{};
         vot::VertexDataComponent vdc{};
         vot::RenderComponent rc{};
@@ -88,7 +89,7 @@ namespace ev {
     };
 
     struct tUpdateScene{};
-
+    struct tDestroyEntity{};
     struct tDestroyVMA{};
 }
 

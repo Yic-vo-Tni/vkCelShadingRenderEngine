@@ -15,6 +15,8 @@ namespace rs {
 
     AssimpLoader::AssimpLoader() {
         ct = yic::systemHub.va<ev::pVkSetupContext>();
+
+        defaultTex = yic::allocator->loadTexture(tex_path "icon.jpg");
     }
 
     AssimpLoader::~AssimpLoader() = default;
@@ -32,11 +34,11 @@ namespace rs {
 
     auto AssimpLoader::importScene(const vot::string &pt) -> ImportContext {
         auto importer = std::make_shared<Assimp::Importer>();
-        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+        const auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
             throw std::runtime_error("assimp load model error: " + std::string (importer->GetErrorString()));
-        std::filesystem::path p(pt);
+        const std::filesystem::path p(pt);
 
         return {.importer = std::move(importer), .scene = scene,
                 .fileName = p.stem().string().data(), .pt = pt, };
@@ -116,9 +118,13 @@ namespace rs {
         for (auto& boneMats : ac.boneMats) {
             boneMats.resize(ac.boneCount, glm::mat4 (1.f));
         }
-        //ac.boneMats.resize(ac.boneCount, glm::mat4 (1.f));
-        //ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneMats.size() * sizeof (glm::mat4), ac.boneMats.data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
-        ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneCount * sizeof (glm::mat4), ac.boneMats[0].data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
+        if (ac.boneCount <= 0) {
+            auto defaultMat = glm::mat4(1.f);
+            ac.boneMatBuffer = yic::allocator->allocBufferStaging(sizeof (glm::mat4), &defaultMat, vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
+            return;
+        } else {
+            ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneCount * sizeof (glm::mat4), ac.boneMats[0].data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
+        }
 
         std::function<void(vot::BoneNode& boneNode, const aiNode* src)> readHierarchyData = [&](vot::BoneNode& boneNode, const aiNode* src){
             boneNode.name = src->mName.data;
@@ -163,6 +169,9 @@ namespace rs {
                     }
                 }
             }
+        } else {
+            rc.subMeshes[0].emplace_back(subMesh); // FIXME
+            rc.diffuseTextures.push_back(defaultTex);
         }
     }
 
@@ -178,7 +187,7 @@ namespace rs {
 
     auto AssimpLoader::extractBone(const aiMesh *aiMesh, const uint32_t& vertexOffset, vot::VertexDataComponent& vc, vot::AnimationComponent& ac) -> void {
         for (auto j = 0; j < aiMesh->mNumBones; ++j) {
-            auto bone = aiMesh->mBones[j];
+            const auto bone = aiMesh->mBones[j];
 
             auto boneId = -1;
             auto& boneMap = ac.boneMap;
@@ -227,6 +236,7 @@ namespace rs {
                 if (options.scale.has_value()) {
                     pos *= *options.scale;
                 }
+            //    yic::logger->warn("x: {0}, y: {1}, z:{2}", pos.x, pos.y, pos.z);
                 std::memcpy(&v.pos, &pos, sizeof(glm::vec3));
             }
             if (aiMesh->HasNormals()) {
@@ -311,6 +321,11 @@ namespace rs {
                 (finalMin[3] + finalMax[3]) / 2.f,
         };
 
+        yic::logger->info("minX:{0}, maxX:{1}", finalMin[1], finalMax[1]);
+        yic::logger->info("minY:{0}, maxY:{1}", finalMin[2], finalMax[2]);
+        yic::logger->info("minZ:{0}, maxZ:{1}", finalMin[3], finalMax[3]);
+        yic::logger->info("center{0}, {1}, {2}", center.x, center.y, center.z);
+
         return center;
     }
 
@@ -373,9 +388,9 @@ namespace rs {
         auto lastDotPos = pt.find_last_of('.');
         auto ext = (lastDotPos != std::string::npos) ? pt.substr(lastDotPos + 1) : "";
 
-//        auto scene = importer->ReadFile(pt.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords);
+        //  auto scene = importer->ReadFile(pt.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords);
 //        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_GenBoundingBoxes);
-        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Triangulate | aiProcess_LimitBoneWeights | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 //        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_FlipUVs);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)

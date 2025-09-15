@@ -117,7 +117,37 @@ struct RayTracingComponent{
     vot::Buffer_sptr scratchBuffer;
 };
 
+    struct PointLightComponent {
 
+    };
+
+
+}
+
+namespace vot::comp::Light {
+    struct Directional {
+        glm::vec4 direction;
+        glm::vec4 color;
+        glm::vec4 intensity;
+    };
+    struct Point {
+        glm::vec4 pos{0.f, 0.f, 0.f, 1.f};
+        glm::vec4 color{1.f, 1.f, 1.f, 1.f};
+        glm::vec4 intensity_radius_constant_linear{1.f, 25.f, 1.f, 0.09f};
+        glm::vec4 quadratic_3pad{0.032f, 0.f, 0.f, 0.f};
+    };
+    struct Spot {
+
+    };
+
+    struct Meta {
+        uint32_t count{0};
+        vot::Buffer_sptr buffer;
+    };
+    struct Array {
+        vot::vector<vot::comp::Light::Point> points;
+        vot::Buffer_sptr buffer;
+    };
 }
 
 #endif //VKCELSHADINGRENDERER_RS_STRUCT_H

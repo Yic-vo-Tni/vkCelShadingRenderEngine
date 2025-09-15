@@ -49,7 +49,7 @@ namespace rhi {
             VmaTotalStatistics totalStats{};
             vmaCalculateStatistics(mVmaAllocator, &totalStats);
 
-            std::cout
+            if_debug std::cout
                     << "Total allocations: " << totalStats.total.statistics.allocationCount
                     << ", total bytes: " << totalStats.total.statistics.allocationBytes
                     << std::endl;
@@ -58,28 +58,11 @@ namespace rhi {
     }
 
     auto Allocator::clear() -> void {
-        VmaTotalStatistics totalStats{};
-        vmaCalculateStatistics(mVmaAllocator, &totalStats);
-
-        // std::cout
-        //     << "Total allocations: " << totalStats.total.statistics.allocationCount
-        //     << ", total bytes: " << totalStats.total.statistics.allocationBytes
-        //     << std::endl;
         yic::systemHub.pub(ev::tDestroyVMA{});
 
         mCaches.clear();
 
         yic::systemHub.pub(ev::tDestroyVMA{});
-        // vmaCalculateStatistics(mVmaAllocator, &totalStats);
-        // std::cout
-        //     << "Total allocations: " << totalStats.total.statistics.allocationCount
-        //     << ", total bytes: " << totalStats.total.statistics.allocationBytes
-        //     << std::endl;
-
-        // char* statsStr = nullptr;
-        // vmaBuildStatsString(mVmaAllocator, &statsStr, VK_TRUE);
-        // yic::logger->warn(statsStr);
-        // vmaFreeStatsString(mVmaAllocator, statsStr);
 
         vmaDestroyAllocator(mVmaAllocator);
     }
@@ -249,13 +232,13 @@ namespace rhi {
                     last != std::string::npos ? id = path.substr(last + 1) : id = path;
                 }
 
-                auto imageData = fo::readFile(path);
+                const auto imageData = fo::readFile(path);
                 if (imageData.empty()) throw std::runtime_error("failed to read image data");
 
-                auto data = stbi_load_from_memory(imageData.data(), static_cast<int>(imageData.size()), &w, &h, &c, STBI_rgb_alpha);
+                const auto data = stbi_load_from_memory(imageData.data(), static_cast<int>(imageData.size()), &w, &h, &c, STBI_rgb_alpha);
                 if (!data) throw std::runtime_error(stbi_failure_reason());
 
-                size_t size = w * h * 4;
+                const size_t size = w * h * 4;
                 pixels.insert(pixels.end(), data, data + size);
                 imageSize += size;
 

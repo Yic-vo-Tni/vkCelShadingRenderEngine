@@ -210,14 +210,6 @@ struct DescriptorHandle{
 
     using RHandle = CommandBuffer*;
 
-//    struct DescriptorSetLayoutBinding {
-//        uint32_t set{};
-//        uint32_t binding{};
-//        vk::DescriptorType descriptorType{};
-//        uint32_t descriptorCount{};
-//        vk::ShaderStageFlags shaderStageFlags{};
-//        const vk::Sampler *pImmutableSamplers{};
-//    };
 
     struct PipelineDescriptorSetLayoutCI{
         vot::map<uint32_t, vot::vector<vk::DescriptorSetLayoutBinding>> desSetBindings{};
@@ -287,7 +279,7 @@ struct DescriptorHandle{
             return *this;
         }
 
-        auto& buildDescriptorSetLayouts(vk::Device* device) {
+        auto& buildDescriptorSetLayouts(const vk::Device* device) {
             auto buildDesSetLayout = [&](vot::vector<vk::DescriptorSetLayoutBinding>& bindings){
                 vk::DescriptorSetLayoutCreateInfo ci{{}, bindings};
                 return vot::create("create descriptor set layout") = [&]{
@@ -296,26 +288,27 @@ struct DescriptorHandle{
             };
             if (desSetLayouts.empty()){
                 //desSetLayouts.emplace_back(buildDesSetLayout(globalSetLayoutBinding));
-                for(auto& [i, bds] : setLayoutBindings){
+                for(auto &bds: setLayoutBindings | std::views::values){
                     desSetLayouts.emplace_back(buildDesSetLayout(bds));
                 }
             }
             return *this;
         }
 
-        auto buildPipelineSetLayout(vk::Device* device) -> vk::PipelineLayout{
+        auto buildPipelineSetLayout(const vk::Device* device) -> vk::PipelineLayout{
             buildDescriptorSetLayouts(device);
-            vk::PipelineLayoutCreateInfo createInfo{{}, desSetLayouts, pushConstantRange};
+            const vk::PipelineLayoutCreateInfo createInfo{{}, desSetLayouts, pushConstantRange};
 
             return vot::create("create pipeline laout") = [&]{
                 return device->createPipelineLayout(createInfo);
             };
         }
 
-        auto clear(vk::Device* device) -> void{
-            for(auto& setLayout : desSetLayouts){
+        auto clear(const vk::Device* device) -> void{
+            for(const auto& setLayout : desSetLayouts){
                 device->destroy(setLayout);
             }
+            desSetLayouts.clear();
         }
     };
 

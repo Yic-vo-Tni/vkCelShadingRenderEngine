@@ -100,6 +100,7 @@ namespace rhi {
                 .setRasterizerDiscardEnable({})
                 .setPolygonMode(vk::PolygonMode::eFill)
                 .setFrontFace(vk::FrontFace::eClockwise)
+        //        .setCullMode()
                 .setDepthBiasEnable(libraryCI.depthBiasEnable.value_or(vk::False))
                 .setDepthBiasConstantFactor(libraryCI.depthBiasConstantFactor.value_or(vk::False))
                 .setDepthBiasClamp({})

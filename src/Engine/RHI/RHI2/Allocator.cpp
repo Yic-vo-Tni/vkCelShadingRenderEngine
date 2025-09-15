@@ -200,10 +200,7 @@ namespace rhi2 {
 
             return mapped;
         }
-        // void* mapped = bufferMata.allocation->GetMappedData();
-        // if (data) {
-        //     memcpy(mapped, data, size);
-        // }
+
         return nullptr;
     }
 
@@ -255,25 +252,6 @@ namespace rhi2 {
     }
 
     auto Allocator::acquireBufferCache(const vk::DeviceSize& size) -> std::shared_ptr<BufferMata> {
-        // auto it = mStagingBuffers.lower_bound(size);
-        //
-        // while(it != mStagingBuffers.end()){
-        //     std::shared_ptr<BufferMata> mata;
-        //     while(it->second.try_pop(mata)){
-        //         return mata;
-        //     }
-        //     ++it;
-        // }
-        //
-        // auto mata = createBuffer(BufferAttachment()
-        //     .setBufferUsageFlags(vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst)
-        //     .setDeviceSize(size)
-        //     .optMemoryUsage(vot::memoryUsage::eCpuOnly)
-        //     .optAllocStrategy(vot::allocStrategy::eMapped)
-        //     .optBufferType(BufferAttachment::eForceHost));
-        // ++mStagBufferCounter;
-        // return mata;
-
         std::shared_ptr<BufferMata> mata;
         if (!mBufferCaches.get(size, mata)) {
             mata = createBuffer(BufferAttachment()
@@ -287,7 +265,5 @@ namespace rhi2 {
         return mata;
     }
 
-    // auto Allocator::releaseStagingBuffer(const std::shared_ptr<BufferMata> &bufferMata) -> void {
-    //     // mStagingBuffers[bufferMata->attach.size].push(bufferMata);
-    // }
+
 } // rhi2

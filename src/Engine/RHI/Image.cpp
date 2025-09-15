@@ -96,7 +96,7 @@ auto Image::beginRendering(vot::CommandBuffer &cmd, vk::Rect2D rect2D) -> void {
 
     auto renderingInfo = vk::RenderingInfo()
        //     .setFlags(vk::RenderingFlagBits::eContentsSecondaryCommandBuffers)
-            .setRenderArea(rect2D)
+            .setRenderArea({{0, 0}, {config.extent.width, config.extent.height}})
             .setLayerCount(1)
             .setColorAttachments(colorAttachments);
 

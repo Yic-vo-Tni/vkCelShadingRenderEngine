@@ -25,6 +25,52 @@ namespace sc {
                 ImGui::Checkbox("Volumetric Fog", &GLOBAL::showVolumetricFog);
             });
 
+            yic::imguiHub->collapsingHeader("Lighting", [&] {
+                static int selectedLightType = 0; // 0=Point, 1=Directional, 2=Spot
+
+
+                if (ImGui::Button("Add Light")) {
+                    yic::systemHub.pub_enqueue(ev::tModelLoaded{});
+                    // if (selectedLightType != 0
+                    // auto e = ecs.create();
+                    //
+                    // switch (selectedLightType) {
+                    //     case 0: // Point
+                    //         ecs.emplace<vot::comp::Light::Point>(e,
+                    //                                              glm::vec4(0.f, 2.f, 0.f, 1.f), // pos
+                    //                                              glm::vec4(1.f, 1.f, 1.f, 1.f), // color
+                    //                                              glm::vec4(1.f, 25.f, 1.f, 0.09f),
+                    //                                              // intensity, radius, constant, linear
+                    //                                              glm::vec4(0.032f, 0.f, 0.f, 0.f) // quadratic
+                    //         );
+                    //         break;
+                    //     case 1: // Directional
+                    //         ecs.emplace<vot::comp::Light::Directional>(e,
+                    //                                                    glm::vec4(-0.3f, -1.f, -0.2f, 0.f), // dir
+                    //                                                    glm::vec4(1.f, 1.f, 1.f, 1.f) // color
+                    //         );
+                    //         break;
+                    //     case 2: // Spot
+                    //         ecs.emplace<vot::comp::Light::Spot>(e,
+                    //                                             glm::vec4(0.f, 2.f, 0.f, 1.f), // pos
+                    //                                             glm::vec4(0.f, -1.f, 0.f, 0.f), // dir
+                    //                                             glm::vec4(1.f, 1.f, 1.f, 1.f), // color
+                    //                                             glm::vec4(glm::cos(glm::radians(12.5f)), // cutoff
+                    //                                                       glm::cos(glm::radians(17.5f)), // outer cutoff
+                    //                                                       0.f, 0.f)
+                    //         );
+                    //         break;
+                    //     default: ;
+                    // }
+                }
+
+                ImGui::SameLine();
+
+                const char *lightTypes[] = {"Point Light", "Directional Light", "Spot Light"};
+                ImGui::Combo("###Light Type", &selectedLightType, lightTypes, IM_ARRAYSIZE(lightTypes));
+            });
+
+
             vot::vector<entt::entity> entities;
             ecs.view<const vot::mark::eVisible, vot::BasicInfoComponent, vot::AnimationComponent>().each(
                 [&](const entt::entity e, vot::BasicInfoComponent &info, vot::AnimationComponent &ac) {
@@ -52,21 +98,7 @@ namespace sc {
                 });
             }
         });
-        // ecs.view<const vot::mark::eVisible, vot::BasicInfoComponent, vot::AnimationComponent>().each(
-        //     [&](const entt::entity e, vot::BasicInfoComponent &info, vot::AnimationComponent &ac) {
-        //         const auto hideId = info.name;
-        //
-        //         yic::imguiHub->collapsingHeader(hideId.c_str(), [&] {
-        //             vot::scoped::ID id(hideId.c_str());
-        //
-        //             if_has<vot::mark::eMMD>(e,
-        //                                     [&] { drawAnimComboForMMD(e, ac); },
-        //                                     [&] { drawAnimComboForGeneric(ac); });
-        //
-        //             drawPlayButton(info, ac);
-        //         });
-        //     });
-        // });
+
 
         yic::imguiHub->to(vot::uiWidget::eRenderWidget, [&] {
             mousePick();

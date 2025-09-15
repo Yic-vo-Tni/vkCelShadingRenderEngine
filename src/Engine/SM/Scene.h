@@ -27,7 +27,6 @@ namespace sm {
     class SceneSystem{
     public:
         MAKE_SINGLETON(SceneSystem);
-        //explicit SceneSystem(flecs::world& ecs);
         explicit SceneSystem(entt::registry& registry);
         ~SceneSystem() = default;
 
@@ -40,25 +39,13 @@ namespace sm {
 
         auto syncBLAS(const vot::VertexDataComponent &vc, const vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
                        bool update = false) -> void;
-        // auto syncBLAS(const std::variant<vot::VertexDataComponent<vot::eAssimp>, vot::VertexDataComponent<vot::eMMD>> &vdc, const vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
-        //                bool update = false) -> void;
 
-        // template<vot::VertexType type>
-        // auto syncBLAST(const vot::VertexDataComponent<type> &vdc, vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
-        //                bool update = false) -> void {
-        //     auto maxVert = static_cast<uint32_t>(vdc.vertices_pmr[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()].size());
-        //     auto numTri = static_cast<uint32_t>(vdc.indices_pmr.size()) / 3;
-        // };
 
         auto syncTLAS() -> void;
         auto acquireActiveScene() { return mActiveScene; }
     private:
-        // auto syncBLAS(const std::pair<uint32_t, uint32_t>& num, vot::RenderComponent &rc, vot::RayTracingComponent &rtc,
-        //        bool update = false) -> void;
-
         auto updateDS() -> void;
     private:
-//        flecs::world& ecs;
         entt::registry& ecs;
         ev::pVkSetupContext ct{};
         ev::pVkRenderContext rt{};

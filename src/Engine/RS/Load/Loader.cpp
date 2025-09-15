@@ -31,6 +31,24 @@ namespace rs {
         });
 
         yic::systemHub.sub_queued(2, [&](const ev::tModelLoaded& ev){ onModelLoaded(ev); });
+
+        yic::systemHub.sub_queued(2, [&](const ev::tDestroyEntity &) {
+            vot::vector<entt::entity> toD;
+
+            ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each(
+                [&](const entt::entity e, vot::RenderComponent &rc, const vot::BasicInfoComponent &bic) {
+                    if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO) {
+                        toD.emplace_back(e);
+                    }
+                });
+
+            for (const auto &e: toD) {
+                yic::logger->info("Entity: {0}, valid ={1}", entt::to_integral(e), ecs.valid(e));
+                ecs.destroy(e);
+            }
+
+            yic::sceneSystem->reloadTlas();
+        });
     }
 
     auto Loader::onResourcePaths(const vot::string &pt) -> void {
@@ -55,10 +73,10 @@ namespace rs {
         if (check(pt, {".pmx"})) {
             vertexDataComponent.type = vot::eMMD;
             mMmdLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent);
-        } else if (check(pt, {".obj", ".fbx"})) {
+        } else if (check(pt, {".obj", ".fbx"})) { // TODO
             vertexDataComponent.type = vot::eAssimp;
             mAssimpLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
-        } else if (check(pt, {".gltf", ".glb"})) {
+        } else if (check(pt, {".gltf", ".glb"})) { // TODO
             vertexDataComponent.type = vot::eAssimp;
             mAssimpLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
         }
@@ -76,15 +94,18 @@ namespace rs {
         const auto entity = ecs.create();
         auto& [basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent] = ev;
 
-        ecs.emplace<vot::BasicInfoComponent>(entity, std::move(basicInfoComponent));
-        ecs.emplace<vot::VertexDataComponent>(entity, std::move(vertexDataComponent));
-        ecs.emplace<vot::RenderComponent>(entity, std::move(renderComponent));
-        ecs.emplace<vot::AnimationComponent>(entity, std::move(animationComponent));
-        ecs.emplace<vot::RayTracingComponent>(entity, std::move(rayTracingComponent));
+        ecs.emplace<vot::BasicInfoComponent>(entity, basicInfoComponent);
+        ecs.emplace<vot::VertexDataComponent>(entity, vertexDataComponent);
+        ecs.emplace<vot::RenderComponent>(entity, renderComponent);
+        ecs.emplace<vot::AnimationComponent>(entity, animationComponent);
+        ecs.emplace<vot::RayTracingComponent>(entity, rayTracingComponent);
         
 
-        if (vertexDataComponent.type == vot::eMMD)
+        if (vertexDataComponent.type == vot::eMMD) {
             ecs.emplace<vot::mark::eMMD>(entity);
+        } else {
+            ecs.emplace<vot::mark::eAssimp>(entity);
+        }
 
         yic::sceneSystem->reloadTlas();
 

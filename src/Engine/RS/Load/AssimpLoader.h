@@ -66,6 +66,7 @@ namespace rs {
 
     private:
         ev::pVkSetupContext ct{};
+        vot::Image_sptr defaultTex;
 
         std::pmr::unsynchronized_pool_resource mVertexPool;
         std::pmr::unsynchronized_pool_resource mIndexPool;

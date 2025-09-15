@@ -16,12 +16,12 @@ namespace rhi {
     }
 
     ComputePipeline::~ComputePipeline() {
-        mDesSetLayoutCI.clear(ct.device);
         ct.device->destroy(mPipeline);
         ct.device->destroy(mPipelineLayout);
+        mDesSetLayoutCI.clear(ct.device);
     }
 
-    auto ComputePipeline::addShader(vot::string path) -> vk::ShaderModule {
+    auto ComputePipeline::addShader(vot::string path) const -> vk::ShaderModule {
         path = spv_path + path + ".spv";
         vot::vector<char> v;
         std::ranges::copy(fo::loadFile(path), std::back_inserter(v));

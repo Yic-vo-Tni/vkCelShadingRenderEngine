@@ -8,7 +8,9 @@
 namespace vot {
     namespace mark {
         struct eVisible{};
+        struct eAssimp{};
         struct eMMD{};
+        struct eLight{};
     }
 }
 

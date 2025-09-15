@@ -144,6 +144,24 @@ namespace yic {
         auto glfwMouseButtonPress = [&](const int button){ return (glfwGetMouseButton(mWindow, button) == GLFW_PRESS); };
         auto glfwMouseButtonRelease = [&](const int button){ return (glfwGetMouseButton(mWindow, button) == GLFW_RELEASE); };
 
+        static int lastDeleteState = GLFW_RELEASE;
+        static int lastXState      = GLFW_RELEASE;
+
+        int currentDelete = glfwGetKey(mWindow, GLFW_KEY_DELETE);
+        int currentX      = glfwGetKey(mWindow, GLFW_KEY_X);
+
+        if (currentDelete == GLFW_PRESS && lastDeleteState == GLFW_RELEASE) {
+            yic::systemHub.pub_enqueue(ev::tDestroyEntity{});
+            yic::logger->warn("Delete pressed once");
+        }
+
+        if (currentX == GLFW_PRESS && lastXState == GLFW_RELEASE) {
+            yic::systemHub.pub_enqueue(ev::tDestroyEntity{});
+            yic::logger->warn("X pressed once");
+        }
+
+        lastDeleteState = currentDelete;
+        lastXState      = currentX;
 
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS){
             closeRequested.store(true, std::memory_order_relaxed);

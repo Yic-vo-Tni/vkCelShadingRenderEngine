@@ -18,10 +18,12 @@ namespace sm {
         rt = yic::systemHub.va<ev::pVkRenderContext>();
 
         loadScene();
+
+
     }
 
     auto SceneSystem::loadScene(const vot::string &id) -> void {
-        auto effId = id.empty() ? "scene " + vot::string(std::to_string(mScenes.size())) : id;
+        const auto effId = id.empty() ? "scene " + vot::string(std::to_string(mScenes.size())) : id;
         mActiveScene = &mScenes.try_emplace(effId, Scene{id}).first->second;
     }
 
@@ -38,6 +40,7 @@ namespace sm {
                 .each([&](auto e, const vot::RenderComponent& rc){
                    bufferAddr.emplace_back(std::array<uint64_t, 2>{rc.vertexBuffer[yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur()]->bufferAddr(), rc.indexBuffer->bufferAddr()});
                 });
+        if (bufferAddr.empty()) return;
         mActiveScene->bufferAddrBuffer = yic::allocator->allocBufferStaging(sizeof (uint64_t ) * 2 * bufferAddr.size(), bufferAddr.data(), vk::BufferUsageFlagBits::eStorageBuffer);
 
         syncTLAS();
@@ -49,8 +52,8 @@ namespace sm {
 
         auto playAnim = false;
         ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent, vot::AnimationComponent>()
-        .each([&](const entt::entity &e, const vot::BasicInfoComponent &bc, vot::VertexDataComponent &vc,
-                vot::RenderComponent &rc, vot::RayTracingComponent &rtc, vot::AnimationComponent &ac) {
+        .each([&](const entt::entity, const vot::BasicInfoComponent &bc, const vot::VertexDataComponent &vc,
+                const vot::RenderComponent &rc, vot::RayTracingComponent &rtc, const vot::AnimationComponent &ac) {
             if (ac.enableAnim && (GLOBAL::playAllAnim || bc.playAnimation)){
                 bool onlyTransform = true;
 
@@ -140,7 +143,7 @@ namespace sm {
             vk::MemoryBarrier barrier{vk::AccessFlagBits::eAccelerationStructureWriteKHR,
                                       vk::AccessFlagBits::eAccelerationStructureReadKHR};
             cmd.pipelineBarrier(vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-                                vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+                                vk::PipelineStageFlagBits::eRayTracingShaderKHR,
                                 {}, barrier, {}, {});
         });
     }

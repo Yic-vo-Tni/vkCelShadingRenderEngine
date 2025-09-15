@@ -14,7 +14,9 @@
 
 namespace sc {
 
-#define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR)
+#define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR) \
+    .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
+    .addDescriptorSetLayoutBinding(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
 
     RenderLibrary::RenderLibrary() {
         frameImageCount = yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size();
@@ -40,7 +42,6 @@ namespace sc {
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
             .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
-           // .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex)
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
 
             .setRenderPass2CI(vot::RenderPass2CI()
@@ -65,6 +66,30 @@ namespace sc {
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/model.frag")));
+
+        GP_Light.combinePipelineLibrary(vot::PipelineLibrary()
+            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+            .SET0
+            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
+
+            .setRenderPass2CI(vot::RenderPass2CI()
+            .setRenderingDepth(vk::True))
+
+            .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
+            .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eAssimp>), vk::VertexInputRate::eVertex)
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, pos))
+            // .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, nor))
+            //  .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, uv))
+            //  .addVertexInputAttributeDescription(3, 0, vk::Format::eR32G32B32A32Sint, offsetof(vot::VertexT<vot::eAssimp>, boneIds))
+            //  .addVertexInputAttributeDescription(4, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, boneWeight))
+            )
+
+            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+            .setShaderPath("Basic/Light.vert"))
+
+            .setFragmentShaderCI(vot::FragmentShaderCI()
+            .setShaderPath("Basic/Light.frag")
+            ));
 
         GP_IDBuffer.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
@@ -163,7 +188,8 @@ namespace sc {
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
-            .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
+           // .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment)
+            .addDescriptorSetLayoutBinding(1, 4, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 5, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
             .addDescriptorSetLayoutBinding(1, 6, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment))
 
@@ -233,8 +259,9 @@ namespace sc {
                 .setFlags(vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
-                .setExtent(RT_RESOLUTION)
-                .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Volumetric overcast clouds RT Image");
+                //.setExtent(RT_RESOLUTION)
+                .setExtent(vot::Resolutions::eFullHDExtent)
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Volumetric overcast clouds RT Image");
 
         RT_Volumetric_Fog = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
@@ -340,7 +367,7 @@ namespace sc {
                         RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_GBuffer->imageInfo(base + eGBuffer::eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eShaderReadOnlyOptimal),
                         RTX_RayTracing->imageInfo(),
                         T_blueNoise64->imageInfo(),
                 });

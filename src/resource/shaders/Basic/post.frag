@@ -14,7 +14,8 @@ layout(input_attachment_index = 0, set = 1, binding = 0) uniform subpassInput i_
 layout(input_attachment_index = 1, set = 1, binding = 1) uniform subpassInput i_gPos;
 layout(input_attachment_index = 2, set = 1, binding = 2) uniform subpassInput i_gNor;
 layout(input_attachment_index = 3, set = 1, binding = 3) uniform subpassInput i_Volumetric_fog;
-layout(input_attachment_index = 4, set = 1, binding = 4) uniform subpassInput i_Volumetric_clouds;
+//layout(input_attachment_index = 4, set = 1, binding = 4) uniform subpassInput i_Volumetric_clouds;
+layout(set = 1, binding = 4) uniform sampler2D clouds;
 layout(set = 1, binding = 5) uniform sampler2D raytracing;
 layout(set = 1, binding = 6) uniform sampler2D blueNoise;
 
@@ -38,9 +39,11 @@ void main()
     vec4 albedo = subpassLoad(i_gAlbedo);
     vec3 pos = subpassLoad(i_gPos).xyz;
     vec3 nor = normalize(subpassLoad(i_gNor).xyz);
-    vec4 volumetric_clouds = subpassLoad(i_Volumetric_clouds);
+ //   vec4 volumetric_clouds = subpassLoad(i_Volumetric_clouds);
+    vec3 cloud = texture(clouds, uv).rgb;
     vec4 volumetric_fog = subpassLoad(i_Volumetric_fog);
     vec4 rt = texture(raytracing, uv).rgba;
+
 
     vec3 viewDir = normalize(cameraPos - pos);
     vec3 lightDir = normalize(vec3(7.f, 3.f, 2.f));
@@ -63,7 +66,7 @@ void main()
 
     // vloumetric fog
     float dist = distance(cameraPos, pos);
-    if(true){
+    if(false){
         float ao = 0.70f;
         baseColor = mix(baseColor, baseColor * ao, 0.35);
 
@@ -113,41 +116,47 @@ void main()
         for (int i = 0; i < steps; ++i) {
             float t = t_start + dt * (i + 0.5);
             vec3 samplePos = rayStart + rayDir * t;
+
+           // float heightFog = clamp(1.f - samplePos.y / 200.f, 0.f, 1.f);
+            float baseDensity = exp(-samplePos.y * 0.02f); // +
+            float fogStart = 0.f;
+            float fogEng = 4000.f;
+            float distFactor = clamp((t - fogStart) / (fogEng - fogStart), 0.012f, 0.8f);
+            //float distFactor = 1.f - exp(-t * 0.001f); // +
+
             vec2 noiseUV = fract(samplePos.xz * 0.02);
             float blueNoiseVal = texture(blueNoise, noiseUV).r;
-            float fogNoise = 1.0 + 0.28 * (blueNoiseVal - 0.5) * 2.0;
 
-            float k = 0.0005f;
-            float localDensity = k * pow(t, 0.7) * fogNoise * 1.3f;
-            float stepAlpha = 1.0 - exp(-localDensity * dt);
+            float noiseFacotr = 0.8f + 0.2f * blueNoiseVal; //+
 
-            float heightFactor = smoothstep(0.0, 200.0, samplePos.y);
+            float localDensity = baseDensity * distFactor * noiseFacotr;
 
-            vec3 fogColor = mix(vec3(0.98, 0.84, 0.74), vec3(1.0, 0.80, 0.68), heightFactor);
+            vec3 sunDir = normalize(vec3(7.f, 3.f, 2.f));
+            float toSun = dot(normalize(sunDir), normalize(samplePos - cameraPos));
+            float godrayStrength = pow(max(toSun, 0.f), 12.f);
+            vec3 godrayColor = vec3(1.f, 0.92f, 0.65f);
 
-            vec3 sunDir = normalize(vec3(7.0, 3.0, 2.0));
-            float toSun = dot(rayDir, sunDir);
-            float godrayStrength = pow(max(toSun, 0.0), 12.0); // 指数越大，光束越锐利
-            vec3 godrayColor = vec3(1.0, 0.92, 0.65); // 光束偏暖
+            vec3 fogColor = vec3(0.98f, 0.84f, 0.74f) * (1.f - samplePos.y / 200.f);
+            fogColor += godrayColor * godrayStrength;
 
-            // 加强Godray色
-            fogColor += godrayColor * godrayStrength * (1.0 + 0.4 * (blueNoiseVal - 0.5));
+            float stepAlpha = 1.f - exp(-localDensity * dt);
+            accumFog += (1.f - accumAlpha) * fogColor * stepAlpha;
+            accumAlpha += (1.f - accumAlpha) * stepAlpha;
+            if(accumAlpha > 0.98) break;
 
-
-            accumFog += (1.0 - accumAlpha) * fogColor * stepAlpha;
-            accumAlpha += (1.0 - accumAlpha) * stepAlpha;
-            if (accumAlpha > 0.98) break;
         }
+        float fogWeight = clamp(accumAlpha, 0.f, 1.f);
+        fogWeight *= mix(0.8f, 0.4f, rt.r);
+        baseColor = mix(baseColor, accumFog, fogWeight);
 
-        baseColor = mix(baseColor, accumFog, clamp(accumAlpha, 0.0, 1.0));
+//        baseColor = mix(baseColor, accumFog, clamp(accumAlpha, 0.0, 1.0));
+
     }
 
 
-    //baseColor = mix(baseColor, fogColor, fogFactor);
-
 
     if(albedo.a < 0.99f){
-        baseColor = volumetric_clouds.xyz;
+        baseColor = cloud;
     }
 
   // float exposure = 0.8f;

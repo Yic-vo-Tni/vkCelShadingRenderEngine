@@ -25,57 +25,6 @@ namespace hide{
         };
         static constexpr uint8_t MultiBuffer{3};
     public:
-        // auto write_begin() -> uint8_t {
-        //     uint8_t oldestIdx = 255;
-        //     uint64_t oldestFrame = UINT64_MAX;
-        //     for (uint8_t i = 0; i < MultiBuffer; ++i) {
-        //         if (!slots[i].ready.load(std::memory_order_seq_cst)) {
-        //             logicIndex = i;
-        //             return i;
-        //         }
-        //
-        //         auto fid = slots[i].frameId.load(std::memory_order_seq_cst);
-        //         if (fid < oldestFrame) {
-        //             oldestFrame = fid;
-        //             oldestIdx = i;
-        //         }
-        //     }
-        //
-        //     logicIndex = oldestIdx;
-        //     return oldestIdx;
-        // }
-        //
-        // auto write_end() -> void {
-        //     ++logicFrameId;
-        //     slots[logicIndex].frameId.store(logicFrameId, std::memory_order_seq_cst);
-        //     slots[logicIndex].ready.store(true, std::memory_order_seq_cst);
-        // }
-        //
-        // auto read_begin() -> uint8_t {
-        //     uint64_t newestFrame = 0;
-        //     int newestIdx = -1;
-        //     for (uint8_t i = 0; i < MultiBuffer; ++i) {
-        //         if (slots[i].ready.load(std::memory_order_seq_cst)) {
-        //             auto fid = slots[i].frameId.load(std::memory_order_seq_cst);
-        //             if (fid > newestFrame) {
-        //                 newestFrame = fid;
-        //                 newestIdx = i;
-        //             }
-        //         }
-        //     }
-        //     if (newestIdx >= 0) {
-        //         renderIndex = newestIdx;
-        //         return renderIndex;
-        //     }
-        //
-        //     //return renderIndex;
-        //     return 255;
-        // }
-        //
-        // auto read_end() -> void{
-        //     slots[renderIndex].ready.store(false, std::memory_order_seq_cst);
-        // }
-
         auto write_begin() -> uint8_t {
             uint8_t oldestIdx = 0;
             uint64_t oldestFrame = UINT64_MAX;

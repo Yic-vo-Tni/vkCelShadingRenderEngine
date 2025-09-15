@@ -51,8 +51,8 @@ namespace rhi {
                     const auto &descriptorInfo = infos[setIndex][desIndex][bindingIndex];
                     const auto &writeSetIndex = setIndex * (ci2.desSetLayouts.size() - startIndex) + desIndex;
 
-                    std::visit([&](auto &&arg) {
-                        using T = std::decay_t<decltype(arg)>;
+                    std::visit([&]<typename T0>(T0 &&arg) {
+                        using T = std::decay_t<T0>;
                         if constexpr (std::is_same_v<T, vk::DescriptorBufferInfo>)
                             mWriteDescriptorSets[setIndex].emplace_back(vk::WriteDescriptorSet{ handle.pSet[writeSetIndex], binding.binding, 0, binding.descriptorType, {}, arg});
                         if constexpr (std::is_same_v<T, vk::DescriptorImageInfo>)
