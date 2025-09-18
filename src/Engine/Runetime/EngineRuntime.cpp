@@ -6,8 +6,6 @@
 #include "Core/DispatchSystem/SystemHub.h"
 #include "Core/Management/TripleBufferIndexManager.h"
 #include "Camera/Camera.h"
-#include "RHI/QueueFamily.h"
-#include "Editor/ImGuiHub.h"
 #include "RHI/DescriptorSystem.h"
 #include "RS/ResourceSystem.h"
 #include "SM/Scene.h"
@@ -20,8 +18,9 @@
 namespace sc {
 
     EngineRuntime::EngineRuntime() {
+        vot::EntityView::Init(ecs);
         prepose();
-        buildGlobalCamera();
+        buildSet0();
     }
 
     EngineRuntime::~EngineRuntime() {
@@ -30,13 +29,7 @@ namespace sc {
         ct.device->waitIdle();
 
         yic::systemHub.pub(ev::tDestroyVMA{});
-
         yic::systemHub.setEvent(ev::tModelLoaded{});
-
-        yic::systemHub.pub(ev::tDestroyVMA{});
-
-        ecs.clear<>();
-
         yic::systemHub.pub(ev::tDestroyVMA{});
 
         RenderLibrary::destroy();
@@ -57,120 +50,66 @@ namespace sc {
     }
 
     auto EngineRuntime::render() -> void {
-        yic::systemHub.dispatch<ev::tModelLoaded>();
-        yic::systemHub.dispatch<ev::tDestroyEntity>();
+        yic::systemHub.dispatch<ev::tModelLoaded, ev::tDestroyEntity>();
 
-        yic::indexRing.get(vot::LogicBufferType::eFast).read_begin();
-        yic::indexRing.get(vot::LogicBufferType::eSlow).read_begin();
-        {
+        yic::indexRing.read([&] {
             yic::shaderHot->frame();
             inspectorPanel->frame();
 
             yic::sceneSystem->frame();
             submissionSystem->frame();
-        }
+        }, vot::eFast, vot::eSlow);
     }
 
     auto EngineRuntime::fastLogic() -> void {
-        const auto fastW = yic::indexRing.get(vot::LogicBufferType::eFast).write_begin();
+        yic::indexRing.write([&] {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        if (fastW == 0xff) return;
-
-        {
-            updateCamera(ecs.get<sc::Camera>(GLOBAL::camera), fastW);
-        }
-
-        yic::indexRing.get(vot::LogicBufferType::eFast).write_end();
+            Camera::UpdateUnique();
+        }, vot::eFast);
     }
 
     auto EngineRuntime::slowLogic() -> void {
-        yic::systemHub.dispatch<ev::tModelLoaded>();
-        yic::systemHub.dispatch<ev::tDestroyEntity>();
-        const auto slowW = yic::indexRing.get(vot::LogicBufferType::eSlow).write_begin();
+        yic::systemHub.dispatch<ev::tModelLoaded, ev::tDestroyEntity>();
 
-        static bool firstRun = true;
-        if (firstRun) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(2));
-            firstRun = false;
-        }
-
-        if (slowW == 0xff ) return;
-
-        {
+        yic::indexRing.write([&] {
             yic::resourceSystem->frame();
-        }
-
-        yic::indexRing.get(vot::LogicBufferType::eSlow).write_end();
+        }, vot::eSlow);
     }
 
-    auto EngineRuntime::buildGlobalCamera() -> void {
-        GLOBAL::camera = ecs.create();
-        auto& cam = ecs.emplace<sc::Camera>(GLOBAL::camera);
+    auto EngineRuntime::buildSet0() -> void {
+        auto& cam = GLOBAL::entity::camera.makeVa<Camera>();
         cam.computeViewProjMatrix();
 
-
-        const auto eLight = ecs.create();
-        vot::comp::Light::Array array{
-            .buffer = yic::allocator->allocBuffer(sizeof(vot::comp::Light::Point) * 30, vk::BufferUsageFlagBits::eStorageBuffer, "Light storage"),
-        };
-        array.points.resize(30);
-        vot::comp::Light::Meta meta{
-            .buffer = yic::allocator->allocBuffer(sizeof(std::uint32_t), vk::BufferUsageFlagBits::eUniformBuffer, "Light Meta "),
-        };
-        meta.buffer->update(meta.count);
-
-        ecs.emplace<vot::comp::Light::Array>(eLight, array);
-        ecs.emplace<vot::comp::Light::Meta>(eLight, meta);
+        vot::comp::Light::Meta meta{};
+        meta.entries.resize(30);
+        meta.ssbo = yic::allocator->allocBuffer(sizeof(vot::comp::Light::Entry) * 30, vk::BufferUsageFlagBits::eStorageBuffer, "Light entries");
+        meta.ssbo->update(meta.entries);
 
         vot::BasicInfoComponent basicInfoComponent{};
         vot::VertexDataComponent vertexDataComponent{};
         vot::RenderComponent renderComponent{};
         vot::AnimationComponent animationComponent{};
-        vot::RayTracingComponent rayTracingComponent{};
 
-        yic::logger->warn(tex_path "../Model/Light/untitled.obj");
         yic::resourceSystem->mLoader->mAssimpLoader->Load(tex_path "../Model/Light/Sphere.gltf", basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
 
-        ecs.emplace<vot::BasicInfoComponent>(eLight, std::move(basicInfoComponent));
-        ecs.emplace<vot::VertexDataComponent>(eLight, std::move(vertexDataComponent));
-        ecs.emplace<vot::RenderComponent>(eLight, std::move(renderComponent));
-        ecs.emplace<vot::mark::eVisible>(eLight);
+        vot::EntityView::Create()
+                .emplace<vot::comp::Light::Meta>(meta)
+                .emplace<vot::BasicInfoComponent>(std::move(basicInfoComponent))
+                .emplace<vot::VertexDataComponent>(std::move(vertexDataComponent))
+                .emplace<vot::RenderComponent>(std::move(renderComponent))
+                .emplace<vot::mark::eVisible>();
 
-        GLOBAL::set0 = ecs.create();
-        auto& set0 = ecs.emplace<vot::DescriptorSet0>(GLOBAL::set0);
-        for(auto i = 0; i < 3; i++){
-            set0.handles[i] = yic::desSystem->allocUpdateDescriptorSets([&]{
+        auto& [set0] = GLOBAL::entity::set0.makeVa<vot::DescriptorSet0>();
+        std::ranges::for_each(std::views::iota(0, 3), [&](auto i) -> void {
+            set0[i] = yic::desSystem->allocUpdateDescriptorSets([&] {
                 vot::DescriptorLayout2 layout2;
-                layout2.emplace({cam.vpBufferInfo(i), meta.buffer->bufferInfo(), array.buffer->bufferInfo()});
+                layout2.emplace({cam.vpBufferInfo(i), meta.ssbo->bufferInfo()});
                 return layout2;
             }, yic::renderLibrary->GP_Basic_Assimp, 0, 1);
-        }
+        });
     }
 
-    auto EngineRuntime::updateCamera(auto &cameraEntity, auto& i) -> void {
-        sc::Camera& c = cameraEntity;
-        {
-            auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();
-            if (f_Lock->W == true) c.getPosition() += 0.1f * c.getCameraFront();
-            if (f_Lock->S == true) c.getPosition() -= 0.1f * c.getCameraFront();
-            if (f_Lock->A == true) c.getPosition() -= 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
-            if (f_Lock->D == true) c.getPosition() += 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
-            if (f_Lock->cursor == true) c.mouseCallback(f_Lock->xPos, f_Lock->yPos);
-            if (f_Lock->scroll == true) c.scrollCallback(f_Lock->xOffset, f_Lock->yOffset);
-            if (f_Lock->firstM == true) c.firstMouse = true;
-
-            f_Lock->W = false;
-            f_Lock->S = false;
-            f_Lock->A = false;
-            f_Lock->D = false;
-            f_Lock->cursor = false;
-            f_Lock->scroll = false;
-            f_Lock->firstM = false;
-        }
-
-        c.updateCamera(i);
-    }
 
     auto EngineRuntime::calFnTimeConsuming(const std::function<void()> &fn) -> void {
         const auto b = oneapi::tbb::tick_count::now();

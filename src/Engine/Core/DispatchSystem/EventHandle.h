@@ -8,111 +8,95 @@
 
 namespace hide {
 
-
-    class IEventHandle{
+    template<typename Derived, typename Event>
+    class EventHandle_Common {
     public:
-        virtual auto execute() -> void = 0;
-        virtual auto executeLatest() -> void = 0;
-        virtual ~IEventHandle() = default;
+        auto up(const Event &e) { event = e; }
+        auto va() const { return event.value(); }
+
+    protected:
+        std::optional<Event> event;
     };
 
+    template<typename Event>
+    class EventHandle_Immediate : public virtual EventHandle_Common<Event, Event> {
+        using Handler = std::function<void(const Event &)>;
+    public:
+        auto sub(Handler h){ handlers.push_back(std::move(h)); }
+        auto pub(const Event& e) {
+            this->up(e);
+            for (auto& handler : handlers){ handler(e); }
+        }
+    private:
+        vot::vector<Handler> handlers;
+    };
 
     template<typename Event>
-    class EventHandle final : public IEventHandle{
-    protected:
-        using Handler = std::function<void(const Event&)>;
+    class EventHandle_Deferred : public virtual EventHandle_Common<Event, Event> {
+        using Handler = std::function<void(const Event &)>;
     public:
-        auto subscribe(Handler handler) -> void {
-            handlers.push_back(std::move(handler));
-        }
-
-        auto publish(const Event& e) -> void {
-            event = e;
-            for(auto& handler : handlers){
-                handler(e);
-            }
-        }
-
-        auto setParticipantCount(const size_t count) {
+        auto sub_queued(const size_t count, Handler h) -> void {
             participantCount = count;
-            syncBarrier = std::make_unique<std::barrier<>>(participantCount);
+            if (!syncBarrier) syncBarrier = std::make_unique<std::barrier<>>(participantCount);
+            handlers.push_back(std::move(h));
         }
-
-        auto subscribePolling(Handler handler) -> void{
-            pollingHandlers.push_back(std::move(handler));
-        }
-
-
-        auto publishPolling(const Event& e) -> void{
-            event = e;
+        auto pub_enqueue(const Event& e) -> void {
+            this->up(e);
             queue.push(e);
         }
 
-        auto poll() -> void {
-         //   Event e;
+        auto dispatch() -> void {
             while (!queue.empty()) {
-                auto &e = queue.front();
+                auto& e = queue.front();
 
                 syncBarrier->arrive_and_wait();
 
                 if (bool expected = false; executed.compare_exchange_strong(expected, true)) {
-                    for (auto &handler: pollingHandlers) {
-                        handler(e);
-                    }
+                    for (auto &h: handlers) { h(e); }
                     queue.pop();
                 }
 
                 syncBarrier->arrive_and_wait();
-
                 executed.store(false);
             }
         }
-
-        auto update(const Event& e) -> void{
-            event = e;
-        }
-
-        auto add(const Event& e) -> void{
-            queue.push(e);
-            event = e;
-        }
-
-        void execute() override{
-            while(!queue.empty()){
-                auto& e = queue.front();
-                for(auto& handler : handlers){
-                    handler(e);
-                }
-                queue.pop();
-            }
-        }
-        void executeLatest() override{
-            for(auto& handler : handlers){
-                handler(event.value());
-            }
-        }
-
-        auto val() -> Event{
-            if (!event.has_value()){
-                yic::logger->error("the event: {0} has not value!", typeid(event).name());
-            }
-            return event.value();
-        }
-
-    protected:
+    private:
         std::atomic<bool> executed{false};
-        std::optional<Event> event;
         vot::queue<Event> queue;
-        //oneapi::tbb::concurrent_bounded_queue<Event> queue;
-        vot::vector<Handler> handlers;
-        vot::vector<Handler> pollingHandlers;
-        std::unique_ptr<std::barrier<>> syncBarrier;
+        std::vector<Handler> handlers;
         size_t participantCount = 0;
+        std::unique_ptr<std::barrier<>> syncBarrier;
     };
 
     template<typename Event>
-    EventHandle<Event>* registerEvent(){
-        static EventHandle<Event> e;
+    class EventHandle_Latest : public virtual EventHandle_Common<Event, Event> { // UNUSE
+        using Handler = std::function<void(const Event &)>;
+
+    public:
+        void sub_unique(Handler h) { handlers.push_back(std::move(h)); }
+        void up(const Event &e) { this->event = e; }
+
+        void process() {
+            if (this->event) {
+                for (auto &h: handlers) h(*this->event);
+            }
+        }
+
+    private:
+        std::vector<Handler> handlers;
+    };
+
+
+
+    template<typename Event>
+    class EventHandleAll : public EventHandle_Immediate<Event>,
+                            public EventHandle_Deferred<Event>,
+                            public EventHandle_Latest<Event> {
+    };
+
+    template<typename Event>
+    EventHandleAll<Event> *registerEvent() {
+        static EventHandleAll<Event> e;
         return &e;
     }
 

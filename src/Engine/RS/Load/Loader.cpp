@@ -91,25 +91,24 @@ namespace rs {
 
 
     auto Loader::onModelLoaded(const ev::tModelLoaded& ev) -> void {
-        const auto entity = ecs.create();
         auto& [basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent] = ev;
 
-        ecs.emplace<vot::BasicInfoComponent>(entity, basicInfoComponent);
-        ecs.emplace<vot::VertexDataComponent>(entity, vertexDataComponent);
-        ecs.emplace<vot::RenderComponent>(entity, renderComponent);
-        ecs.emplace<vot::AnimationComponent>(entity, animationComponent);
-        ecs.emplace<vot::RayTracingComponent>(entity, rayTracingComponent);
-        
+        auto e = vot::EntityView::Create()
+                .emplace<vot::BasicInfoComponent>(basicInfoComponent)
+                .emplace<vot::VertexDataComponent>(vertexDataComponent)
+                .emplace<vot::RenderComponent>(renderComponent)
+                .emplace<vot::AnimationComponent>(animationComponent)
+                .emplace<vot::RayTracingComponent>(rayTracingComponent);
 
-        if (vertexDataComponent.type == vot::eMMD) {
-            ecs.emplace<vot::mark::eMMD>(entity);
+        if (vertexDataComponent.type == vot::eAssimp) {
+            e.emplace<vot::mark::eAssimp>();
         } else {
-            ecs.emplace<vot::mark::eAssimp>(entity);
+            e.emplace<vot::mark::eMMD>();
         }
 
         yic::sceneSystem->reloadTlas();
 
-        ecs.emplace<vot::mark::eVisible>(entity);
+        e.emplace<vot::mark::eVisible>();
     }
 
 }

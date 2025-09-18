@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_CAMERA_H
 
 #include "RHI/Allocator.h"
+#include "Core/Management/TripleBufferIndexManager.h"
 
 namespace sc {
 
@@ -85,12 +86,7 @@ namespace sc {
             mVpMatrix.vp = mProj * mView;
             mVpMatrix.pos_pad = glm::vec4(position.x, position.y, position.z, 0.f);
             mVpMatrix.front_pad = glm::vec4(cameraFront.x, cameraFront.y, cameraFront.z, 0.f);
-//            if (buf){
-//                buf->update(mVpMatrix);
-//            } else {
-//                //buf = yic::allocator->allocBuffer(sizeof(glm::mat4), &mVp, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
-//                buf = yic::allocator->allocBuffer(sizeof(VpMatrix), &mVpMatrix, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
-//            }
+
             for(auto& b : buf){
                 b = yic::allocator->allocBuffer(sizeof(VpMatrix), &mVpMatrix, vk::BufferUsageFlagBits::eUniformBuffer, " camera");
             }
@@ -98,7 +94,32 @@ namespace sc {
             return *this;
         }
 
-        auto updateCamera(const int& i){
+        static auto UpdateUnique() -> void {
+            Camera& c = GLOBAL::entity::camera.va<Camera>();
+            {
+                auto f_Lock = yic::systemHub.vaL<ev::vFreeCameraController>();
+                if (f_Lock->W == true) c.getPosition() += 0.1f * c.getCameraFront();
+                if (f_Lock->S == true) c.getPosition() -= 0.1f * c.getCameraFront();
+                if (f_Lock->A == true) c.getPosition() -= 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
+                if (f_Lock->D == true) c.getPosition() += 0.1f * glm::normalize(glm::cross(c.getCameraFront(), c.getCameraUp()));
+                if (f_Lock->cursor == true) c.mouseCallback(f_Lock->xPos, f_Lock->yPos);
+                if (f_Lock->scroll == true) c.scrollCallback(f_Lock->xOffset, f_Lock->yOffset);
+                if (f_Lock->firstM == true) c.firstMouse = true;
+
+                f_Lock->W = false;
+                f_Lock->S = false;
+                f_Lock->A = false;
+                f_Lock->D = false;
+                f_Lock->cursor = false;
+                f_Lock->scroll = false;
+                f_Lock->firstM = false;
+            }
+
+            c.updateCamera();
+        }
+
+        auto updateCamera() -> Camera& {
+
             computeViewMatrix();
             computeProjMatrix();
 
@@ -106,7 +127,7 @@ namespace sc {
             mVpMatrix.pos_pad = glm::vec4(position.x, position.y, position.z, 0.f);
             mVpMatrix.front_pad = glm::vec4(cameraFront.x, cameraFront.y, cameraFront.z, 0.f);
 
-            buf[i]->update(mVpMatrix);
+            buf[yic::indexRing.get(vot::LogicBufferType::eFast).logic_cur()]->update(mVpMatrix);
 
             return *this;
         }

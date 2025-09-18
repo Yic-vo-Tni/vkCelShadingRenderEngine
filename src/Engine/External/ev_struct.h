@@ -80,12 +80,15 @@ namespace ev {
     struct tResourcesPaths{ vot::vector<vot::string> paths; };
 
     struct tModelLoaded {
-        // bool isLight{false};
         vot::BasicInfoComponent bic{};
         vot::VertexDataComponent vdc{};
         vot::RenderComponent rc{};
         vot::AnimationComponent ac{};
         vot::RayTracingComponent rtc{};
+    };
+    struct tCreateEntity {
+        enum Mark{ eModel, eLight, } mark;
+       // void* pNext;
     };
 
     struct tUpdateScene{};

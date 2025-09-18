@@ -29,7 +29,8 @@ namespace sc {
     auto RenderSubmissionSystem::flow(vot::CommandBuffer &cmd) -> void {
         const auto fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
         const auto slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
-        const auto set0 = ecs.get<vot::DescriptorSet0>(GLOBAL::set0).handles[fast];
+        //const auto set0 = ecs.get<vot::DescriptorSet0>(GLOBAL::set0).handles[fast];
+        const auto set0 = GLOBAL::entity::set0.va<vot::DescriptorSet0>().handles[fast];
 
         auto draw_meshes = [&](rhi::GraphicsPipeline& pipeline, auto view) {
             cmd.bindPipeline_(pipeline)
@@ -70,7 +71,7 @@ namespace sc {
         };
 
         auto draw_meshes_shadowMap = [&](rhi::GraphicsPipeline& pipeline, auto view) {
-            auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
+            //auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
             cmd.bindPipeline_(pipeline);
 
             view.each([&](entt::entity e, const vot::RenderComponent& rc) {
@@ -110,7 +111,8 @@ namespace sc {
 
         auto draw_volumetric_fog = [&]{
             if (!GLOBAL::showVolumetricFog) {
-                const auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
+                //const auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
+                const auto cam = GLOBAL::entity::camera.va<Camera>();
                 const auto lightMat = sm::DirectionLightTool::updateLightSpaceMat(glm::vec3(7.f, 3.f, 2.f), cam.getProj(), cam.getView());
                 constexpr vk::FragmentShadingRateCombinerOpKHR vrsCombiner[] = {
                         vk::FragmentShadingRateCombinerOpKHR::eReplace,
@@ -201,21 +203,36 @@ namespace sc {
                 cmd.bindPipeline_(yic::renderLibrary->GP_Light)
                 .bindDescriptorSets_(yic::renderLibrary->GP_Light, set0);
 
-                ecs.view<const vot::mark::eVisible, const vot::RenderComponent, const vot::comp::Light::Meta, const vot::comp::Light::Array>()
-                .each([&](entt::entity e, const vot::RenderComponent& rc, const vot::comp::Light::Meta& meta, const vot::comp::Light::Array& array) {
-                    const auto combMat = rc.baseMat * rc.zmoMat;
-                    cmd.bindVertexBuffers(rc.vertexBuffer[vot::VertexDataComponent::eAnim]);
-                    cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
-                    cmd.pushConstants(yic::renderLibrary->GP_Light.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &combMat);
+                // ecs.view<const vot::mark::eVisible, const vot::RenderComponent, const vot::comp::Light::Meta, const vot::comp::Light::Array>()
+                // .each([&](entt::entity e, const vot::RenderComponent& rc, const vot::comp::Light::Meta& meta, const vot::comp::Light::Array& array) {
+                //     const auto combMat = rc.baseMat * rc.zmoMat;
+                //     cmd.bindVertexBuffers(rc.vertexBuffer[vot::VertexDataComponent::eAnim]);
+                //     cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
+                //     cmd.pushConstants(yic::renderLibrary->GP_Light.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &combMat);
+                //
+                //     for (auto i = 0u; i < meta.count; i++) {
+                //         for (const auto &subMeshes: rc.subMeshes | std::views::values) {
+                //             for (const auto &[indexCount, firstIndex]: subMeshes) {
+                //                 cmd.drawIndexed(indexCount, 1, firstIndex, 0, 0);
+                //             }
+                //         }
+                //     }
+                // });
+                ecs.view<const vot::mark::eVisible, const vot::RenderComponent, const vot::comp::Light::Meta>()
+                        .each([&](entt::entity, const vot::RenderComponent &rc, const vot::comp::Light::Meta &meta) {
+                            const auto combMat = rc.baseMat * rc.zmoMat;
+                            cmd.bindVertexBuffers(rc.vertexBuffer[vot::VertexDataComponent::eAnim]);
+                            cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
+                            cmd.pushConstants(yic::renderLibrary->GP_Light.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &combMat);
 
-                    for (auto i = 0u; i < meta.count; i++) {
-                        for (const auto &subMeshes: rc.subMeshes | std::views::values) {
-                            for (const auto &[indexCount, firstIndex]: subMeshes) {
-                                cmd.drawIndexed(indexCount, 1, firstIndex, 0, 0);
+                            for (auto i = 0u; i < meta.usedCount(); i++) {
+                                for (const auto &subMeshes: rc.subMeshes | std::views::values) {
+                                    for (const auto &[indexCount, firstIndex]: subMeshes) {
+                                        cmd.drawIndexed(indexCount, 1, firstIndex, 0, 0);
+                                    }
+                                }
                             }
-                        }
-                    }
-                });
+                        });
             }
         });
         uRenderGraph->addPass({

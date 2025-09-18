@@ -15,8 +15,7 @@
 namespace sc {
 
 #define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR) \
-    .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
-    .addDescriptorSetLayoutBinding(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
+    .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
 
     RenderLibrary::RenderLibrary() {
         frameImageCount = yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size();
@@ -73,23 +72,23 @@ namespace sc {
             .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4(1.f))}))
 
             .setRenderPass2CI(vot::RenderPass2CI()
+            .setColorAttachmentFormats({vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat})
             .setRenderingDepth(vk::True))
 
             .setVertexInputInterfaceCI(vot::VertexInputInterfaceCI()
             .addVertexInputBindingDescription(0, sizeof(vot::VertexT<vot::eAssimp>), vk::VertexInputRate::eVertex)
-            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, pos))
-            // .addVertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, nor))
-            //  .addVertexInputAttributeDescription(2, 0, vk::Format::eR32G32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, uv))
-            //  .addVertexInputAttributeDescription(3, 0, vk::Format::eR32G32B32A32Sint, offsetof(vot::VertexT<vot::eAssimp>, boneIds))
-            //  .addVertexInputAttributeDescription(4, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, boneWeight))
-            )
+            .addVertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, offsetof(vot::VertexT<vot::eAssimp>, pos)))
 
             .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
             .setShaderPath("Basic/Light.vert"))
 
+            .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
+            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeBlendAttachment()}))
+
             .setFragmentShaderCI(vot::FragmentShaderCI()
-            .setShaderPath("Basic/Light.frag")
-            ));
+            .setShaderPath("Basic/Light.frag")));
 
         GP_IDBuffer.combinePipelineLibrary(vot::PipelineLibrary()
             .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()

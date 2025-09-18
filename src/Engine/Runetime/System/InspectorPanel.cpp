@@ -157,7 +157,8 @@ namespace sc {
     auto InspectorPanel::drawGizmo() -> void {
         ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each([&](entt::entity, vot::RenderComponent& rc, const vot::BasicInfoComponent& bic) {
             if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO){
-                const auto camera = ecs.get<sc::Camera>(GLOBAL::camera);
+                //const auto camera = ecs.get<sc::Camera>(GLOBAL::camera);
+                const auto camera = GLOBAL::entity::camera.va<Camera>();
                 auto view = camera.getView();
                 auto proj = camera.getProj();
                 proj[1][1] = -proj[1][1];

@@ -8,6 +8,7 @@
 #include "External/pch.h"
 #include "External/base.h"
 
+
 namespace vot{
     enum LogicBufferType : uint8_t {
         eFast,
@@ -22,6 +23,7 @@ namespace hide{
         struct alignas(64) SlotInfo{
             std::atomic<uint64_t> frameId{0};
             std::atomic<bool> ready{false};
+            std::atomic<bool> inUse{false};
         };
         static constexpr uint8_t MultiBuffer{3};
     public:
@@ -29,14 +31,19 @@ namespace hide{
             uint8_t oldestIdx = 0;
             uint64_t oldestFrame = UINT64_MAX;
             for (uint8_t i = 0; i < MultiBuffer; ++i) {
-                if (!slots[i].ready.load(std::memory_order_acquire)) {
+                if (!slots[i].ready.load(std::memory_order_acquire) && slots[i].inUse.load(std::memory_order_acquire)) {
                     logicIndex = i;
                     return i;
                 }
-                auto fid = slots[i].frameId.load(std::memory_order_relaxed);
-                if (fid < oldestFrame) {
-                    oldestFrame = fid;
-                    oldestIdx = i;
+            }
+
+            for (uint8_t i = 0; i < MultiBuffer; ++i) {
+                if (!slots[i].inUse.load(std::memory_order_acquire)) {
+                    auto fid = slots[i].frameId.load(std::memory_order_relaxed);
+                    if (fid < oldestFrame) {
+                        oldestFrame = fid;
+                        oldestIdx = i;
+                    }
                 }
             }
             logicIndex = oldestIdx;
@@ -54,12 +61,14 @@ namespace hide{
             int idx = latestIndex.load(std::memory_order_acquire);
             if (idx >= 0 && slots[idx].ready.load(std::memory_order_acquire)) {
                 renderIndex = idx;
+                slots[idx].inUse.store(true, std::memory_order_release);
                 return renderIndex;
             }
             return 255;
         }
 
         auto read_end() -> void {
+            slots[latestIndex].inUse.store(false, std::memory_order_release);
         }
 
         void print_slots() {
@@ -80,17 +89,44 @@ namespace hide{
     };
 
     class TripleBufferIndexManagerSet{
+        bool writeChecked = false;
     public:
-        TripleBufferIndexManager fastBuffer;
-        TripleBufferIndexManager slowBuffer;
-
-        TripleBufferIndexManager& get(vot::LogicBufferType type) {
-            switch(type) {
-                case vot::LogicBufferType::eFast: return fastBuffer;
-                case vot::LogicBufferType::eSlow: return slowBuffer;
-                default: assert(false); return fastBuffer;
-            }
+        TripleBufferIndexManager& get(const vot::LogicBufferType& type) {
+           return buffers[type];
         }
+
+        template<typename F, typename ...Args>
+        auto read(F&& f, Args&&... args) -> void {
+            (get(args).read_begin(), ...);
+
+            f();
+
+            (get(args).read_end(), ...);
+        }
+
+        template<typename F, typename ...Args>
+        auto write(F&& f, Args&&... args) -> void {
+            // auto w = (get(args).write_begin(), ...);
+            // if (w == 0xff) return;
+
+            if (!writeChecked) {
+                std::array<uint8_t, sizeof...(Args)> results = { get(args).write_begin()... };
+                if (std::any_of(results.begin(), results.end(),
+                                [](uint8_t v){ return v == 0xff; })) {
+                    return;
+                                }
+                writeChecked = true;
+            } else {
+                (get(args).write_begin(), ...);
+            }
+
+            f();
+
+            (get(args).write_end(), ...);
+        }
+
+    private:
+        std::array<TripleBufferIndexManager, vot::LogicBufferType::eCount> buffers;
     };
 
 }
