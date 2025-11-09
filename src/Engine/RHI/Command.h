@@ -15,16 +15,11 @@ namespace rhi {
         CommandManager();
         ~CommandManager();
 
-        auto draw(const std::function<void(vot::CommandBuffer&)>& record) -> void;
         auto drawOneTimeSubmit(const std::function<void(vot::CommandBuffer&)>& rec) -> void;
         auto acquire() -> vot::CommandBuffer;
         auto release(vot::CommandBuffer& cmd) -> void;
 
-     //   auto acquire(const vot::threadSpecificCmdPool& threadSpecificCmdPool) -> vot::CommandBuffer&;
-
         auto clear() -> void;
-
-
 
         ////
         auto acquire(const vot::threadSpecificCmdPool& threadSpecificCmdPool) -> vot::CommandBuffer*;

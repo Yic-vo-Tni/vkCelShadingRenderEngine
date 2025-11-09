@@ -8,7 +8,7 @@
 #include "RS/ResourceSystem.h"
 #include "RHI/Command.h"
 
-namespace sc {
+namespace runtime::flow {
     RenderGraph::RenderGraph() {
         RHandle = yic::command->acquire(vot::threadSpecificCmdPool::eMainRender);
     }
@@ -18,28 +18,70 @@ namespace sc {
     }
 
     auto RenderGraph::end() -> void {
+        compile();
+        drawFlowNodeGraph();
+    }
+
+    auto RenderGraph::compile() -> void {
         yic::command->bind(vot::SubmitInfo()
                            .setRHandle(RHandle)
                            .setQueueType(vot::queueType::eUndefined)
                            .setWaitValues(vot::timelineStage::ePrepare)
                            .setSignalValues(vot::timelineStage::eFinish)
                            .setWaitStageMasks(vk::PipelineStageFlagBits::eTopOfPipe), [&](vot::CommandBuffer &cmd) {
-                               sorted = topologicalSort();
+                               if (sorted.empty()) sorted = topologicalSort(); // FIXME: temp
                                for (auto &pass: sorted) {
-                                        if (pass.target) {
-                                            if (pass.drawci != std::nullopt) {
-                                                pass.target->drawRender(cmd, pass.drawci.value(), [&]{ pass.execute(cmd); });
-                                            } else {
-                                                pass.target->drawRendering(cmd, [&]{pass.execute(cmd); });
-                                            }
-                                        } else {
-                                            if (pass.execute) {
-                                                pass.execute(cmd);
-                                            }
-                                        }
-                                    }
+                                   if (pass.target) {
+                                       pass.target->draw(cmd, [&] { pass.execute(cmd); });
+                                   } else {
+                                       if (pass.execute) {
+                                           pass.execute(cmd);
+                                       }
+                                   }
+                               }
                            });
+    }
 
+    auto RenderGraph::passDependsOn(const RenderPassNode &A, const RenderPassNode &B) -> bool {
+        for (const auto& in : A.inputs)
+            for (const auto& out : B.outputs) {
+                if (!in || !out) continue;
+                if (in == out) return true;
+                if (in->va()->id == out->va()->id) return true;
+            }
+        return false;
+    }
+
+    auto RenderGraph::topologicalSort() const -> vot::vector<RenderPassNode> {
+        vot::unordered_map<int, vot::unordered_set<int>> graph;
+        vot::vector<int> indegree(passes.size(), 0);
+
+        for (size_t i = 0; i < passes.size(); ++i)
+            for (size_t j = 0; j < passes.size(); ++j)
+                if (i != j && passDependsOn(passes[i], passes[j])) {
+                    graph[j].insert(i);
+                    indegree[i]++;
+                }
+
+        vot::queue<int> q;
+        for (size_t i = 0; i < passes.size(); ++i)
+            if (indegree[i] == 0) q.push(int(i));
+
+        vot::vector<RenderPassNode> sorted_;
+        while (!q.empty()) {
+            int idx = q.front(); q.pop();
+            sorted_.push_back(passes[idx]);
+            for (int to : graph[idx]) {
+                if (--indegree[to] == 0) q.push(to);
+            }
+        }
+
+        if (sorted_.size() != passes.size())
+            throw std::runtime_error("RenderGraph Pass has circular dependency!");
+        return sorted_;
+    }
+
+    auto RenderGraph::drawFlowNodeGraph() const -> void {
         yic::imguiHub->to(vot::uiWidget::eNodeWidget, [&] {
             ImNodes::BeginNodeEditor();
             constexpr float spacingX = 200.0f;
@@ -47,6 +89,19 @@ namespace sc {
             constexpr int nodesPerRow = 5;
             constexpr auto originOffset = ImVec2(150.0f, 100.0f);
             static std::unordered_set<int> positionedNodes;
+
+            static float zoom = 1.0f;
+            const ImGuiIO &io = ImGui::GetIO();
+
+            if (ImGui::IsWindowHovered()) {
+                if (io.MouseWheel != 0.0f) {
+                    zoom += io.MouseWheel * 0.1f;
+                    zoom = std::clamp(zoom, 0.2f, 2.5f);
+                }
+            }
+
+            ImGui::SetWindowFontScale(zoom);
+
             for (size_t i = 0; i < sorted.size(); ++i) {
                 const auto& pass = sorted[i];
 
@@ -65,6 +120,8 @@ namespace sc {
                 ImNodes::BeginNodeTitleBar();
                 ImGui::Text("%s", pass.target ? pass.target->va()->id.c_str() : pass.name.c_str());
                 ImNodes::EndNodeTitleBar();
+
+                ImGui::Dummy(ImVec2(150.f, 0.0f));
 
                 ImNodes::BeginInputAttribute(static_cast<int>(i * 100));
                 ImGui::Text("In");
@@ -86,51 +143,8 @@ namespace sc {
 
             ImNodes::MiniMap(0.2f, ImNodesMiniMapLocation_BottomRight);
             ImNodes::EndNodeEditor();
+
+            ImGui::SetWindowFontScale(1.0f);
         });
-    }
-
-    auto RenderGraph::passDependsOn(const RenderPassNode &A, const RenderPassNode &B) -> bool {
-        // for (const auto& in : A.inputs)
-        //     for (const auto& out : B.outputs)
-        //         if (in == out) return true;
-        // return false;
-
-
-        for (const auto& in : A.inputs)
-            for (const auto& out : B.outputs) {
-                if (!in || !out) continue;
-                if (in == out) return true;
-                if (in->va()->id == out->va()->id) return true;
-            }
-        return false;
-    }
-
-    auto RenderGraph::topologicalSort() -> vot::vector<RenderPassNode> {
-        vot::unordered_map<int, vot::unordered_set<int>> graph;
-        vot::vector<int> indegree(passes.size(), 0);
-
-        for (size_t i = 0; i < passes.size(); ++i)
-            for (size_t j = 0; j < passes.size(); ++j)
-                if (i != j && passDependsOn(passes[i], passes[j])) {
-                    graph[j].insert(i);
-                    indegree[i]++;
-                }
-
-        vot::queue<int> q;
-        for (size_t i = 0; i < passes.size(); ++i)
-            if (indegree[i] == 0) q.push(int(i));
-
-        vot::vector<RenderPassNode> sorted;
-        while (!q.empty()) {
-            int idx = q.front(); q.pop();
-            sorted.push_back(passes[idx]);
-            for (int to : graph[idx]) {
-                if (--indegree[to] == 0) q.push(to);
-            }
-        }
-
-        if (sorted.size() != passes.size())
-            throw std::runtime_error("RenderGraph Pass has circular dependency!");
-        return sorted;
     }
 } // sc

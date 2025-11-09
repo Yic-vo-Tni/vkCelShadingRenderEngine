@@ -4,7 +4,7 @@
 
 #ifndef VKCELSHADINGRENDERER_RENDERSTAGE_H
 #define VKCELSHADINGRENDERER_RENDERSTAGE_H
-#include "Runtime/System/RenderGraph.h"
+#include "../RenderFlow/RenderGraph.h"
 
 namespace sc {
     class RenderStage {
@@ -23,16 +23,6 @@ namespace sc {
         auto drawing_volumetricFog(vot::CommandBuffer& cmd) const -> void;
         auto drawing_post(vot::CommandBuffer& cmd) const -> void;
 
-        auto drawci_RTShadow() -> vot::ImageDrawCI {
-            return vot::ImageDrawCI()
-                    .setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                    .setNewLayout(vk::ImageLayout::eGeneral)
-                    .setSrcAccessMask(vk::AccessFlagBits2::eShaderRead)
-                    .setDstAccessMask(vk::AccessFlagBits2::eAccelerationStructureWriteKHR)
-                    .setSrcStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
-                    .setDstStageMask(vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR)
-                    .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-        };
         auto draw_RTShadow(vot::CommandBuffer& cmd) const -> void;
     private:
         entt::registry& ecs;

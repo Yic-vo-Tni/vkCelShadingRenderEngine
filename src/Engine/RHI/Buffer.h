@@ -6,75 +6,66 @@
 #define VKCELSHADINGRENDERER_BUFFER_H
 
 namespace vot::inline rhi {
-
-    struct Buffer : public Identifiable{
-    public:
-        Buffer(vk::Buffer buffer, VmaAllocation alloc, void* data, VmaAllocator& vmaAllocator, const vot::string& id);
-        Buffer(vk::Buffer buffer, VmaAllocation alloc, void* data, VmaAllocator& vmaAllocator, std::function<void(const void* scr)> updateFn, const vot::string& id);
+    struct Buffer final : public Identifiable {
+        Buffer(vk::Buffer buffer, VmaAllocation alloc, void *data, VmaAllocator &vmaAllocator, const string &id);
+        Buffer(vk::Buffer buffer, VmaAllocation alloc, void *data, VmaAllocator &vmaAllocator,
+               std::function<void(const void *scr)> updateFn, const string &id);
         ~Buffer() override;
 
-        [[nodiscard]] auto bufferInfo(vk::DeviceSize offset = 0, vk::DeviceSize range = vk::WholeSize) const{
+        [[nodiscard]] auto bufferInfo(const vk::DeviceSize offset = 0, const vk::DeviceSize range = vk::WholeSize) const {
             return vk::DescriptorBufferInfo{buffer, offset, range};
         }
 
         template<typename T>
-        auto update(const T& src, bool unmap = false){
-            updateFn(&src);
-        }
+        auto update(const T &src) { updateFn(&src); }
 
         template<typename T>
-        auto update(const vot::vector<T>& src, bool unmap = false){
-            if (!src.empty())
-                updateFn(src.data());
-        }
+        auto update(const vector<T> &src) { if (!src.empty()) updateFn(src.data()); }
 
         template<typename T>
-        auto update(const std::pmr::vector<T>& src, bool unmap = false) {
-            if (!src.empty())
-                updateFn(src.data());
-        }
+        auto update(const std::pmr::vector<T> &src) { if (!src.empty()) updateFn(src.data()); }
 
-        auto bufferAddr() -> vk::DeviceAddress {
+        auto bufferAddr() const -> vk::DeviceAddress {
             if (!buffer) return 0;
-
             return device.getBufferAddress(buffer);
         }
+
     public:
         vk::Buffer buffer;
         VmaAllocation allocation;
-        void* mapped = nullptr;
-        VmaAllocator& allocator;
-        std::function<void(const void* scr)> updateFn;
+        void *mapped = nullptr;
+        VmaAllocator &allocator;
+        std::function<void(const void *scr)> updateFn;
 
     private:
         vk::Device device;
     };
 
-struct Accel : public  Identifiable{
-    vk::Buffer buffer{};
-    VmaAllocation vmaAllocation{};
-    VmaAllocator &mAllocator;
-    vk::AccelerationStructureKHR accel;
-    bool update{false};
+    struct Accel final : public Identifiable {
+        vk::Buffer buffer{};
+        VmaAllocation vmaAllocation{};
+        VmaAllocator &mAllocator;
+        vk::AccelerationStructureKHR accel;
+        bool update{false};
 
-    Accel(vk::Buffer buf, VmaAllocation alloc, VmaAllocator &allocatorRef, vk::AccelerationStructureKHR accel, vot::string id);
-    ~Accel() override;
+        Accel(vk::Buffer buf, VmaAllocation alloc, VmaAllocator &allocatorRef, vk::AccelerationStructureKHR accel,
+              vot::string id);
 
-    auto accelAddr() -> vk::DeviceSize {
-        vk::AccelerationStructureDeviceAddressInfoKHR addressInfoKhr{accel};
-        return device.getAccelerationStructureAddressKHR(addressInfoKhr, dyDispatch);
-    }
+        ~Accel() override;
 
-    [[nodiscard]] auto accelInfo() const {
-        return vk::WriteDescriptorSetAccelerationStructureKHR{accel};
-    }
+        auto accelAddr() const -> vk::DeviceSize {
+            const vk::AccelerationStructureDeviceAddressInfoKHR addressInfoKhr{accel};
+            return device.getAccelerationStructureAddressKHR(addressInfoKhr, dyDispatch);
+        }
 
-private:
-    vk::Device device{};
-    vk::detail::DispatchLoaderDynamic dyDispatch;
-};
+        [[nodiscard]] auto accelInfo() const {
+            return vk::WriteDescriptorSetAccelerationStructureKHR{accel};
+        }
 
-
+    private:
+        vk::Device device{};
+        vk::detail::DispatchLoaderDynamic dyDispatch;
+    };
 } // rhi
 
 #endif //VKCELSHADINGRENDERER_BUFFER_H

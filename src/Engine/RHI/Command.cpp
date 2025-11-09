@@ -112,12 +112,6 @@ namespace rhi {
         }
     }
 
-    auto CommandManager::draw(const std::function<void(vot::CommandBuffer &)> &record) -> void {
-        auto cmd = acquire();
-        record(cmd);
-        release(cmd);
-    }
-
     auto CommandManager::drawOneTimeSubmit(const std::function<void(vot::CommandBuffer &)> &rec) -> void {
         auto cmd = acquire();
 

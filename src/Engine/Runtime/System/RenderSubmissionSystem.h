@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_RENDERSUBMISSIONSYSTEM_H
 #define VKCELSHADINGRENDERER_RENDERSUBMISSIONSYSTEM_H
 
-#include "RenderGraph.h"
+#include "RenderFlow/RenderGraph.h"
 #include "RenderStage/RenderStage.h"
 
 namespace sc {
@@ -18,7 +18,7 @@ namespace sc {
         auto frame() -> void;
     private:
         entt::registry& ecs;
-        std::unique_ptr<RenderGraph> uRenderGraph;
+        std::unique_ptr<runtime::flow::RenderGraph> uRenderGraph;
         std::unique_ptr<RenderStage> uRenderStage;
     };
 

@@ -7,13 +7,22 @@
 #include "RHI/Allocator.h"
 
 namespace runtime::flow {
-    auto RenderTarget::beginRendering(vot::CommandBuffer &cmd) -> void {
-        RT->images.size() / RT->config.colorAttachmentCount < *vot::Image::index ? RT->activeIndex = 0 : RT->activeIndex = *vot::Image::index;
+
+    auto RenderTarget::draw(vot::CommandBuffer &cmd, const std::function<void()> &fn) -> void {
+        if (RT->config.srcImageLayout != vk::ImageLayout::eUndefined) {
+            drawRender(cmd, fn);
+        } else {
+            drawRendering(cmd, fn);
+        }
+    }
+
+    auto RenderTarget::beginRendering(vot::CommandBuffer &cmd)  -> void {
+        RT->images.size() / RT->config.colorAttachmentCount < *vot::Image::index ? activeIndex = 0 : activeIndex = *vot::Image::index;
         vot::vector<vk::ImageMemoryBarrier2> imageMemoryBarriers;
         if (RT->config.currentImageLayout != vk::ImageLayout::eColorAttachmentOptimal && RT->config.currentImageLayout != vk::ImageLayout::eRenderingLocalRead) {
             for (auto i = 0; i < RT->config.colorAttachmentCount; i++) {
                 imageMemoryBarriers.emplace_back(vk::ImageMemoryBarrier2()
-                                                    .setImage(RT->images[RT->activeIndex + i])
+                                                    .setImage(RT->images[activeIndex + i])
                                                     .setOldLayout(RT->config.currentImageLayout)
                                                     .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
                                                     .setSrcAccessMask(vk::AccessFlagBits2::eShaderRead)
@@ -38,7 +47,7 @@ namespace runtime::flow {
         yic::allocator->pipelineBarrier2(cmd, {}, imageMemoryBarriers);
 
         vot::vector<vk::RenderingAttachmentInfo> colorAttachments(RT->config.colorAttachmentCount);
-        const auto aI = RT->activeIndex * RT->config.colorAttachmentCount;
+        const auto aI = activeIndex * RT->config.colorAttachmentCount;
         for(auto i = 0; i < RT->config.colorAttachmentCount; i++){
             colorAttachments[i] = vk::RenderingAttachmentInfo()
                 .setImageView(RT->imageViews[aI + i])
@@ -62,21 +71,22 @@ namespace runtime::flow {
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue(vk::ClearDepthStencilValue{1.f, 0});
 
-            renderingInfo.setPDepthAttachment(&depthStencilAttach)
+            renderingInfo
+                .setPDepthAttachment(&depthStencilAttach)
                 .setPStencilAttachment(nullptr);
         }
 
         cmd.beginRendering(renderingInfo, RT->dispatchLoaderDynamic);
     }
 
-    auto RenderTarget::endRendering(vot::CommandBuffer &cmd) -> void {
+    auto RenderTarget::endRendering(vot::CommandBuffer &cmd)  -> void {
         cmd.endRendering(RT->dispatchLoaderDynamic);
 
         vot::vector<vk::ImageMemoryBarrier2> imageMemoryBarrier2s;
         if (RT->config.currentImageLayout != vk::ImageLayout::eColorAttachmentOptimal && RT->config.currentImageLayout != vk::ImageLayout::eRenderingLocalReadKHR) {
             for(auto i = 0; i < RT->config.colorAttachmentCount; i++){
                 imageMemoryBarrier2s.emplace_back(vk::ImageMemoryBarrier2()
-                                                      .setImage(RT->images[RT->activeIndex + i])
+                                                      .setImage(RT->images[activeIndex + i])
                                                       .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
                                                       .setNewLayout(RT->config.currentImageLayout)
                                                       .setSrcAccessMask(vk::AccessFlagBits2::eColorAttachmentWrite)
@@ -100,7 +110,7 @@ namespace runtime::flow {
         yic::allocator->pipelineBarrier2(cmd, {}, imageMemoryBarrier2s);
     }
 
-    auto RenderTarget::drawRendering(vot::CommandBuffer &cmd, const std::function<void()> &fn) -> void {
+    auto RenderTarget::drawRendering(vot::CommandBuffer &cmd, const std::function<void()> &fn)  -> void {
         beginRendering(cmd);
 
         fn();
@@ -108,33 +118,33 @@ namespace runtime::flow {
         endRendering(cmd);
     }
 
-    auto RenderTarget::drawRender(vot::CommandBuffer &cmd, const vot::ImageDrawCI &drawci,
-        const std::function<void()> &fn) -> void {
-        RT->activeIndex = (*vot::Image::index >= (RT->images.size() / RT->config.colorAttachmentCount)) ? 0 : *vot::Image::index;
-        //未添加多color attachment ↓，如需要 需修改
+
+    auto RenderTarget::drawRender(vot::CommandBuffer &cmd, const std::function<void()> &fn)  -> void {
+        activeIndex = (*vot::Image::index >= (RT->images.size() / RT->config.colorAttachmentCount)) ? 0 : *vot::Image::index;
+        //FIXME 未添加多color attachment ↓，如需要 需修改
+        //NOTE 如果未来有不需要更改布局的情况，则需要优化此处
         yic::allocator->pipelineBarrier2(cmd, {},
                                          vk::ImageMemoryBarrier2()
-                                                 .setImage(RT->images[RT->activeIndex])
-                                                 .setOldLayout(drawci.oldLayout)
-                                                 .setNewLayout(drawci.newLayout)
-        //如果非首次需添加，需要时需修改
-    //                                             .setSrcAccessMask(ci.srcAccessMask)
-    //                                             .setDstAccessMask(ci.dstAccessMask)
-    //                                             .setSrcStageMask(ci.srcStageMask)
-    //                                             .setDstStageMask(ci.dstStageMask)
-                                                 .setSubresourceRange(drawci.subresourceRange));
+                                         .setImage(RT->images[activeIndex])
+                                         .setOldLayout(RT->config.currentImageLayout)
+                                         .setNewLayout(RT->config.srcImageLayout)
+                                         .setSrcAccessMask(RT->config.srcAccessMask)
+                                         .setDstAccessMask(RT->config.dstAccessMask)
+                                         .setSrcStageMask(RT->config.srcStageMask)
+                                         .setDstStageMask(RT->config.dstStageMask)
+                                         .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
 
         fn();
 
         yic::allocator->pipelineBarrier2(cmd, {},
                                          vk::ImageMemoryBarrier2()
-                                                 .setImage(RT->images[RT->activeIndex])
-                                                 .setOldLayout(drawci.newLayout)
-                                                 .setNewLayout(drawci.oldLayout)
-                                                 .setSrcAccessMask(drawci.dstAccessMask)
-                                                 .setDstAccessMask(drawci.srcAccessMask)
-                                                 .setSrcStageMask(drawci.dstStageMask)
-                                                 .setDstStageMask(drawci.srcStageMask)
-                                                 .setSubresourceRange(drawci.subresourceRange));
+                                         .setImage(RT->images[activeIndex])
+                                         .setOldLayout(RT->config.srcImageLayout)
+                                         .setNewLayout(RT->config.currentImageLayout)
+                                         .setSrcAccessMask(RT->config.dstAccessMask)
+                                         .setDstAccessMask(RT->config.srcAccessMask)
+                                         .setSrcStageMask(RT->config.dstStageMask)
+                                         .setDstStageMask(RT->config.srcStageMask)
+                                         .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}));
     }
 } // runtime

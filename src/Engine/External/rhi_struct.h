@@ -122,16 +122,6 @@ namespace vot::inline rhi{
     };
 
 
-struct ImageDrawCI{
-    SS(vk::ImageLayout, oldLayout, OldLayout);
-    SS(vk::ImageLayout, newLayout, NewLayout);
-    SS(vk::AccessFlags2KHR, srcAccessMask, SrcAccessMask);
-    SS(vk::AccessFlags2KHR, dstAccessMask, DstAccessMask);
-    SS(vk::PipelineStageFlags2KHR, srcStageMask, SrcStageMask);
-    SS(vk::PipelineStageFlags2KHR, dstStageMask, DstStageMask);
-    SS(vk::ImageSubresourceRange, subresourceRange, SubresourceRange);
-};
-
 struct DescriptorHandle{
     uint32_t setCount{};
     uint32_t startIndex{};
@@ -459,13 +449,13 @@ struct DescriptorHandle{
     };
 
     struct ImageCI{
+        // basic info
         imageFlags imageFlags = eDefault;
         uint8_t imageCount = 1;
         uint8_t colorAttachmentCount = 1;
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::Format format = vk::Format::eR8G8B8A8Unorm;
         vk::Extent3D extent = {2560, 1440, 1};
-        vk::Offset2D renderAreaOffset = {0, 0};
         uint32_t mipLevels = 1;
         uint32_t arrayLayers = 1;
         vk::SampleCountFlagBits sampleCountFlags = vk::SampleCountFlagBits::e1;
@@ -473,18 +463,18 @@ struct DescriptorHandle{
         vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment;
         vk::SharingMode sharingMode = vk::SharingMode::eExclusive;
 
+        // image view & component
         vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
         vk::ComponentSwizzle componentSwizzle = vk::ComponentSwizzle::eIdentity;
         vk::ImageSubresourceRange imageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
+        // sampler parm
         vk::Filter magFilter = vk::Filter::eLinear;
         vk::Filter minFilter = vk::Filter::eNearest;
         vk::SamplerMipmapMode samplerMipMap = vk::SamplerMipmapMode::eLinear;
         vk::SamplerAddressMode u = vk::SamplerAddressMode::eRepeat;
         vk::SamplerAddressMode v = vk::SamplerAddressMode::eRepeat;
         vk::SamplerAddressMode w = vk::SamplerAddressMode::eRepeat;
-        vk::ImageLayout currentImageLayout = vk::ImageLayout::eUndefined;
-        vk::ImageLayout currentDepthImageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
         float mipLodBias = 0.f;
         vk::Bool32 anisotropyEnable = vk::False;
         float maxAnisotropy = 1.f;
@@ -494,36 +484,55 @@ struct DescriptorHandle{
         float maxLod = 0.f;
         vk::BorderColor borderColor = vk::BorderColor::eIntOpaqueBlack;
         vk::Bool32  unNormalizedCoordinates = vk::False;
+
+        // rendering parm
         vk::RenderPass renderPass;
-        std::optional<vot::uiWidget> uiWidget = std::nullopt;
+        vk::ImageLayout currentImageLayout = vk::ImageLayout::eUndefined;
+        vk::ImageLayout currentDepthImageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+        // dynamic rendering
+        vk::Offset2D renderAreaOffset = {0, 0};
+
+        // non-dynamic rendering
+        vk::ImageLayout srcImageLayout = vk::ImageLayout::eUndefined;
+        vk::AccessFlags2KHR srcAccessMask;
+        vk::AccessFlags2KHR dstAccessMask;
+        vk::PipelineStageFlags2KHR srcStageMask;
+        vk::PipelineStageFlags2KHR dstStageMask;
+
+        // other
+        vk::ClearColorValue clearColorValue = vk::ClearColorValue{0.2f, 0.2f, 0.2f, 1.f};
+        std::optional<uiWidget> uiWidget = std::nullopt;
         bool custom_define = false;
 
-        vk::ClearColorValue clearColorValue = vk::ClearColorValue{0.2f, 0.2f, 0.2f, 1.f};
+        explicit ImageCI(vk::Extent2D e2d = Resolutions::eQHDExtent, uint8_t imgCount = 1) : imageCount(imgCount), extent(e2d, 1) {};
+        explicit ImageCI(vk::Extent2D e2d, vot::imageFlags flags, uint8_t imgCount = 1) : imageFlags(flags), imageCount(imgCount), extent(e2d, 1) {};
 
-        explicit ImageCI(vk::Extent2D e2d = Resolutions::eQHDExtent, uint8_t imgCount = 1) : extent(e2d, 1), imageCount(imgCount) {};
-        explicit ImageCI(vk::Extent2D e2d, vot::imageFlags flags, uint8_t imgCount = 1) : extent(e2d, 1), imageFlags(flags), imageCount(imgCount) {};
-        ImageCI(vk::Extent2D e2d, vot::imageFlags flags, vk::RenderPass rp, uint8_t imgCount = 1) : extent(e2d, 1), imageFlags(flags),  renderPass(rp), imageCount(imgCount) {};
-
-        ImageCI& setRenderPass(vk::RenderPass rp){ renderPass = rp; return *this; }
-        ImageCI& setFlags(vot::imageFlags flags) { imageFlags = flags; return *this; }
-        ImageCI& setImageType(vk::ImageType type) { imageType = type; return *this;}
-        ImageCI& setImageViewType(vk::ImageViewType type) { imageViewType = type; return *this;}
-        ImageCI& setFormat(vk::Format f) { format = f; return *this; }
-        ImageCI& setExtent(vk::Extent3D e) { extent = e; return *this; }
-        ImageCI& setExtent(vk::Extent2D e) { extent = vk::Extent3D{e, 1}; return *this; }
-        ImageCI& setMipLevels(uint32_t levels) { mipLevels = levels; return *this;}
-        ImageCI& setArrayLayers(uint32_t layers) { arrayLayers = layers; return *this; }
-        ImageCI& setSampleCountFlags(vk::SampleCountFlagBits flags) { sampleCountFlags = flags; return *this; }
-        ImageCI& setTiling(vk::ImageTiling t) { tiling = t; return *this; }
-        ImageCI& addUsage(vk::ImageUsageFlags usg) { usage |= usg; return *this; }
-        ImageCI& setUsage(vk::ImageUsageFlags usg) { usage = usg; return *this; }
-        ImageCI& setSharingMode(vk::SharingMode mode) { sharingMode = mode; return *this; }
-        ImageCI& setAspect(vk::ImageAspectFlags flags){ imageSubresourceRange.aspectMask = flags; return *this;}
-        ImageCI& setImageCount(uint8_t count){ imageCount = count; return *this; }
-        ImageCI& setColorAttachmentCount(uint8_t count){ colorAttachmentCount = count; return *this; }
-        ImageCI& setDstImageLayout(vk::ImageLayout imageLayout){ currentImageLayout = imageLayout; return *this; }
-        ImageCI& setDstDepthImageLayout(vk::ImageLayout imageLayout){ currentDepthImageLayout = imageLayout; return *this;}
+        ImageCI& setRenderPass(const vk::RenderPass rp){ renderPass = rp; return *this; }
+        ImageCI& setFlags(const vot::imageFlags flags) { imageFlags = flags; return *this; }
+        ImageCI& setImageType(const vk::ImageType type) { imageType = type; return *this;}
+        ImageCI& setImageViewType(const vk::ImageViewType type) { imageViewType = type; return *this;}
+        ImageCI& setFormat(const vk::Format f) { format = f; return *this; }
+        ImageCI& setExtent(const vk::Extent3D e) { extent = e; return *this; }
+        ImageCI& setExtent(const vk::Extent2D e) { extent = vk::Extent3D{e, 1}; return *this; }
+        ImageCI& setMipLevels(const uint32_t levels) { mipLevels = levels; return *this;}
+        ImageCI& setArrayLayers(const uint32_t layers) { arrayLayers = layers; return *this; }
+        ImageCI& setSampleCountFlags(const vk::SampleCountFlagBits flags) { sampleCountFlags = flags; return *this; }
+        ImageCI& setTiling(const vk::ImageTiling t) { tiling = t; return *this; }
+        ImageCI& addUsage(const vk::ImageUsageFlags usg) { usage |= usg; return *this; }
+        ImageCI& setUsage(const vk::ImageUsageFlags usg) { usage = usg; return *this; }
+        ImageCI& setSharingMode(const vk::SharingMode mode) { sharingMode = mode; return *this; }
+        ImageCI& setAspect(const vk::ImageAspectFlags flags){ imageSubresourceRange.aspectMask = flags; return *this;}
+        ImageCI& setImageCount(const uint8_t count){ imageCount = count; return *this; }
+        ImageCI& setColorAttachmentCount(const uint8_t count){ colorAttachmentCount = count; return *this; }
+        ImageCI& setDstImageLayout(const vk::ImageLayout imageLayout){ currentImageLayout = imageLayout; return *this; }
+        ImageCI& setDstDepthImageLayout(const vk::ImageLayout imageLayout){ currentDepthImageLayout = imageLayout; return *this;}
         ImageCI& updateColorToImGui(vot::uiWidget widget) { uiWidget = widget; return *this; }
+        ImageCI& setSrcImageLayout(const vk::ImageLayout& image_layout) { srcImageLayout = image_layout; return *this; }
+        ImageCI& setSrcAccessMask(const vk::AccessFlags2KHR& accessMask) { srcAccessMask = accessMask; return *this; }
+        ImageCI& setDstAccessMask(const vk::AccessFlags2KHR& accessMask) { dstAccessMask = accessMask; return *this; }
+        ImageCI& setSrcStageMask(const vk::PipelineStageFlags2KHR& stage_flags2) { srcStageMask = stage_flags2; return *this; }
+        ImageCI& setDstStageMask(const vk::PipelineStageFlags2KHR& stage_flags2) { dstStageMask = stage_flags2; return *this; }
 
         template<typename T>
         ImageCI& setExtent(T w_, T h_) { extent = vk::Extent3D{static_cast<uint32_t>(w_), static_cast<uint32_t>(h_), 1}; return *this; }

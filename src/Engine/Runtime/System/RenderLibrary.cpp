@@ -245,21 +245,26 @@ namespace sc {
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::Shadow");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::ShadowMap");
 
         RTX_RayTracing = yic::allocator->allocImage(vot::ImageCI()
                 .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
                 .setImageCount(1)
                 .setExtent(RT_RESOLUTION)
                 .setFormat(vk::Format::eR8G8B8A8Unorm)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::RayTracingShadow");
+                .setSrcImageLayout(vk::ImageLayout::eGeneral)
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                .setSrcAccessMask(vk::AccessFlagBits2::eShaderRead)
+                .setDstAccessMask(vk::AccessFlagBits2::eAccelerationStructureWriteKHR)
+                .setSrcStageMask(vk::PipelineStageFlagBits2::eFragmentShader)
+                .setDstStageMask(vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR),"RT::RayTracing");
 
         RT_Volumetric_Clouds = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
                 .setExtent(vot::Resolutions::eFullHDExtent)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::VolumetricOvercastClouds");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::VolumetricClouds");
 
         RT_Volumetric_Fog = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
@@ -275,7 +280,7 @@ namespace sc {
                 .setFormat(vk::Format::eR16G16B16A16Sfloat)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::Post");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::Compose");
     }
 
     auto RenderLibrary::buildUniqueDSHandle() -> void {
@@ -287,7 +292,7 @@ namespace sc {
             for (auto i = 0u; i < frameImageCount; i++) {
                 const auto base = RT_GBuffer->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d{
-                        RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_ShadowMap->imageInfo(i),
                         T_blueNoise64->imageInfo(),
                 });
@@ -302,9 +307,9 @@ namespace sc {
             for(auto i = 0u; i < frameImageCount; i++){
                 const auto base = RT_GBuffer->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d {
-                        RT_GBuffer->imageInfo(base + eGBuffer::eAlbedo, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_GBuffer->imageInfo(base + eGBuffer::eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + eAlbedo, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                        RT_GBuffer->imageInfo(base + eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eShaderReadOnlyOptimal),
                         RTX_RayTracing->imageInfo(),

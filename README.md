@@ -18,7 +18,25 @@
 
 <img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
 
-### Learning Goals & Planned Features
+### Newly Added Plan (2025.11.9)
+
+Currently planning to optimize the **RenderGraph** into a truly **parallel architecture**,  
+while expanding the **NodeGraph** visualization to support more diverse and dynamic nodes.
+
+For now, other planned features will be temporarily **paused**,  
+as the focus shifts entirely toward building this next-generation RenderGraph system.
+
+**Future directions include:**
+- Allowing **dynamic creation and deletion** of RenderTargets (RTs) directly within the NodeGraph.
+- Supporting **interactive drag-and-drop reconnection** between any RT nodes.
+- Extracting RenderGraph data into a **custom scripting layer** that can automatically generate GLSL code and descriptor set relationships.
+- Enabling **runtime modification** of the entire render pipeline through this script system.
+- Exploring **AI-based optimization**, where an AI module analyzes the execution time of each RT pass and automatically adjusts the render order for optimal performance.
+
+> In essence, the next stage aims to evolve from a pseudo-sequential RenderGraph  
+> into a fully data-driven, script-controllable, and AI-optimized rendering workflow.
+
+### Learning Goals & Planned Features （2025.9.6）
 
 > *Note: The following features are goals or planned work. Most are still in progress and not yet available in the
 current codebase.*
@@ -58,25 +76,6 @@ current codebase.*
 > Keep the rest unchanged for now. Step one is to decouple the data layer from the original library.
 
 - **Optimization && AI**
-
-### Newly Added Plan (2025.11.9)
-
-Currently planning to optimize the **RenderGraph** into a truly **parallel architecture**,  
-while expanding the **NodeGraph** visualization to support more diverse and dynamic nodes.
-
-For now, other planned features will be temporarily **paused**,  
-as the focus shifts entirely toward building this next-generation RenderGraph system.
-
-**Future directions include:**
-- Allowing **dynamic creation and deletion** of RenderTargets (RTs) directly within the NodeGraph.
-- Supporting **interactive drag-and-drop reconnection** between any RT nodes.
-- Extracting RenderGraph data into a **custom scripting layer** that can automatically generate GLSL code and descriptor set relationships.
-- Enabling **runtime modification** of the entire render pipeline through this script system.
-- Exploring **AI-based optimization**, where an AI module analyzes the execution time of each RT pass and automatically adjusts the render order for optimal performance.
-
-> In essence, the next stage aims to evolve from a pseudo-sequential RenderGraph  
-> into a fully data-driven, script-controllable, and AI-optimized rendering workflow.
-
 
 ### Current Project Status （2025.9.6）
 
@@ -214,6 +213,16 @@ as the focus shifts entirely toward building this next-generation RenderGraph sy
 | 120fps Window Lock          | Removed, unnecessary with new thread system    |
 | Model Selection (Ray pick)  | Replaced by ID buffer-based picking            |
 
+### Development Philosophy
+
+The project evolves through an iterative refactoring cycle.  
+Many systems were implemented in different phases (from prototype to stable architecture),  
+so certain modules may appear inconsistent in style or abstraction level.
+
+This is intentional — the engine prioritizes *functional completeness* and *architecture verification* first,  
+with stylistic and structural refinement following after each milestone.
+
+
 ## How to Build
 This project is mainly for personal learning, so it always targets the **latest toolchains and hardware**.  
 Please make sure your environment is **equal to or newer than mine**, otherwise it may fail to build.
@@ -227,7 +236,7 @@ Please make sure your environment is **equal to or newer than mine**, otherwise 
 - GPU: NVIDIA GeForce RTX 3080 Ti *(RTX 20 series may work, AMD not tested)*
 - OS: Windows 11
 
-### Dependencies
+### Dependencies (2025.9.4)
 Currently you need to download or build the following libraries manually:  
 `Assimp, Boost (locale/system), mimalloc, entt, glfw, oneAPI TBB, glm, miniaudio, nlohmann, spdlog, stb, webview, imgui(docking), imguizmo, saba, bullet`.\
 Place library `third/xxx`,Place built `.lib` in `third/lib` and `.dll` in `third/dll`.

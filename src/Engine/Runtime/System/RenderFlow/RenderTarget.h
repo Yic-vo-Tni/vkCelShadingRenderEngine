@@ -1,5 +1,3 @@
-#include <utility>
-
 //
 // Created by lenovo on 11/9/2025.
 //
@@ -26,14 +24,16 @@ namespace runtime::flow {
         vot::rhi::Image* operator->() const noexcept { assert(RT && "RenderTarget::image is null"); return RT.get(); }
 
     public:
-        auto drawRender(vot::CommandBuffer& cmd, const vot::ImageDrawCI& drawci, const std::function<void()>& fn) -> void;
-        auto drawRendering(vot::CommandBuffer& cmd, const std::function<void()>& fn) -> void;
+        auto draw(vot::CommandBuffer &cmd, const std::function<void()>& fn) -> void;
 
     private:
-        auto beginRendering(vot::CommandBuffer& cmd) -> void;
-        auto endRendering(vot::CommandBuffer& cmd) -> void;
+        auto beginRendering(vot::CommandBuffer& cmd)  -> void;
+        auto endRendering(vot::CommandBuffer& cmd)  -> void;
+        auto drawRender(vot::CommandBuffer& cmd, const std::function<void()>& fn)  -> void;
+        auto drawRendering(vot::CommandBuffer& cmd, const std::function<void()>& fn)  -> void;
     private:
         vot::Image_sptr RT;
+        std::uint32_t activeIndex{0};
     };
 
     using RT_sptr = std::shared_ptr<RenderTarget>;

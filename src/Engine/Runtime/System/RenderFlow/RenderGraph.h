@@ -7,14 +7,13 @@
 
 #include "Runtime/System/RenderFlow/RenderTarget.h"
 
-namespace sc {
+namespace runtime::flow {
 
     struct RenderPassNode{
         vot::string name;
-        runtime::flow::RT_sptr target;
-        vot::vector<runtime::flow::RT_sptr> inputs;
-        vot::vector<runtime::flow::RT_sptr> outputs;
-        std::optional<vot::ImageDrawCI> drawci{std::nullopt};
+        RT_sptr target;
+        vot::vector<RT_sptr> inputs;
+        vot::vector<RT_sptr> outputs;
         std::function<void(vot::CommandBuffer&)> execute;
     };
 
@@ -26,53 +25,69 @@ namespace sc {
         auto begin() -> void{ passes.clear(); }
         auto end() -> void;
     private:
+        auto compile() -> void;
         static auto passDependsOn(const RenderPassNode& A, const RenderPassNode& B) -> bool ;
-        auto topologicalSort() -> vot::vector<RenderPassNode>;
+        auto topologicalSort() const -> vot::vector<RenderPassNode>;
+        auto drawFlowNodeGraph() const -> void;
 
         vot::vector<RenderPassNode> passes;
         vot::vector<RenderPassNode> sorted;
-        vot::vector<runtime::flow::RT_sptr> images;
+        vot::vector<RT_sptr> images;
         vot::RHandle RHandle{};
     };
 
     namespace Node {
-        struct in{
-            runtime::flow::RT_sptr image;
-            explicit in(const vot::Image_sptr& img): image(std::make_shared<runtime::flow::RenderTarget>(img)) {}
+        struct read{
+            vot::vector<RT_sptr> images;
+
+            template<typename ...Args>
+            explicit read(Args&&...imgs) {
+                (images.emplace_back(std::make_shared<RenderTarget>(imgs)), ...);
+            }
         };
-        struct out{ runtime::flow::RT_sptr image; };
-        struct ctx{ vot::ImageDrawCI drawci; };
-        struct exec{ std::function<void(vot::CommandBuffer&)> execute; };
+        struct write {
+            vot::vector<RT_sptr> images;
+
+            template<typename ...Args>
+            explicit write(Args&&...imgs) {
+                (images.emplace_back(std::make_shared<RenderTarget>(imgs)), ...);
+            }
+        };
+        struct invoke{ std::function<void(vot::CommandBuffer&)> execute; };
     }
 
     struct PassNode {
         vot::vector<std::function<void(RenderPassNode&)>> passes;
 
         PassNode() = default;
-        explicit PassNode(const runtime::flow::RT_sptr &target){
+        explicit PassNode(const RT_sptr &target){
             passes.emplace_back([=](RenderPassNode& node){ node.target = target; });
         }
         explicit PassNode(const vot::Image_sptr &target){
-            passes.emplace_back([=](RenderPassNode& node){ node.target = std::make_shared<runtime::flow::RenderTarget>(target); });
+            passes.emplace_back([=](RenderPassNode& node){ node.target = std::make_shared<RenderTarget>(target); });
         }
         explicit PassNode(const vot::string& n) {
             passes.emplace_back([=](RenderPassNode& node) { node.name = n; });
         }
     };
 
-    inline PassNode operator+(PassNode A, const Node::in &B) {
-        A.passes.emplace_back([=](RenderPassNode& p) { p.inputs.emplace_back(B.image); });
+    inline PassNode operator+(PassNode A, const Node::read &B) {
+        A.passes.emplace_back([&](RenderPassNode& p) {
+            for (auto& img : B.images) {
+                p.inputs.emplace_back(img);
+            }
+        });
         return A;
     }
-    inline PassNode operator+(PassNode A, const Node::out &B) {
-        A.passes.emplace_back([=](RenderPassNode& p) { p.outputs.emplace_back(B.image); });
+    inline PassNode operator+(PassNode A, const Node::write &B) {
+        A.passes.emplace_back([&](RenderPassNode& p) {
+            for (auto& img : B.images) {
+                p.outputs.emplace_back(img);
+            }
+        });
         return A;
     }
-    inline PassNode operator+(PassNode A, const Node::ctx &B) {
-        A.passes.emplace_back([=](RenderPassNode& p) { p.drawci = B.drawci; });
-        return A;
-    }
-    inline PassNode operator>>(PassNode A, const Node::exec &B) {
+    inline PassNode operator>>(PassNode A, const Node::invoke &B) {
         A.passes.emplace_back([=](RenderPassNode& p) { p.execute = B.execute; });
         return A;
     }
@@ -82,9 +97,9 @@ namespace sc {
         struct RG_Begin_t{};
         struct RG_End_t{};
     public:
-        inline static constexpr RG_Begin_t begin{};
-        inline static constexpr RG_End_t end{};
-    public:
+        static constexpr RG_Begin_t begin{};
+        static constexpr RG_End_t end{};
+
         template<typename T>
         static auto ctx(T &&ptr) -> RenderGraph * {
             if constexpr (std::is_pointer_v<std::decay_t<T> >) {
