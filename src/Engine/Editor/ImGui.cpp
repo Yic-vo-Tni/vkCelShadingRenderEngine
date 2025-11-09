@@ -6,11 +6,6 @@
 #include "RHI/QueueFamily.h"
 #include "Core/DispatchSystem/SystemHub.h"
 
-#include "Widget/RenderWidget.h"
-#include "Widget/ViewWidget.h"
-#include "Widget/ConsoleWidget.h"
-#include "Widget/PanelWidget.h"
-
 #include "Window.h"
 #include "ImGuiHub.h"
 
@@ -18,6 +13,7 @@ namespace ui {
 
     ImGuiLauncher ::ImGuiLauncher () {
         ImGui::CreateContext();
+        ImNodes::CreateContext();
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
         io.IniFilename = imgui_ini_path "ImGui.ini";
@@ -66,10 +62,11 @@ namespace ui {
 
         ImGui_ImplVulkan_CreateFontsTexture();
 
-        mWidgets.emplace_back(std::move(std::make_unique<RenderWidget>()));
-        mWidgets.emplace_back(std::move(std::make_unique<ConsoleWidget>()));
-        mWidgets.emplace_back(std::move(std::make_unique<ViewWidget>()));
-        mWidgets.emplace_back(std::move(std::make_unique<PanelWidget>()));
+        mWidgets.emplace_back(std::move(std::make_unique<window::render>()));
+        mWidgets.emplace_back(std::move(std::make_unique<window::view>()));
+        mWidgets.emplace_back(std::move(std::make_unique<window::console>()));
+        mWidgets.emplace_back(std::move(std::make_unique<window::panel>()));
+        mWidgets.emplace_back(std::move(std::make_unique<window::nodeGraph>()));
 
         yic::imguiHub = ImGuiHub::make();
     }
@@ -78,6 +75,8 @@ namespace ui {
         ImGui_ImplVulkan_DestroyFontsTexture();
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
+
+        ImNodes::DestroyContext();
         ImGui::DestroyContext();
 
         mWidgets.clear();
@@ -124,6 +123,12 @@ namespace ui {
             ImGui::Begin(w->getName().c_str());
             w->rec();
             ImGui::End();
+        }
+
+        if (mFocusMainWindow)
+        {
+            ImGui::FocusWindow(ImGui::FindWindowByName("Render"));
+            mFocusMainWindow = false;
         }
 
         ImGui::Render();

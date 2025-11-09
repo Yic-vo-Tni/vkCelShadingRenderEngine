@@ -230,7 +230,7 @@ namespace sc {
                 .setColorAttachmentCount(3)
                 .setExtent(RT_RESOLUTION)
                 .setDstDepthImageLayout(vk::ImageLayout::eRenderingLocalReadKHR)
-                .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Main RT Image");
+                .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "RT::GBuffer");
 
         RT_IDBuffer = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
@@ -238,36 +238,35 @@ namespace sc {
                 .setExtent(RT_RESOLUTION)
                 .setFormat(vk::Format::eR32Uint)
                 .setImageCount(frameImageCount)
-                .setDstImageLayout(vk::ImageLayout::eTransferSrcOptimal), "ID buffer RT Image");
+                .setDstImageLayout(vk::ImageLayout::eTransferSrcOptimal), "RT::IdBuffer");
 
         RT_ShadowMap = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Shadow RT Image");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::Shadow");
 
         RTX_RayTracing = yic::allocator->allocImage(vot::ImageCI()
                 .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
                 .setImageCount(1)
                 .setExtent(RT_RESOLUTION)
                 .setFormat(vk::Format::eR8G8B8A8Unorm)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RayTracing RT Image");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::RayTracingShadow");
 
         RT_Volumetric_Clouds = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
-                //.setExtent(RT_RESOLUTION)
                 .setExtent(vot::Resolutions::eFullHDExtent)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Volumetric overcast clouds RT Image");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::VolumetricOvercastClouds");
 
         RT_Volumetric_Fog = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDynamicRender)
                 .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
-                .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "Volumetric fog RT Image");
+                .setDstImageLayout(vk::ImageLayout::eRenderingLocalReadKHR), "RT::VolumetricFog");
 
         RT_Post = yic::allocator->allocImage(vot::ImageCI()
                 .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
@@ -276,7 +275,7 @@ namespace sc {
                 .setFormat(vk::Format::eR16G16B16A16Sfloat)
                 .setImageCount(frameImageCount)
                 .setExtent(RT_RESOLUTION)
-                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "Post RT Image");
+                .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "RT::Post");
     }
 
     auto RenderLibrary::buildUniqueDSHandle() -> void {

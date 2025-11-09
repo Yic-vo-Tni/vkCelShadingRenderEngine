@@ -7,7 +7,7 @@
 
 namespace vot::inline ui{
     enum uiWidget : int {
-        eRenderWidget, eViewWidget, ePanelWidget, eConsoleWidget, eCount
+        eRenderWidget, eViewWidget, ePanelWidget, eConsoleWidget, eNodeWidget, eCount
     };
 //    enum uiAction{
 //        eUpdateImage, eAddControl,

@@ -59,6 +59,25 @@ current codebase.*
 
 - **Optimization && AI**
 
+### Newly Added Plan (2025.11.9)
+
+Currently planning to optimize the **RenderGraph** into a truly **parallel architecture**,  
+while expanding the **NodeGraph** visualization to support more diverse and dynamic nodes.
+
+For now, other planned features will be temporarily **paused**,  
+as the focus shifts entirely toward building this next-generation RenderGraph system.
+
+**Future directions include:**
+- Allowing **dynamic creation and deletion** of RenderTargets (RTs) directly within the NodeGraph.
+- Supporting **interactive drag-and-drop reconnection** between any RT nodes.
+- Extracting RenderGraph data into a **custom scripting layer** that can automatically generate GLSL code and descriptor set relationships.
+- Enabling **runtime modification** of the entire render pipeline through this script system.
+- Exploring **AI-based optimization**, where an AI module analyzes the execution time of each RT pass and automatically adjusts the render order for optimal performance.
+
+> In essence, the next stage aims to evolve from a pseudo-sequential RenderGraph  
+> into a fully data-driven, script-controllable, and AI-optimized rendering workflow.
+
+
 ### Current Project Status （2025.9.6）
 
 > Each item is marked with one of the following statuses:
@@ -199,11 +218,11 @@ current codebase.*
 This project is mainly for personal learning, so it always targets the **latest toolchains and hardware**.  
 Please make sure your environment is **equal to or newer than mine**, otherwise it may fail to build.
 
-### Environment (2025.9.4)
+### Environment (2025.11.9)
 - Vulkan SDK: 1.4.312  *(1.3 or newer is required)*
 - Vulkan Runtime (driver): 1.4.312
 - CMake: 3.29  *(3.20+ should work)*
-- Compiler: Clang 20.1.8  
+- Compiler: Clang 21.1.1  
   *(Clang 18+ work, MinGW not supported due to TBB, MSVC may hit CRT issues)*
 - GPU: NVIDIA GeForce RTX 3080 Ti *(RTX 20 series may work, AMD not tested)*
 - OS: Windows 11

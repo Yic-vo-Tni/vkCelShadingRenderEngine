@@ -7,7 +7,7 @@
 #include "RHI/Allocator.h"
 
 namespace runtime::flow {
-    auto RenderTarget::beginRendering(vot::CommandBuffer &cmd, vk::Offset2D offset2d) -> void {
+    auto RenderTarget::beginRendering(vot::CommandBuffer &cmd) -> void {
         RT->images.size() / RT->config.colorAttachmentCount < *vot::Image::index ? RT->activeIndex = 0 : RT->activeIndex = *vot::Image::index;
         vot::vector<vk::ImageMemoryBarrier2> imageMemoryBarriers;
         if (RT->config.currentImageLayout != vk::ImageLayout::eColorAttachmentOptimal && RT->config.currentImageLayout != vk::ImageLayout::eRenderingLocalRead) {
@@ -49,7 +49,7 @@ namespace runtime::flow {
         }
 
         auto renderingInfo = vk::RenderingInfo()
-            .setRenderArea({offset2d, {RT->config.extent.width, RT->config.extent.height}})
+            .setRenderArea({RT->config.renderAreaOffset, {RT->config.extent.width, RT->config.extent.height}})
             .setLayerCount(1)
             .setColorAttachments(colorAttachments);
 
@@ -101,7 +101,7 @@ namespace runtime::flow {
     }
 
     auto RenderTarget::drawRendering(vot::CommandBuffer &cmd, const std::function<void()> &fn) -> void {
-        beginRendering(cmd, vk::Offset2D{0, 0});
+        beginRendering(cmd);
 
         fn();
 

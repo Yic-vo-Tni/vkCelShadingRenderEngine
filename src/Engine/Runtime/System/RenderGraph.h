@@ -10,6 +10,7 @@
 namespace sc {
 
     struct RenderPassNode{
+        vot::string name;
         runtime::flow::RT_sptr target;
         vot::vector<runtime::flow::RT_sptr> inputs;
         vot::vector<runtime::flow::RT_sptr> outputs;
@@ -29,6 +30,7 @@ namespace sc {
         auto topologicalSort() -> vot::vector<RenderPassNode>;
 
         vot::vector<RenderPassNode> passes;
+        vot::vector<RenderPassNode> sorted;
         vot::vector<runtime::flow::RT_sptr> images;
         vot::RHandle RHandle{};
     };
@@ -52,6 +54,9 @@ namespace sc {
         }
         explicit PassNode(const vot::Image_sptr &target){
             passes.emplace_back([=](RenderPassNode& node){ node.target = std::make_shared<runtime::flow::RenderTarget>(target); });
+        }
+        explicit PassNode(const vot::string& n) {
+            passes.emplace_back([=](RenderPassNode& node) { node.name = n; });
         }
     };
 

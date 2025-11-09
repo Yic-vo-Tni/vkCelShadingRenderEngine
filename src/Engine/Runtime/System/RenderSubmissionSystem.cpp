@@ -26,7 +26,7 @@ namespace sc {
 
         | RG_DSL::begin
 
-        | PassNode{}
+        | PassNode{"comp_skinning"}
         >> Node::exec{RG_STAGE(comp_skinning)}
 
         | PassNode{RL->RT_GBuffer}

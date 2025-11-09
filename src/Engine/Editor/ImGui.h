@@ -36,7 +36,7 @@ namespace ui {
 //        oneapi::tbb::spin_rw_mutex cursorPosInputMutex;
 //        oneapi::tbb::spin_rw_mutex scrollInputMutex;
         std::atomic_bool bSwap = false;
-
+        bool mFocusMainWindow = true;
         auto updateSwap() -> void;
         std::chrono::microseconds swapInterval = std::chrono::microseconds(8);
         std::chrono::steady_clock::time_point lastSwapTime;

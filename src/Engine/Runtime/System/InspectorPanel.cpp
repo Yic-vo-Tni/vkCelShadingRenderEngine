@@ -110,6 +110,16 @@ namespace sc {
             drawModelList();
             drawShaderFileList();
         });
+
+        // yic::imguiHub->to(vot::uiWidget::eNodeWidget, [&] {
+        //     ImNodes::BeginNodeEditor();
+        //
+        //     ImNodes::BeginNode(1);
+        //     ImGui::Dummy(ImVec2(80.0f, 45.0f));
+        //     ImNodes::EndNode();
+        //
+        //     ImNodes::EndNodeEditor();
+        // });
     }
 
     auto InspectorPanel::drawAnimComboForMMD(const entt::entity &entity, vot::AnimationComponent &ac) -> void {

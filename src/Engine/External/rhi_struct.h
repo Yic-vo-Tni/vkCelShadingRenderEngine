@@ -465,6 +465,7 @@ struct DescriptorHandle{
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::Format format = vk::Format::eR8G8B8A8Unorm;
         vk::Extent3D extent = {2560, 1440, 1};
+        vk::Offset2D renderAreaOffset = {0, 0};
         uint32_t mipLevels = 1;
         uint32_t arrayLayers = 1;
         vk::SampleCountFlagBits sampleCountFlags = vk::SampleCountFlagBits::e1;

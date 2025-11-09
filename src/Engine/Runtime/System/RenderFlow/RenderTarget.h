@@ -1,3 +1,5 @@
+#include <utility>
+
 //
 // Created by lenovo on 11/9/2025.
 //
@@ -10,7 +12,7 @@ namespace runtime::flow {
     class RenderTarget {
     public:
         RenderTarget() = default;
-        explicit RenderTarget(const vot::Image_sptr &image) : RT(image) {};
+        explicit RenderTarget(vot::Image_sptr image) : RT(std::move(image)) {};
 
         RenderTarget& operator=(RenderTarget&& other) noexcept {
             RT = std::move(other.RT);
@@ -24,11 +26,11 @@ namespace runtime::flow {
         vot::rhi::Image* operator->() const noexcept { assert(RT && "RenderTarget::image is null"); return RT.get(); }
 
     public:
-        auto drawRendering(vot::CommandBuffer& cmd, const std::function<void()>& fn) -> void;
         auto drawRender(vot::CommandBuffer& cmd, const vot::ImageDrawCI& drawci, const std::function<void()>& fn) -> void;
+        auto drawRendering(vot::CommandBuffer& cmd, const std::function<void()>& fn) -> void;
 
     private:
-        auto beginRendering(vot::CommandBuffer& cmd, vk::Offset2D offset2d) -> void;
+        auto beginRendering(vot::CommandBuffer& cmd) -> void;
         auto endRendering(vot::CommandBuffer& cmd) -> void;
     private:
         vot::Image_sptr RT;
