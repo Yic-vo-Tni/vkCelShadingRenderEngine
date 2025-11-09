@@ -9,7 +9,7 @@
 #include "RHI/Allocator.h"
 #include "RHI/Command.h"
 #include "RHI/DescriptorSystem.h"
-#include "Runetime/System/RenderLibrary.h"
+#include "Runtime/System/RenderLibrary.h"
 
 namespace rs {
 
@@ -44,11 +44,11 @@ namespace rs {
                 .fileName = p.stem().string().data(), .pt = pt, };
     }
 
-    auto AssimpLoader::extractMesh(ImportContext& ctx, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac, const vot::LoadOptions& options) -> void {
-        auto scene = ctx.scene;
+    auto AssimpLoader::extractMesh(ImportContext& mic, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac, const vot::LoadOptions& options) -> void {
+        const auto scene = mic.scene;
         uint32_t vertexOffset = 0, indexOffset = 0;
-        extractCenter(ctx, rc);
-        assignBuffer(ctx, vc);
+        extractCenter(mic, rc);
+        assignBuffer(mic, vc);
 
         yic::logger->info("scene has {0} num meshes", scene->mNumMeshes);
         for(const auto aiMesh : std::span<aiMesh*>(scene->mMeshes, scene->mNumMeshes)){
@@ -64,48 +64,15 @@ namespace rs {
             subMesh.indexCount = indexOffset - subMesh.firstIndex;
 
             buildAdjacencyIndex(vc.indices_pmr.data() + subMesh.firstIndex, subMesh.indexCount, vc.adjIndices_pmr.data() + subMesh.firstIndex * 2);
-            extractDiffTex(ctx, aiMat, subMesh, rc);
-
-            auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-            auto annotate = [&](const vot::string &id) { return " model: " + ctx.fileName + " " + id + " buf"; };
-
-            for(auto& vb : rc.vertexBuffer){
-                vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::VertexT<vot::eAssimp>),
-                                                                 vc.vertices_pmr[0].data(),
-                                                                 usage | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
-                                                                 annotate("vert"));
-            }
-            rc.indexBuffer = yic::allocator->allocBufferStaging(vc.indices_pmr.size() * sizeof(uint32_t),
-                                                                vc.indices_pmr.data(),
-                                                                usage | vk::BufferUsageFlagBits::eIndexBuffer,
-                                                                annotate("index"));
-            rc.adjIndexBuffer = yic::allocator->allocBufferStaging(vc.adjIndices_pmr.size() * sizeof(uint32_t),
-                                                                   vc.adjIndices_pmr.data(),
-                                                                   usage | vk::BufferUsageFlagBits::eIndexBuffer,
-                                                                   annotate("adj index"));
+            extractDiffTex(mic, aiMat, subMesh, rc);
         }
-
-        extractBoneNode(ctx, ac);
-
-        rc.dsHandle = yic::desSystem->allocUpdateDescriptorSets([&]{
-            vot::DescriptorLayout2 layout{};
-
-
-            for(const auto& img : rc.diffuseTextures){
-                layout.emplace(vot::DescriptorLayout2::_1d{
-                    img->imageInfo(),
-                    ac.boneMatBuffer->bufferInfo(),
-                    rc.vertexBuffer[vot::VertexDataComponent::eTPose]->bufferInfo(),
-                    rc.vertexBuffer[vot::VertexDataComponent::eAnim]->bufferInfo(),
-                });
-            }
-
-            return layout;
-        }, yic::renderLibrary->GP_Basic_Assimp);
+        extractBoneNode(mic, ac);
+        allocBuffer(mic, vc, rc);
+        allocDSHandle(ac, rc);
     }
 
-    auto AssimpLoader::extractAnim(AssimpLoader::ImportContext &mic, vot::AnimationComponent& ac) -> void {
-        auto scene = mic.scene;
+    auto AssimpLoader::extractAnim(const AssimpLoader::ImportContext &mic, vot::AnimationComponent& ac) -> void {
+        const auto scene = mic.scene;
         if (!scene->HasAnimations()) {yic::logger->info("No animations in the model!"); return;};
 
         for(auto aiAnim : std::span<aiAnimation*>(scene->mAnimations, scene->mNumAnimations)){
@@ -119,12 +86,11 @@ namespace rs {
             boneMats.resize(ac.boneCount, glm::mat4 (1.f));
         }
         if (ac.boneCount <= 0) {
-            auto defaultMat = glm::mat4(1.f);
+            constexpr auto defaultMat = glm::mat4(1.f);
             ac.boneMatBuffer = yic::allocator->allocBufferStaging(sizeof (glm::mat4), &defaultMat, vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
             return;
-        } else {
-            ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneCount * sizeof (glm::mat4), ac.boneMats[0].data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
         }
+        ac.boneMatBuffer = yic::allocator->allocBufferStaging(ac.boneCount * sizeof (glm::mat4), ac.boneMats[0].data(), vk::BufferUsageFlagBits::eStorageBuffer, "bone matrices buf");
 
         std::function<void(vot::BoneNode& boneNode, const aiNode* src)> readHierarchyData = [&](vot::BoneNode& boneNode, const aiNode* src){
             boneNode.name = src->mName.data;
@@ -146,16 +112,14 @@ namespace rs {
             auto [it, inserted] = ctx.pts.emplace(pt, 0);
             if (!inserted) {
                 return {it->second, false};
-            } else {
-                uint32_t newIndex = ctx.pts.size() - 1;
-                it->second = newIndex;
-                return {newIndex, true};
             }
+            uint32_t newIndex = ctx.pts.size() - 1;
+            it->second = newIndex;
+            return {newIndex, true};
         };
         aiString aiPt;
         if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiPt) == AI_SUCCESS) {
-            auto loadPt = fo::findFileInDirectory(std::filesystem::path(ctx.pt.c_str()).parent_path(), aiPt.C_Str());
-            if (loadPt.has_value()) {
+            if (const auto loadPt = fo::findFileInDirectory(std::filesystem::path(ctx.pt.c_str()).parent_path(), aiPt.C_Str()); loadPt.has_value()) {
                 auto [index, alloc] = findOrAdd(loadPt.value());
 
                 rc.subMeshes[index].emplace_back(subMesh);
@@ -163,7 +127,7 @@ namespace rs {
 
                 if (alloc) {
                     if (rc.diffuseTextures[index] == nullptr) {
-                        auto utf8str = boost::locale::conv::utf_to_utf<char>(loadPt.value().u16string());
+                        const auto utf8str = boost::locale::conv::utf_to_utf<char>(loadPt.value().u16string());
                         yic::logger->info(utf8str);
                         rc.diffuseTextures[index] = yic::allocator->loadTexture(utf8str.c_str());
                     }
@@ -177,7 +141,7 @@ namespace rs {
 
     auto AssimpLoader::extractIndex(const aiMesh *aiMesh, const uint32_t& vertexOffset, const uint32_t& indexOffset, vot::VertexDataComponent& vc) -> void {
         for (auto j = 0; j < aiMesh->mNumFaces; j++) {
-            auto &face = aiMesh->mFaces[j];
+            const auto &face = aiMesh->mFaces[j];
             vc.indices_pmr[j * 3 + indexOffset] = face.mIndices[0] + vertexOffset;
             vc.indices_pmr[j * 3 + indexOffset + 1] = face.mIndices[1] + vertexOffset;
             vc.indices_pmr[j * 3 + indexOffset + 2] = face.mIndices[2] + vertexOffset;
@@ -195,7 +159,7 @@ namespace rs {
 
             if (ac.boneMap.find(boneName) == boneMap.end()){
                 boneId = ac.boneCount;
-                vot::BoneInfo boneInfo{
+                const vot::BoneInfo boneInfo{
                         .id = ac.boneCount,
                         .offset = miku::AssimpGLMConverter(bone->mOffsetMatrix),
                 };
@@ -205,14 +169,14 @@ namespace rs {
                 boneId = boneMap[boneName].id;
             }
 
-            auto weights = bone->mWeights;
-            auto numWeights = bone->mNumWeights;
+            const auto weights = bone->mWeights;
+            const auto numWeights = bone->mNumWeights;
 
             for (auto& pmr : vc.vertices_pmr) {
 
             for(auto wIndex = 0u; wIndex < numWeights; wIndex++){
-                auto vertId = weights[wIndex].mVertexId;
-                auto weight = weights[wIndex].mWeight;
+                const auto vertId = weights[wIndex].mVertexId;
+                const auto weight = weights[wIndex].mWeight;
                 auto& vert = pmr[vertexOffset + vertId];
 
                 for(auto x = 0; x < 4; ++x){
@@ -236,7 +200,6 @@ namespace rs {
                 if (options.scale.has_value()) {
                     pos *= *options.scale;
                 }
-            //    yic::logger->warn("x: {0}, y: {1}, z:{2}", pos.x, pos.y, pos.z);
                 std::memcpy(&v.pos, &pos, sizeof(glm::vec3));
             }
             if (aiMesh->HasNormals()) {
@@ -251,11 +214,11 @@ namespace rs {
             for(auto k = 0; k < 4; k++){
                 v.boneIds[k] = -1;
                 v.boneWeight[k] = 0.f;
-            }
+            }  // NOTE: pos nor uv boneId boneWeight
 
             for(auto& pmr : vc.vertices_pmr){
                 pmr[j + vertexOffset] = v;
-            }
+            }  // NOTE:
         }
     }
 
@@ -273,7 +236,7 @@ namespace rs {
 
         uint32_t vertexCount = 0, indexCount = 0;
         for(auto i = 0; i < ctx.scene->mNumMeshes; ++i){
-            auto aiMesh = ctx.scene->mMeshes[i];
+            const auto aiMesh = ctx.scene->mMeshes[i];
             vertexCount += aiMesh->mNumVertices;
             indexCount += aiMesh->mNumFaces * 3;
         }
@@ -293,27 +256,20 @@ namespace rs {
         auto max = _mm256_set1_ps(FLT_MIN);
 
         for (uint32_t i = 0; i < s->mNumMeshes; i++) {
-            auto mesh = s->mMeshes[i];
-            auto ax = mesh->mAABB.mMax, in = mesh->mAABB.mMin;
+            const auto mesh = s->mMeshes[i];
+            const auto ax = mesh->mAABB.mMax, in = mesh->mAABB.mMin;
 
-            auto meshMax = _mm256_set_ps(0, 0, 0, 0, ax.z, ax.y, ax.x, 0);
-            auto meshMin = _mm256_set_ps(0, 0, 0, 0, in.z, in.y, in.x, 0);
+            const auto meshMax = _mm256_set_ps(0, 0, 0, 0, ax.z, ax.y, ax.x, 0);
+            const auto meshMin = _mm256_set_ps(0, 0, 0, 0, in.z, in.y, in.x, 0);
 
             min = _mm256_min_ps(min, meshMin);
             max = _mm256_max_ps(max, meshMax);
 
-//            model.mesh.subMeshes[i].aabb = {{ax.x, ax.y, ax.z},
-//                                            {in.x, in.y, in.z}};
         }
 
         float finalMin[8], finalMax[8];
         _mm256_storeu_ps(finalMin, min);
         _mm256_storeu_ps(finalMax, max);
-
-//        auto aabb = vot::AABB{
-//                {finalMax[1], finalMax[2], finalMax[3]},
-//                {finalMin[1], finalMin[2], finalMin[3]}
-//        };
 
         auto center = glm::vec3{
                 (finalMin[1] + finalMax[1]) / 2.f,
@@ -331,20 +287,20 @@ namespace rs {
 
     auto AssimpLoader::buildAdjacencyIndex(const uint32_t *indexChunkFirst, const uint32_t offset,
                                            uint32_t *adjIndexChunk) -> void {
-        size_t triCount = offset / 3;
+        const size_t triCount = offset / 3;
         vot::unordered_map<uint64_t, EdgeEntry> edgeMap;
         edgeMap.reserve(triCount * 3);
 
         for(auto t = 0; t < triCount; ++t){
-            auto v0 = indexChunkFirst[3 * t + 0];
-            auto v1 = indexChunkFirst[3 * t + 1];
-            auto v2 = indexChunkFirst[3 * t + 2];
-            uint32_t verts[3] = {v0, v1, v2};
+            const auto v0 = indexChunkFirst[3 * t + 0];
+            const auto v1 = indexChunkFirst[3 * t + 1];
+            const auto v2 = indexChunkFirst[3 * t + 2];
+            const uint32_t verts[3] = {v0, v1, v2};
 
             for(auto e = 0; e < 3; ++e){
-                auto a = verts[e];
-                auto b = verts[(e + 1) % 3];
-                auto opp = verts[(e + 2) % 3];
+                const auto a = verts[e];
+                const auto b = verts[(e + 1) % 3];
+                const auto opp = verts[(e + 2) % 3];
                 uint64_t key = makeEdgeKey(a, b);
                 auto& ent = edgeMap[key];
 
@@ -354,18 +310,18 @@ namespace rs {
         }
 
         for(uint32_t t = 0; t < triCount; ++t){
-            auto v0 = indexChunkFirst[3 * t + 0];
-            auto v1 = indexChunkFirst[3 * t + 1];
-            auto v2 = indexChunkFirst[3 * t + 2];
-            uint32_t verts[3] = {v0, v1, v2};
+            const auto v0 = indexChunkFirst[3 * t + 0];
+            const auto v1 = indexChunkFirst[3 * t + 1];
+            const auto v2 = indexChunkFirst[3 * t + 2];
+            const uint32_t verts[3] = {v0, v1, v2};
 
             for(auto e = 0; e < 3; ++e){
-                auto a = verts[e];
-                auto b = verts[(e + 1) % 3];
+                const auto a = verts[e];
+                const auto b = verts[(e + 1) % 3];
                 uint64_t key = makeEdgeKey(a, b);
-                auto& ent = edgeMap[key];
+                const auto& ent = edgeMap[key];
 
-                auto adjOutIndex = static_cast<uint32_t>(t * 6 + e * 2);
+                const auto adjOutIndex = static_cast<uint32_t>(t * 6 + e * 2);
                 adjIndexChunk[adjOutIndex + 0] = a;
 
                 auto adj = a;
@@ -377,20 +333,56 @@ namespace rs {
         }
     }
 
+    auto AssimpLoader::allocBuffer(const ImportContext& mic, const vot::VertexDataComponent& vc, vot::RenderComponent& rc) -> void {
+        constexpr auto usage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        auto annotate = [&](const vot::string &id) { return " model: " + mic.fileName + " " + id + " buf"; };
+
+        for(auto& vb : rc.vertexBuffer){
+            vb = yic::allocator->allocBufferStaging(vc.vertices_pmr[0].size() * sizeof(vot::VertexT<vot::eAssimp>),
+                                                             vc.vertices_pmr[0].data(),
+                                                             usage | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+                                                             annotate("vert"));
+        }
+        rc.indexBuffer = yic::allocator->allocBufferStaging(vc.indices_pmr.size() * sizeof(uint32_t),
+                                                            vc.indices_pmr.data(),
+                                                            usage | vk::BufferUsageFlagBits::eIndexBuffer,
+                                                            annotate("index"));
+        rc.adjIndexBuffer = yic::allocator->allocBufferStaging(vc.adjIndices_pmr.size() * sizeof(uint32_t),
+                                                               vc.adjIndices_pmr.data(),
+                                                               usage | vk::BufferUsageFlagBits::eIndexBuffer,
+                                                               annotate("adj index"));
+    }
+
+    auto AssimpLoader::allocDSHandle(const vot::AnimationComponent& ac, vot::RenderComponent& rc) -> void {
+        rc.dsHandle = yic::desSystem->allocUpdateDescriptorSets([&]{
+           vot::DescriptorLayout2 layout{};
+
+
+           for(const auto& img : rc.diffuseTextures){
+               layout.emplace(vot::DescriptorLayout2::_1d{
+                   img->imageInfo(),
+                   ac.boneMatBuffer->bufferInfo(),
+                   rc.vertexBuffer[vot::VertexDataComponent::eTPose]->bufferInfo(),
+                   rc.vertexBuffer[vot::VertexDataComponent::eAnim]->bufferInfo(),
+               });
+           }
+
+           return layout;
+       }, yic::renderLibrary->GP_Basic_Assimp);
+    }
+
     auto AssimpLoader::makeEdgeKey(uint32_t a, uint32_t b) -> uint64_t {
-        uint32_t lo = std::min(a, b), hi = std::max(a, b);
-        return (uint64_t (lo) << 32) | hi;
+        const uint32_t lo = std::min(a, b), hi = std::max(a, b);
+        return (static_cast<uint64_t>(lo) << 32) | hi;
     }
 
     auto AssimpLoader::resolvingPath(const vot::string& pt) -> std::shared_ptr<void> {
         auto importer = std::make_shared<Assimp::Importer>();
         auto directionPt = std::filesystem::path(pt.c_str()).parent_path();
-        auto lastDotPos = pt.find_last_of('.');
+        const auto lastDotPos = pt.find_last_of('.');
         auto ext = (lastDotPos != std::string::npos) ? pt.substr(lastDotPos + 1) : "";
 
-        //  auto scene = importer->ReadFile(pt.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords);
-//        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_GenBoundingBoxes);
-        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Triangulate | aiProcess_LimitBoneWeights | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+        const auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Triangulate | aiProcess_LimitBoneWeights | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 //        auto scene = importer->ReadFile(pt.c_str(), aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_LimitBoneWeights | aiProcess_FlipUVs);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)

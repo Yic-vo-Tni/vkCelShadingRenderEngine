@@ -18,7 +18,7 @@
 namespace sc {
 
     EngineRuntime::EngineRuntime() {
-        vot::EntityView::Init(ecs);
+        vot::EntityView<vot::bit::eEntityViewDefault>::Init(ecs); // TODO: if more scene(entt::register)
         prepose();
         buildSet0();
     }
@@ -57,13 +57,13 @@ namespace sc {
             inspectorPanel->frame();
 
             yic::sceneSystem->frame();
-            submissionSystem->frame();
+            submissionSystem->frame(); // TODO: Split into -> RHI thread
         }, vot::eFast, vot::eSlow);
     }
 
     auto EngineRuntime::fastLogic() -> void {
         yic::indexRing.write([&] {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1)); // TODO: Take on some takes in future
 
             Camera::UpdateUnique();
         }, vot::eFast);
@@ -73,16 +73,16 @@ namespace sc {
         yic::systemHub.dispatch<ev::tModelLoaded, ev::tDestroyEntity>();
 
         yic::indexRing.write([&] {
-            yic::resourceSystem->frame();
+            yic::resourceSystem->frame(); // TODO: Split into -> Animation.frame()
         }, vot::eSlow);
     }
 
     auto EngineRuntime::buildSet0() -> void {
-        auto& cam = GLOBAL::entity::camera.makeVa<Camera>();
+        auto& cam = GLOBAL::entity::camera.make_va<Camera>();
         cam.computeViewProjMatrix();
 
         vot::comp::Light::Meta meta{};
-        meta.entries.resize(30);
+        meta.entries.resize(30); // HACK: dynamic increase
         meta.ssbo = yic::allocator->allocBuffer(sizeof(vot::comp::Light::Entry) * 30, vk::BufferUsageFlagBits::eStorageBuffer, "Light entries");
         meta.ssbo->update(meta.entries);
 
@@ -92,15 +92,13 @@ namespace sc {
         vot::AnimationComponent animationComponent{};
 
         yic::resourceSystem->mLoader->mAssimpLoader->Load(tex_path "../Model/Light/Sphere.gltf", basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
+        // FIXME: tex_path -> mod_path
 
-        vot::EntityView::Create()
-                .emplace<vot::comp::Light::Meta>(meta)
-                .emplace<vot::BasicInfoComponent>(std::move(basicInfoComponent))
-                .emplace<vot::VertexDataComponent>(std::move(vertexDataComponent))
-                .emplace<vot::RenderComponent>(std::move(renderComponent))
-                .emplace<vot::mark::eVisible>();
+        vot::EntityView<vot::bit::eEntityViewDefault>::create()
+            .mark<vot::mark::eVisible>()
+            .emplace(meta, basicInfoComponent, vertexDataComponent, renderComponent);
 
-        auto& [set0] = GLOBAL::entity::set0.makeVa<vot::DescriptorSet0>();
+        auto& [set0] = GLOBAL::entity::set0.make_va<vot::DescriptorSet0>();
         std::ranges::for_each(std::views::iota(0, 3), [&](auto i) -> void {
             set0[i] = yic::desSystem->allocUpdateDescriptorSets([&] {
                 vot::DescriptorLayout2 layout2;

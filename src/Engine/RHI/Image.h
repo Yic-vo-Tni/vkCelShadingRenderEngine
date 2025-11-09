@@ -15,7 +15,7 @@ namespace vot::inline rhi {
         Image(const vot::smart_vector<vk::Image>& images, const vot::smart_vector<vk::ImageView>& imageViews,
               const vot::smart_vector<VmaAllocation>& allocations,
               const vk::Image& depthImage, const vk::ImageView& depthImageView,
-              const VmaAllocation& depthAlloc, VmaAllocator& allocator, const vot::ImageCI& c, const vot::string& id);
+              const VmaAllocation& depthAlloc, const VmaAllocator& allocator, const vot::ImageCI& c, const vot::string& id);
 
         ~Image() override;
 
@@ -42,7 +42,7 @@ namespace vot::inline rhi {
         vot::ImageCI config{};
         static inline uint64_t counter{};
 
-    protected:
+    // protected:
         inline static uint32_t *index = nullptr;
         vk::Device device;
         vk::detail::DispatchLoaderDynamic dispatchLoaderDynamic;

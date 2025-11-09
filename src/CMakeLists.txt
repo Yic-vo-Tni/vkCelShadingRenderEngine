@@ -15,7 +15,7 @@ file(GLOB_RECURSE MSVC_DLLs "third/dll/msvc/*.dll")
 file(GLOB_RECURSE MinGW_DLLs "third/dll/mingw/*.dll")
 file(GLOB_RECURSE PCHs "Engine/External/*.h")
 
-add_library(renderer STATIC ${SRCs} "Engine/Runetime/Model/common_device.cu")
+add_library(renderer STATIC ${SRCs} "Engine/Runtime/Model/common_device.cu")
 
 #target_compile_options(renderer PRIVATE /MDd)
 

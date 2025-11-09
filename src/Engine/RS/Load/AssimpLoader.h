@@ -38,7 +38,7 @@ namespace rs {
                        vot::RenderComponent &renderComponent, vot::AnimationComponent &animationComponent, const vot::LoadOptions& options = {}) -> vot::string;
     private:
         auto extractMesh(ImportContext& mic, vot::VertexDataComponent& vc, vot::RenderComponent& rc, vot::AnimationComponent& ac, const vot::LoadOptions& options) -> void;
-        auto extractAnim(ImportContext& mic, vot::AnimationComponent& ac) -> void;
+        auto extractAnim(const ImportContext& mic, vot::AnimationComponent& ac) -> void;
     private:
         auto importScene(const vot::string& pt) -> ImportContext;
         auto extractCenter(const ImportContext& ctx, vot::RenderComponent& rc) -> void;
@@ -49,6 +49,8 @@ namespace rs {
         auto extractDiffTex(ImportContext& ctx, const aiMaterial* aiMat, const vot::SubMesh& subMesh, vot::RenderComponent& rc) -> void;
         auto extractBoneNode(const ImportContext& ctx, vot::AnimationComponent& ac) -> void;
         auto buildAdjacencyIndex(const uint32_t* indexChunkFirst, uint32_t offset, uint32_t* adjIndexChunk) -> void;
+        auto allocBuffer(const ImportContext& mic, const vot::VertexDataComponent& vc, vot::RenderComponent& rc) -> void;
+        auto allocDSHandle(const vot::AnimationComponent& ac, vot::RenderComponent& rc) -> void;
     private:
         auto resolvingPath(const vot::string& pt) -> std::shared_ptr<void>;
         auto processMeshCenter(const auto* scene) -> glm::vec3;

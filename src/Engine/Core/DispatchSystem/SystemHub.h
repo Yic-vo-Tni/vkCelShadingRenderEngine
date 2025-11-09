@@ -153,7 +153,7 @@ namespace hide {
         }
 
     private:
-        oneapi::tbb::task_group eventGroup;
+        oneapi::tbb::task_group eventGroup; // TODO: join job system
 
         vot::unordered_map<std::type_index, vot::unordered_map<vot::string, std::unique_ptr<Entry>>> Entries;
     };

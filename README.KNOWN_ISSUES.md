@@ -10,9 +10,17 @@
     - ✅ 本模型未播放动画时：可以正常载入动画
     - ❌ 本模型正在播放动画时：载入动画会卡死
 
+- [ ] **缩放zmo拖动跨度太大会导致模型消失**
+  - 额外维护一个Transform结构体
+
 
 ## 🚀 优化方向 (Improvements)
-
+- **光源数据结构限制**  
+  当前 `Light::Meta` 中光源条目数固定：
+  - 9.18_固定位30个，后续可能调高
+   ```cpp
+    vot::comp::Light::Meta meta{};
+    meta.entries.resize(30); // HACK: dynamic increase 
 
 ## 📌 TODO
 

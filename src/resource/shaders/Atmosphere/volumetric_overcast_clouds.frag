@@ -32,7 +32,7 @@ const int cld_march_steps = 64;
 //50
 const float cld_coverage = 0.4;
 //0.3125
-const float cld_thick = 70.0;
+const float cld_thick = 120.0;
 //90
 const float cld_absorb_coeff = 1.0;
 
@@ -237,6 +237,9 @@ vec4 render_clouds(ray_t eye, float time) {
     vec3 projection = eye.direction / eye.direction.y;
     vec3 iter = projection * march_step;
     volume_sampler_t cloud = begin_volume(eye.origin + projection * 300.0, cld_absorb_coeff);
+
+    //vec3 rayStart = eye.origin + eye.direction * 3000.f;
+    //volume_sampler_t cloud = begin_volume(rayStart, cld_absorb_coeff);
 
     const vec3 hemi_top = vec3(0.96, 0.55, 0.18); // 太阳色/顶部
     const vec3 hemi_bottom = vec3(0.86, 0.63, 0.65); // 天空蓝/地面色（可换蓝灰）

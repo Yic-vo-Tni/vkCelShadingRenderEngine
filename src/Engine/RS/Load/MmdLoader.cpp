@@ -10,7 +10,7 @@
 #include "Core/Management/TripleBufferIndexManager.h"
 #include "RHI/Allocator.h"
 #include "RHI/DescriptorSystem.h"
-#include "Runetime/System/RenderLibrary.h"
+#include "Runtime/System/RenderLibrary.h"
 
 namespace rs {
     MmdLoader::MmdLoader() {

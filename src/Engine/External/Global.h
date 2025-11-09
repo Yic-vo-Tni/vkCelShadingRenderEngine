@@ -25,8 +25,8 @@ namespace GLOBAL{
     inline bool playAllAnim{false};
 
     namespace entity {
-        inline vot::EntityView set0;
-        inline vot::EntityView camera;
+        inline vot::EntityView<vot::bit::eEntityViewDefault> set0;
+        inline vot::EntityView<vot::bit::eEntityViewDefault> camera;
     }
 }
 

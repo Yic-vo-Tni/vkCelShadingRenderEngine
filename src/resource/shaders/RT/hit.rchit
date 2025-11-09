@@ -17,8 +17,6 @@ hitAttributeEXT vec2 attribs;
 layout(buffer_reference, scalar) buffer Vertices { vec4 v[]; };
 layout(buffer_reference, scalar) buffer Indices { uint i[]; };
 
-//layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
-//layout(set = 0, binding = 3) buffer ObjDesc_ { ObjDesc objDesc[]; };
 layout(set = 1, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 1, binding = 2) buffer ObjDesc_ { ObjDesc objDesc[]; };
 

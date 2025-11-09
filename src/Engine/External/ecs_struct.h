@@ -22,6 +22,13 @@ struct DirectionLightComponent {
 
 namespace vot {
 
+    namespace bit {
+        enum EntityViewBits {
+            eEntityViewDefault, eEntityViewCount,
+        };
+    }
+
+    template<bit::EntityViewBits T>
     struct EntityView {
         EntityView() = default;
 
@@ -29,14 +36,27 @@ namespace vot {
             this->entity = entity;
         }
 
-        static auto Create() -> EntityView {
+        static auto create() -> EntityView {
             return EntityView{registry->create()};
         }
 
-        template<typename C, typename... Args>
-        EntityView& emplace(Args&&...args) {
+        template<typename... Args>
+        EntityView& emplace(Args&&... args) {
             assert(entity != entt::null && "You must create the entity first!");
-            registry->emplace<C>(entity, std::forward<Args>(args)...);
+            (emplaceImpl(std::forward<Args>(args)), ...);
+            return *this;
+        }
+
+        template<typename... Args>
+        EntityView& mark() {
+            (registry->emplace<Args>(entity), ...);
+            return *this;
+        }
+
+        template<typename tagTrue, typename tagFalse>
+        EntityView &mark_if(const bool cond) {
+            if (cond) registry->emplace<tagTrue>(entity);
+            else registry->emplace<tagFalse>(entity);
             return *this;
         }
 
@@ -46,7 +66,7 @@ namespace vot {
         }
 
         template<typename C, typename... Args>
-        auto makeVa(Args &&... args) -> C& {
+        auto make_va(Args &&... args) -> C& {
             entity = registry->create();
             registry->emplace<C>(entity, std::forward<Args>(args)...);
             return registry->get<C>(entity);
@@ -64,6 +84,13 @@ namespace vot {
         auto destroy() const -> void { registry->destroy(entity); }
 
         static auto Init(entt::registry& entt){ registry = &entt; }
+    private:
+        template<typename C>
+        EntityView &emplaceImpl(C &&component) {
+            assert(entity != entt::null && "You must create the entity first!");
+            registry->emplace<std::decay_t<C> >(entity, std::forward<C>(component));
+            return *this;
+        }
     private:
         entt::entity entity{entt::null};
         static inline entt::registry* registry{nullptr};

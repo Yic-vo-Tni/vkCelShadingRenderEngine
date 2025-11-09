@@ -6,6 +6,7 @@
 #define VKCELSHADINGRENDERER_RENDERSUBMISSIONSYSTEM_H
 
 #include "RenderGraph.h"
+#include "RenderStage/RenderStage.h"
 
 namespace sc {
 
@@ -16,18 +17,9 @@ namespace sc {
 
         auto frame() -> void;
     private:
-        auto flow(vot::CommandBuffer& cmd) -> void;
-
-    private:
         entt::registry& ecs;
-
-        float iTime{1.f};
-    public:
-        ev::pVkSetupContext ct{};
-        ev::pVkRenderContext rt{};
-        vot::RHandle RHandle = nullptr;
-
         std::unique_ptr<RenderGraph> uRenderGraph;
+        std::unique_ptr<RenderStage> uRenderStage;
     };
 
 } // sc

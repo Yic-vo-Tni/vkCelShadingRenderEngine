@@ -33,11 +33,16 @@ namespace rs {
         auto onResourcePaths(const vot::string& pt) -> void;
         auto LoadModel(const vot::string& pt) -> void;
         auto onModelLoaded(const ev::tModelLoaded& ev) -> void;
+        auto onEntityDestroyed() const -> void;
 
         auto check(const vot::string& pt, const vot::vector<vot::string>& suffixes) -> bool {
             return std::ranges::any_of(suffixes, [&](const vot::string& suffix){
                  return pt.ends_with(suffix);
              });
+        }
+
+        auto getExt(const std::filesystem::path& p) -> std::string {
+            return p.extension().string();
         }
     private:
         entt::registry& ecs;

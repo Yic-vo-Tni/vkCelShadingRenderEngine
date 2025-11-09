@@ -23,7 +23,7 @@ namespace vot::inline rhi {
 
 Image::Image(const vot::smart_vector<vk::Image> &images, const vot::smart_vector<vk::ImageView> &imageViews,
              const vot::smart_vector<VmaAllocation> &allocations, const vk::Image &depthImage,
-             const vk::ImageView &depthImageView, VmaAllocation const &depthAlloc, VmaAllocator &allocator,
+             const vk::ImageView &depthImageView, VmaAllocation const &depthAlloc, const VmaAllocator &allocator,
              const vot::ImageCI &c, const vot::string &id)
         : images(images), imageViews(imageViews), allocations(allocations),
           depthImage(depthImage), depthImageView(depthImageView), depthAllocation(depthAlloc),
@@ -187,14 +187,14 @@ auto Image::drawRender(vot::CommandBuffer &cmd, const vot::ImageDrawCI& ci, cons
                                              .setSubresourceRange(ci.subresourceRange));
 }
 
-auto Image::imageInfo(std::optional<uint32_t> imageViewIndex, std::optional<vk::Sampler> sampler,
+auto Image::imageInfo(const std::optional<uint32_t> imageViewIndex, const std::optional<vk::Sampler> sampler,
                       vk::ImageLayout imageLayout) const -> vk::DescriptorImageInfo {
     return {sampler.value_or(DefaultSampler ::sampler),
             imageViews[imageViewIndex.value_or(0)],
             imageLayout};
 }
 
-auto Image::depthImageInfo(std::optional<vk::Sampler> sampler, vk::ImageLayout imageLayout) const -> vk::DescriptorImageInfo {
+auto Image::depthImageInfo(const std::optional<vk::Sampler> sampler, vk::ImageLayout imageLayout) const -> vk::DescriptorImageInfo {
     return {sampler.value_or(DefaultSampler ::sampler), depthImageView, imageLayout};
 }
 

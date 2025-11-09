@@ -29,6 +29,37 @@ namespace vot::dsl {
         }
     }
 
+
+    template<typename T>
+    struct Match {
+        const T& value;
+        bool matched{false};
+
+        template<typename U, typename F>
+        Match& case_(U&& expected, F&& func) {
+            if (!matched && value == expected) {
+                func();
+                matched = true;
+            }
+            return *this;
+        }
+
+        Match& case_(std::initializer_list<std::string_view> exts, auto&& func) {
+            if (!matched && std::ranges::any_of(exts, [&](auto e){ return value == e; })) {
+                func();
+                matched = true;
+            }
+            return *this;
+        }
+
+        template<typename F>
+        auto default_(F &&func) -> void {
+            if (!matched) func();
+        }
+    };
+
+
+
 }
 
 #endif //VKCELSHADINGRENDERER_DSL_H

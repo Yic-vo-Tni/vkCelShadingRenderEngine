@@ -9,9 +9,10 @@
 #include "Editor/ImGuiHub.h"
 #include "RS/ResourceSystem.h"
 #include "Editor/ShaderHotReload/ShaderHotReload.h"
-#include "Runetime/Camera/Camera.h"
+#include "Runtime/Camera/Camera.h"
 #include "RHI/Command.h"
 #include "Utils/Auxiliary.h"
+#include "glm/gtx/matrix_decompose.hpp"
 
 namespace sc {
 
@@ -26,11 +27,11 @@ namespace sc {
             });
 
             yic::imguiHub->collapsingHeader("Lighting", [&] {
-                static int selectedLightType = 0; // 0=Point, 1=Directional, 2=Spot
+                static int selectedLightType = vot::comp::Light::Kind::eDirectional; // 0=Point, 1=Directional, 2=Spot
 
 
                 if (ImGui::Button("Add Light")) {
-                    yic::systemHub.pub_enqueue(ev::tModelLoaded{});
+                    //yic::systemHub.pub_enqueue(ev::tModelLoaded{});
                     // if (selectedLightType != 0
                     // auto e = ecs.create();
                     //
@@ -148,16 +149,11 @@ namespace sc {
         ImGui::SameLine();
 
         ImGui::Checkbox(playAnimLabel.c_str(), &info.playAnimation);
-
-        // if(ImGui::Button(playAnimLabel.c_str())){
-        //     info.playAnimation = !info.playAnimation;
-        // }
     }
 
     auto InspectorPanel::drawGizmo() -> void {
         ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each([&](entt::entity, vot::RenderComponent& rc, const vot::BasicInfoComponent& bic) {
             if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO){
-                //const auto camera = ecs.get<sc::Camera>(GLOBAL::camera);
                 const auto camera = GLOBAL::entity::camera.va<Camera>();
                 auto view = camera.getView();
                 auto proj = camera.getProj();
@@ -178,8 +174,9 @@ namespace sc {
                                      glm::value_ptr(proj),
                                      GLOBAL::gizmoOperation,
                                      ImGuizmo::MODE::LOCAL,
-                                     glm::value_ptr(temp)
-                );
+                                     glm::value_ptr(temp));
+
+                // HACK: Zoom too small and the model will disappear
 
                 rc.zmoMat = T * temp * invT;
             }
@@ -245,8 +242,8 @@ namespace sc {
 
         dev->bindBufferMemory(stagBuffer, stagDeviceMem, 0);
 
-        yic::command->drawOneTimeSubmit([&](vot::CommandBuffer& cmd) {
-            auto region = vk::BufferImageCopy()
+        yic::command->drawOneTimeSubmit([&](const vot::CommandBuffer& cmd) {
+            const auto region = vk::BufferImageCopy()
                 .setBufferOffset(0)
                 .setBufferRowLength(0)
             .setBufferImageHeight(0)
@@ -272,7 +269,7 @@ namespace sc {
         GLOBAL::mousePick = {-1.f, -1.f};
 
         if (entityID != 0){
-            auto e = static_cast<entt::entity>(entityID);
+            const auto e = static_cast<entt::entity>(entityID);
             yic::logger->warn(entityID);
             if (ecs.valid(e)) {
                 GLOBAL::pickON = ecs.get<vot::BasicInfoComponent>(e).name;

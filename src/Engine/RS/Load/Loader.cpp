@@ -3,8 +3,6 @@
 //
 
 #include "Core/DispatchSystem/SystemHub.h"
-#include "RHI/Allocator.h"
-#include "RHI/Command.h"
 #include "SM/Scene.h"
 
 #include "Loader.h"
@@ -30,87 +28,67 @@ namespace rs {
             for (const auto &pt: pts.paths)  onResourcePaths(pt);
         });
 
-        yic::systemHub.sub_queued(2, [&](const ev::tModelLoaded& ev){ onModelLoaded(ev); });
-
-        yic::systemHub.sub_queued(2, [&](const ev::tDestroyEntity &) {
-            vot::vector<entt::entity> toD;
-
-            ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each(
-                [&](const entt::entity e, vot::RenderComponent &rc, const vot::BasicInfoComponent &bic) {
-                    if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO) {
-                        toD.emplace_back(e);
-                    }
-                });
-
-            for (const auto &e: toD) {
-                yic::logger->info("Entity: {0}, valid ={1}", entt::to_integral(e), ecs.valid(e));
-                ecs.destroy(e);
-            }
-
-            yic::sceneSystem->reloadTlas();
-        });
+        yic::systemHub.sub_queued(2, [&](const ev::tModelLoaded &ev) { onModelLoaded(ev); });
+        yic::systemHub.sub_queued(2, [&](const ev::tDestroyEntity &) { onEntityDestroyed(); });
     }
 
     auto Loader::onResourcePaths(const vot::string &pt) -> void {
         yic::logger->warn("Load path: {0}", pt);
 
-        if (check(pt, {".mp3"})){
-            mAudio->Load(pt);
-        } else if (check(pt, {".vmd"})) {
-            mMmdLoader->LoadVmd(pt);
-        } else {
-            LoadModel(pt);
-        }
+        vot::dsl::Match{getExt(pt)}
+            .case_(".mp3", [&]{ mAudio->Load(pt); })
+            .case_(".vmd", [&]{ mMmdLoader->LoadVmd(pt); })
+            .default_([&]{ LoadModel(pt); });
     }
 
     auto Loader::LoadModel(const vot::string& pt) -> void {
-        vot::BasicInfoComponent basicInfoComponent{};
-        vot::VertexDataComponent vertexDataComponent{};
-        vot::RenderComponent renderComponent{};
-        vot::AnimationComponent animationComponent{};
-        vot::RayTracingComponent rayTracingComponent{};
+        vot::BasicInfoComponent basicInfo{};
+        vot::VertexDataComponent vd{};
+        vot::RenderComponent rc{};
+        vot::AnimationComponent ac{};
+        vot::RayTracingComponent rtc{};
 
-        if (check(pt, {".pmx"})) {
-            vertexDataComponent.type = vot::eMMD;
-            mMmdLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent);
-        } else if (check(pt, {".obj", ".fbx"})) { // TODO
-            vertexDataComponent.type = vot::eAssimp;
-            mAssimpLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
-        } else if (check(pt, {".gltf", ".glb"})) { // TODO
-            vertexDataComponent.type = vot::eAssimp;
-            mAssimpLoader->Load(pt, basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
-        }
-        yic::sceneSystem->syncBLAS(vertexDataComponent, renderComponent, rayTracingComponent);
-        GLOBAL::pickON = basicInfoComponent.name;
+        vot::dsl::Match{getExt(pt)}
+            .case_(".pmx", [&]{ vd.type = vot::eMMD; mMmdLoader->Load(pt, basicInfo, vd, rc); })
+            .case_({".obj", ".fbx"}, [&]{ vd.type = vot::eAssimp; mAssimpLoader->Load(pt, basicInfo, vd, rc, ac); })
+            .case_({".gltf", ".glb"}, [&]{ vd.type = vot::eAssimp; mAssimpLoader->Load(pt, basicInfo, vd, rc, ac); });
 
-        yic::systemHub.pub_enqueue(ev::tModelLoaded{
-            basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent
-        });
+        yic::sceneSystem->syncBLAS(vd, rc, rtc);
+        GLOBAL::pickON = basicInfo.name;
 
+        yic::systemHub.pub_enqueue(ev::tModelLoaded{basicInfo, vd, rc, ac, rtc});
     }
 
 
     auto Loader::onModelLoaded(const ev::tModelLoaded& ev) -> void {
         auto& [basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent] = ev;
 
-        auto e = vot::EntityView::Create()
-                .emplace<vot::BasicInfoComponent>(basicInfoComponent)
-                .emplace<vot::VertexDataComponent>(vertexDataComponent)
-                .emplace<vot::RenderComponent>(renderComponent)
-                .emplace<vot::AnimationComponent>(animationComponent)
-                .emplace<vot::RayTracingComponent>(rayTracingComponent);
-
-        if (vertexDataComponent.type == vot::eAssimp) {
-            e.emplace<vot::mark::eAssimp>();
-        } else {
-            e.emplace<vot::mark::eMMD>();
-        }
+        auto e = vot::EntityView<vot::bit::eEntityViewDefault>::create()
+            .emplace(basicInfoComponent, vertexDataComponent, renderComponent, animationComponent, rayTracingComponent)
+            .mark_if<vot::mark::eAssimp, vot::mark::eMMD>(vertexDataComponent.type == vot::eAssimp);
 
         yic::sceneSystem->reloadTlas();
 
-        e.emplace<vot::mark::eVisible>();
+        e.mark<vot::mark::eVisible>();
     }
 
+    auto Loader::onEntityDestroyed() const -> void {
+        vot::vector<entt::entity> toD;
+
+        ecs.view<vot::RenderComponent, const vot::BasicInfoComponent>().each(
+            [&](const entt::entity e, vot::RenderComponent &, const vot::BasicInfoComponent &bic) {
+                if (GLOBAL::pickON == bic.name && GLOBAL::visibleZMO) {
+                    toD.emplace_back(e);
+                }
+            });
+
+        for (const auto &e: toD) {
+            yic::logger->info("Entity: {0}, valid ={1}", entt::to_integral(e), ecs.valid(e));
+            ecs.destroy(e);
+        }
+
+        yic::sceneSystem->reloadTlas();
+    }
 }
 
 

@@ -280,72 +280,13 @@ namespace sc {
     }
 
     auto RenderLibrary::buildUniqueDSHandle() -> void {
-//        FastNoiseLite noise;
-//        noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2); // 或 Perlin, Cellular等
-//        noise.SetFrequency(0.9f); // 控制云结构大小
-//        noise.SetFractalType(FastNoiseLite::FractalType_FBm);
-//        noise.SetFractalOctaves(5); // fbm迭代次数
-//        noise.SetFractalGain(0.5f);
-//        noise.SetFractalLacunarity(2.0f);
-//
-//        const int size = 128;
-//        std::vector<float> fbm_volume(size * size * size);
-//
-//        float max_fbm = -1e9, min_fbm = 1e9;
-//        for (int z = 0; z < size; ++z)
-//            for (int y = 0; y < size; ++y)
-//                for (int x = 0; x < size; ++x) {
-//                    // 归一化采样坐标, 控制scale影响细节
-//                    float fx = float(x) / size * 10.0f;  // 10.0可调（云团多大）
-//                    float fy = float(y) / size * 10.0f;
-//                    float fz = float(z) / size * 10.0f;
-//                    float val = noise.GetNoise(fx, fy, fz);
-//                    max_fbm = std::max(max_fbm, val);
-//                    min_fbm = std::min(min_fbm, val);
-//                    fbm_volume[z * size * size + y * size + x] = val;
-//                }
-//
-//        for (auto& v : fbm_volume)
-//            v = (v - min_fbm) / (max_fbm - min_fbm);
-//        std::vector<uint8_t> out(size*size);
-//        int z = 64; // 切一层
-//        for(int y=0; y<size; ++y)
-//            for(int x=0; x<size; ++x)
-//                out[y*size+x] = uint8_t(255.0f * fbm_volume[z*size*size + y*size + x]);
-//        stbi_write_png("fbm_check.png", size, size, 1, out.data(), size);
-//
-//        T_fbmNoise = yic::allocator->allocImage(vot::ImageCI()
-//                .setExtent(vk::Extent3D{size, size, size})
-//                .setImageCount(1)
-//                .setFormat(vk::Format::eR32Sfloat)
-//                .setImageType(vk::ImageType::e3D)
-//                .setImageViewType(vk::ImageViewType::e3D)
-//                .setUsage(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst), "fbm noise"
-//                );
-//
-//        yic::allocator->uploadImage(T_fbmNoise->images, fbm_volume.data(), vk::Extent3D{size, size, size}, vk::Format::eR16Sfloat);
-//        yic::logger->info("T_fbm ok");
-
       T_blueNoise64 = yic::allocator->loadTexture(tex_path "LDR_LLL1_0.png");
-
-//        GP_Volumetric_Overcast_Clouds.DS = yic::desSystem->allocUpdateDescriptorSets([&]{
-//            vot::DescriptorLayout2 layout{};
-//
-//            for (auto i = 0u; i < frameImageCount; i++) {
-//                auto base = RT_GBuffer->config.colorAttachmentCount * i;
-//                layout.emplace(vot::DescriptorLayout2::_1d{
-//                      T_fbmNoise->imageInfo(),
-//                });
-//            }
-//
-//            return layout;
-//        }, GP_Volumetric_Overcast_Clouds);
 
         GP_Volumetric_Fog.DS = yic::desSystem->allocUpdateDescriptorSets([&] {
             vot::DescriptorLayout2 layout{};
 
             for (auto i = 0u; i < frameImageCount; i++) {
-                auto base = RT_GBuffer->config.colorAttachmentCount * i;
+                const auto base = RT_GBuffer->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d{
                         RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_ShadowMap->imageInfo(i),
@@ -360,7 +301,7 @@ namespace sc {
             vot::DescriptorLayout2 layout{};
 
             for(auto i = 0u; i < frameImageCount; i++){
-                auto base = RT_GBuffer->config.colorAttachmentCount * i;
+                const auto base = RT_GBuffer->config.colorAttachmentCount * i;
                 layout.emplace(vot::DescriptorLayout2::_1d {
                         RT_GBuffer->imageInfo(base + eGBuffer::eAlbedo, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
                         RT_GBuffer->imageInfo(base + eGBuffer::ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
