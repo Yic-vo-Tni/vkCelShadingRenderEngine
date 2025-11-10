@@ -17,7 +17,7 @@ namespace rhi {
         auto submit(const vot::SubmitInfo& submitInfo) -> void;
         auto finalSubmit(vk::SwapchainKHR swapchainKhr, uint32_t imageIndex, const vot::SubmitInfo& submitInfo) -> vk::Result;
 
-        auto clear() -> void;
+        auto clear() const -> void;
     private:
         uint64_t value{0};
         vk::Semaphore handle{};

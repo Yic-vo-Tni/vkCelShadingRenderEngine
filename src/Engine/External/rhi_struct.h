@@ -138,8 +138,14 @@ struct DescriptorHandle{
         virtual auto acquirePipelineBindPoint() -> vk::PipelineBindPoint = 0;
     };
 
-    struct CommandBuffer : public vk::CommandBuffer {
-        vk::Fence fence;
+    struct CommandBuffer : vk::CommandBuffer {
+        vk::Fence fence; //NOTE: Early design defects, the second edition of the command system has been abandoned. o(╥﹏╥)o
+        std::uint32_t id{UINT32_MAX};
+
+        // operator vk::CommandBuffer() const noexcept {
+        //     return static_cast<const vk::CommandBuffer&>(*this);
+        // }
+
 
         using cVk = vk::CommandBuffer;
         auto& bindPipeline_(auto& pipeline){
@@ -539,10 +545,10 @@ struct DescriptorHandle{
     };
 
     struct SubmitInfo{
-        vot::vector<uint64_t> waitValues{};
-        vot::vector<uint64_t> signalValues{};
-        vot::vector<vot::CommandBuffer> cmds{};
-        vot::vector<vk::PipelineStageFlags> waitStageMasks{};
+        vector<uint64_t> waitValues{};
+        vector<uint64_t> signalValues{};
+        vector<CommandBuffer> cmds{};
+        vector<vk::PipelineStageFlags> waitStageMasks{};
         vk::Fence fence{};
         vk::Semaphore waitSemaphore{};
         vk::Semaphore signalSemaphore{};

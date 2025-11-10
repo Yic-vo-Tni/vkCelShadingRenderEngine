@@ -15,6 +15,9 @@ namespace runtime::flow {
         vot::vector<RT_sptr> inputs;
         vot::vector<RT_sptr> outputs;
         std::function<void(vot::CommandBuffer&)> execute;
+
+        std::uint32_t order = 0;
+        std::uint32_t layer = 0;
     };
 
     class RenderGraph {
@@ -27,7 +30,9 @@ namespace runtime::flow {
     private:
         auto compile() -> void;
         static auto passDependsOn(const RenderPassNode& A, const RenderPassNode& B) -> bool ;
+        auto inferOutputs() -> void;
         auto topologicalSort() const -> vot::vector<RenderPassNode>;
+        auto topologicalSortWithLayer() const -> vot::vector<RenderPassNode>;
         auto drawFlowNodeGraph() const -> void;
 
         vot::vector<RenderPassNode> passes;

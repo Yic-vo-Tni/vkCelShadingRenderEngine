@@ -4,13 +4,15 @@
 
 #include "Core/DispatchSystem/SystemHub.h"
 #include "Rhi.h"
-#include "QueueFamily.h"
 #include "TimelineSemaphore.h"
 #include "Command.h"
 #include "Allocator.h"
 #include "Descriptor.h"
 #include "DescriptorSystem.h"
+
+#include "RHI2/CommandCollector.h"
 #include "RHI2/Allocator.h"
+
 
 namespace rhi {
     Rhi::Rhi() {
@@ -41,7 +43,7 @@ namespace rhi {
         vk::PhysicalDevicePresentModeFifoLatestReadyFeaturesEXT presentModeFifoLatestReadyFeatures{vk::True};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
-         .addInstanceLayers("VK_LAYER_KHRONOS_validation")
+     //    .addInstanceLayers("VK_LAYER_KHRONOS_validation")
          .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
          .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
          .addInstanceExtensions(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)
@@ -94,7 +96,7 @@ namespace rhi {
       //  yic::allocator2 = rhi2::Allocator::make();
         yic::desSystem = rhi::DescriptorSystem::make();
         yic::imguiImage = rhi::ImGuiDescriptorManager::make();
-
+        yic::command2 = rhi2::CommandCollector::make();
     }
 
     Rhi::~Rhi() {
@@ -104,6 +106,7 @@ namespace rhi {
       //  rhi2::Allocator::destroy();
         yic::timeline->clear();
         yic::command->clear();
+        yic::command2->clear();
         yic::desSystem->clear();
         PipeRSManager->clear();
         yic::imguiImage->clear();

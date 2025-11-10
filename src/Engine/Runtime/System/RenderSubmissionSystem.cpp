@@ -33,12 +33,15 @@ namespace sc {
         >> Node::invoke{RG_STAGE(drawing_gBuffer)}
 
         | PassNode{RL->RT_ShadowMap}
+        + Node::read{RL->RT_GBuffer}
         >> Node::invoke{RG_STAGE(drawing_shadowMap)} //FIXME: lie over
 
         | PassNode{RL->RT_IDBuffer}
+        + Node::read{RL->RT_GBuffer}
         >> Node::invoke{RG_STAGE(drawing_IDBuffer)}
 
         | PassNode{RL->RT_Volumetric_Clouds}
+        + Node::read{RL->RT_GBuffer}
         >> Node::invoke{RG_STAGE(drawing_volumetricClouds)}
 
         | PassNode{RL->RT_Volumetric_Fog}
@@ -49,7 +52,7 @@ namespace sc {
         >> Node::invoke{RG_STAGE(draw_RTShadow)}
 
         | PassNode{RL->RT_Post}
-        + Node::read{RL->RT_GBuffer, RL->RT_Volumetric_Clouds}
+        + Node::read{RL->RT_Volumetric_Clouds, RL->RT_GBuffer, RL->RTX_RayTracing}
         >> Node::invoke{RG_STAGE(drawing_post)}
 
         | RG_DSL::end;

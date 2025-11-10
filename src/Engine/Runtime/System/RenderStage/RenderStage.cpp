@@ -88,6 +88,31 @@ namespace sc {
 
     }
 
+    auto RenderStage::drawing_IDBuffer(vot::CommandBuffer &cmd) -> void {
+        auto fn = [&](rhi::GraphicsPipeline& pipeline, auto view) {
+            cmd.bindPipeline_(pipeline)
+            .bindDescriptorSets_(pipeline, set0);
+
+            view.each([&](entt::entity e, const vot::RenderComponent& rc) {
+                const auto combMat = rc.baseMat * rc.zmoMat;
+                const auto pushConstants = IDBufferPushConstant{combMat, static_cast<std::uint32_t>(e)};
+
+                cmd.bindVertexBuffers(rc.vertexBuffer[slow]);
+                cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
+                cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+                                  sizeof(IDBufferPushConstant), &pushConstants);
+
+                for (const auto& subMesh : rc.subMeshes | std::views::values | std::views::join) {
+                    cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
+                }
+            });
+        };
+
+        cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
+        fn(yic::renderLibrary->GP_IDBuffer_Assimp, ecs.view<const vot::mark::eVisible, const vot::mark::eAssimp, const vot::RenderComponent>());
+        fn(yic::renderLibrary->GP_IDBuffer, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());
+    }
+
     auto RenderStage::drawing_shadowMap(vot::CommandBuffer &cmd) -> void {
         auto draw_meshes_shadowMap = [&](rhi::GraphicsPipeline& pipeline, auto view) {
             //auto cam = ecs.get<sc::Camera>(GLOBAL::camera);
@@ -110,29 +135,7 @@ namespace sc {
         draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_Assimp, ecs.view<const vot::mark::eVisible, const vot::mark::eAssimp, const vot::RenderComponent>());
         draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_PMX, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());}
 
-    auto RenderStage::drawing_IDBuffer(vot::CommandBuffer &cmd) -> void {
-        auto fn = [&](rhi::GraphicsPipeline& pipeline, auto view) {
-            cmd.bindPipeline_(pipeline)
-            .bindDescriptorSets_(pipeline, set0);
 
-            view.each([&](entt::entity e, const vot::RenderComponent& rc) {
-                const auto combMat = rc.baseMat * rc.zmoMat;
-                const auto pushConstants = IDBufferPushConstant{combMat, static_cast<std::uint32_t>(e)};
-
-                cmd.bindVertexBuffers(rc.vertexBuffer[slow]);
-                cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
-                cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
-                                  sizeof(IDBufferPushConstant), &pushConstants);
-
-                for (const auto& subMesh : rc.subMeshes | std::views::values | std::views::join) {
-                    cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);
-                }
-            });
-        };
-
-        fn(yic::renderLibrary->GP_IDBuffer_Assimp, ecs.view<const vot::mark::eVisible, const vot::mark::eAssimp, const vot::RenderComponent>());
-        fn(yic::renderLibrary->GP_IDBuffer, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());
-    }
 
     auto RenderStage::drawing_volumetricClouds(vot::CommandBuffer &cmd) const -> void {
         cmd.setRenderArea_(vot::Resolutions::eFullHDExtent);

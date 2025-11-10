@@ -9,10 +9,10 @@
 
 namespace rhi {
     TimelineSemaphore::TimelineSemaphore() : graphicsQueue(yic::qFamily->acquireQueueUnSafe(vot::queueType::eGraphics, 0)) {
-        auto typeCreateInfo = vk::SemaphoreTypeCreateInfo()
+        const auto typeCreateInfo = vk::SemaphoreTypeCreateInfo()
                 .setSemaphoreType(vk::SemaphoreType::eTimeline)
                 .setInitialValue(value);
-        auto semaphoreCreateInfo = vk::SemaphoreCreateInfo()
+        const auto semaphoreCreateInfo = vk::SemaphoreCreateInfo()
                 .setPNext(&typeCreateInfo);
 
         graphicsQueue = yic::qFamily->acquireQueueUnSafe(vot::queueType::eGraphics, 0);
@@ -29,8 +29,37 @@ namespace rhi {
                 .setWaitSemaphoreValues(submitInfo.waitValues)
                 .setSignalSemaphoreValues(submitInfo.signalValues);
 
+        // auto sub = vk::SubmitInfo()
+        //         .setCommandBuffers(submitInfo.cmds);
+        // yic::logger->warn("sizeof(vk::CommandBuffer)  = {}", sizeof(vk::CommandBuffer));
+        // yic::logger->warn("sizeof(vot::CommandBuffer) = {}", sizeof(vot::CommandBuffer));
+        //
+        // // 检查每个句柄的地址和字节内容
+        // for (size_t i = 0; i < submitInfo.cmds.size(); ++i) {
+        //     auto& src = submitInfo.cmds[i];
+        //     yic::logger->warn(
+        //         fmt::runtime("[src {}] vk handle = {}, first bytes = {:016llx}"),
+        //         i,
+        //         (void*)static_cast<VkCommandBuffer>(src),
+        //         *reinterpret_cast<const uint64_t*>(&src)
+        //     );
+        // }
+        //
+        // // 执行转换
+
+        // 检查转换结果
+        // for (size_t i = 0; i < cmds.size(); ++i) {
+        //     auto& dst = cmds[i];
+        //     yic::logger->warn(
+        //         fmt::runtime("[dst {}] vk handle = {}, first bytes = {:016llx}"),
+        //         i,
+        //         (void*)static_cast<VkCommandBuffer>(dst),
+        //         *reinterpret_cast<const uint64_t*>(&dst)
+        //     );
+        // }
+        auto cmds = vot::vector<vk::CommandBuffer>(submitInfo.cmds.begin(), submitInfo.cmds.end());
         auto sub = vk::SubmitInfo()
-                .setCommandBuffers(submitInfo.cmds);
+            .setCommandBuffers(cmds);
 
         if (!submitInfo.onetimeSubmit) {
             sub.setWaitDstStageMask(submitInfo.waitStageMasks)
@@ -49,14 +78,14 @@ namespace rhi {
     }
 
     auto TimelineSemaphore::finalSubmit(vk::SwapchainKHR swapchainKhr, uint32_t imageIndex, const vot::SubmitInfo &submitInfo) -> vk::Result {
-        auto timelineSubmitInfo = vk::TimelineSemaphoreSubmitInfo()
+        const auto timelineSubmitInfo = vk::TimelineSemaphoreSubmitInfo()
                 .setWaitSemaphoreValues(submitInfo.waitValues)
                 .setSignalSemaphoreValues(submitInfo.signalValues);
 
-        vk::Semaphore wait[] = {handle, submitInfo.waitSemaphore};
-        vk::Semaphore signal[] = {handle, submitInfo.signalSemaphore};
+        const vk::Semaphore wait[] = {handle, submitInfo.waitSemaphore};
+        const vk::Semaphore signal[] = {handle, submitInfo.signalSemaphore};
 
-        auto sub = vk::SubmitInfo()
+        const auto sub = vk::SubmitInfo()
                 .setCommandBuffers(submitInfo.cmds)
                 .setWaitSemaphores(wait)
                 .setWaitDstStageMask(submitInfo.waitStageMasks)
@@ -66,10 +95,6 @@ namespace rhi {
         vot::SubmitInfo::increase();
 
         graphicsQueue.submit(sub, submitInfo.cmds.front().fence);
-        // return graphicsQueue.presentKHR(vk::PresentInfoKHR()
-        //                                         .setSwapchains(swapchainKhr)
-        //                                         .setImageIndices(imageIndex)
-        //                                         .setWaitSemaphores(submitInfo.signalSemaphore));
 
         vk::Result r;
         try {
@@ -83,7 +108,7 @@ namespace rhi {
         return r;
     }
 
-    auto TimelineSemaphore::clear() -> void {
+    auto TimelineSemaphore::clear() const -> void {
         yic::systemHub.va<ev::pVkSetupContext>().device->destroy(handle);
     }
 } // rhi

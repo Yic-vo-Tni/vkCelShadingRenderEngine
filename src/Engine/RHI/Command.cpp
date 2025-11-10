@@ -14,7 +14,7 @@ namespace rhi {
             allocCommandBuffer();
         }
 
-        mFrameCount = (uint32_t )yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size();
+        mFrameCount = static_cast<uint32_t>(yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size());
         mThreadCommandPools.resize(vot::threadSpecificCmdPool::eCount);
         mThreadCommandbuffers.resize(vot::threadSpecificCmdPool::eCount);
         for(auto i = 0; i < vot::threadSpecificCmdPool::eCount; i++){
@@ -52,7 +52,7 @@ namespace rhi {
     }
 
     auto CommandManager::bind(vot::CommandBuffer *cmd, const std::function<void(vot::CommandBuffer &)> &fn) -> void {
-        auto actualCmd = cmd + *mActiveImageIndex;
+        const auto actualCmd = cmd + *mActiveImageIndex;
 
         if (ct.device->getFenceStatus(actualCmd->fence) == vk::Result::eNotReady) {
             if (ct.device->waitForFences(actualCmd->fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess)
@@ -65,7 +65,7 @@ namespace rhi {
 
     auto CommandManager::bind(vot::SubmitInfo submitInfo,
                               const std::function<void(vot::CommandBuffer &)> &fn) -> void {
-        auto actualCmd = static_cast<vot::CommandBuffer*>(submitInfo.pNext) + *mActiveImageIndex;
+        const auto actualCmd = static_cast<vot::CommandBuffer*>(submitInfo.pNext) + *mActiveImageIndex;
 
         if (ct.device->getFenceStatus(actualCmd->fence) == vk::Result::eNotReady) {
             if (ct.device->waitForFences(actualCmd->fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess)
@@ -74,7 +74,6 @@ namespace rhi {
         ct.device->resetFences(actualCmd->fence);
 
         actualCmd->render([&]{fn(*actualCmd);});
-        //fn(*actualCmd);
 
         yic::timeline->submit(submitInfo.setCommandBuffers(*actualCmd));
     }
@@ -128,21 +127,21 @@ namespace rhi {
     }
 
     auto CommandManager::clear() -> void {
-        for(auto& fence : mFences){
+        for(const auto& fence : mFences){
             ct.device->destroy(fence);
         }
 
-        for(auto& pool : mCommandPools){
+        for(const auto& pool : mCommandPools){
             ct.device->destroy(pool);
         }
 
         for(auto& cmds : mThreadCommandbuffers){
-            for(auto& cmd : cmds){
+            for(const auto& cmd : cmds){
                 ct.device->destroy(cmd.fence);
             }
         }
 
-        for(auto& pool : mThreadCommandPools){
+        for(const auto& pool : mThreadCommandPools){
             ct.device->destroy(pool);
         }
     }
