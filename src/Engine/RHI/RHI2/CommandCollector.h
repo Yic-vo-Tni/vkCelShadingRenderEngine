@@ -24,7 +24,7 @@ namespace rhi2 {
             SafeCommandPool& operator=(const SafeCommandPool&) = delete;
 
             SafeCommandPool(SafeCommandPool&& other) noexcept
-                : commandPool(std::move(other.commandPool)),
+                : commandPool(other.commandPool),
                   next(other.next.load()),
                   cmds(std::move(other.cmds)) {}
 
@@ -37,7 +37,6 @@ namespace rhi2 {
         };
         struct FramePool {
             vot::vector<SafeCommandPool> commandPools;
-            //vot::vector<vot::CommandBuffer> records;
             oneapi::tbb::concurrent_vector<vot::CommandBuffer> records;
             vk::Fence fence;
             std::atomic<std::uint32_t> id = 0;

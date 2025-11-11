@@ -24,91 +24,10 @@ namespace runtime::flow {
     }
 
     auto RenderGraph::compile() -> void {
-        // yic::command->bind(vot::SubmitInfo()
-        //                    .setRHandle(RHandle)
-        //                    .setQueueType(vot::queueType::eUndefined)
-        //                    .setWaitValues(vot::timelineStage::ePrepare)
-        //                    .setSignalValues(vot::timelineStage::eFinish)
-        //                    .setWaitStageMasks(vk::PipelineStageFlagBits::eTopOfPipe), [&](vot::CommandBuffer &cmd) {
-        //                        if (sorted.empty()) sorted = topologicalSort(); // FIXME: temp
-        //                        for (auto &pass: sorted) {
-        //                            if (pass.target) {
-        //                                pass.target->draw(cmd, [&] { pass.execute(cmd); });
-        //                            } else {
-        //                                if (pass.execute) {
-        //                                    pass.execute(cmd);
-        //                                }
-        //                            }
-        //                        }
-        //                    });
-
-        // yic::command2->bind([&](vot::CommandBuffer &cmd) {
-        //     if (sorted.empty()) sorted = topologicalSort(); // FIXME: temp
-        //     for (auto &pass: sorted) {
-        //         if (pass.target) {
-        //             pass.target->draw(cmd, [&] { pass.execute(cmd); });
-        //         } else {
-        //             if (pass.execute) {
-        //                 pass.execute(cmd);
-        //             }
-        //         }
-        //     }
-        // });
-
         if (sorted.empty()) {
             inferOutputs();
-            sorted = topologicalSortWithLayer();
+            sorted = topologicalSortWithLayer(); //FIXME: temp
         }
-        //if (sorted.empty()) sorted = topologicalSort();
-
-        // for (auto& [] : sorted) {
-        //     fmt::print("  [{}] {} -> ", src, passes[src].name);
-        //     for (auto dst : dsts)
-        //         fmt::print("{} ", passes[dst].name);
-        //     fmt::print("\n");
-        // }
-        // fmt::print("\n========== [RenderGraph: Pass Inputs / Outputs] ==========\n");
-        // for (size_t i = 0; i < passes.size(); ++i) {
-        //     const auto& p = passes[i];
-        //     fmt::print("Pass[{}]: {}\n", i, p.name);
-        //
-        //     if (p.inputs.empty() && p.outputs.empty() && !p.target) {
-        //         fmt::print("  (no inputs/outputs)\n");
-        //         continue;
-        //     }
-        //
-        //     if (p.target)
-        //         fmt::print("  target -> {}\n", p.target->va()->id);
-        //
-        //     for (auto& in : p.inputs)
-        //         fmt::print("  in  -> {}\n", (in && in->va()) ? in->va()->id : "null");
-        //
-        //     for (auto& out : p.outputs)
-        //         fmt::print("  out -> {}\n", (out && out->va()) ? out->va()->id : "null");
-        // }
-        // for (auto &pass: sorted) {
-        //     // yic::command2->bind([&](vot::CommandBuffer &cmd) {
-        //     //     if (pass.target) {
-        //     //         pass.target->draw(cmd, [&] { pass.execute(cmd); });
-        //     //     } else {
-        //     //         if (pass.execute) {
-        //     //             pass.execute(cmd);
-        //     //         }
-        //     //     }
-        //     // });
-        //
-        //     yic::logger->warn("order:{0}, layer:{1}", pass.order, pass.layer);
-        //
-        //     yic::command2->bind(pass.order, [&](vot::CommandBuffer &cmd) {
-        //         if (pass.target) {
-        //             pass.target->draw(cmd, [&] { pass.execute(cmd); });
-        //         } else {
-        //             if (pass.execute) {
-        //                 pass.execute(cmd);
-        //             }
-        //         }
-        //     });
-        // }
 
         tbb::parallel_for_each(sorted, [&](auto &pass) {
             yic::command2->bind(pass.order, sorted.size(),[&](vot::CommandBuffer &cmd) {
@@ -119,7 +38,7 @@ namespace runtime::flow {
             });
         });
 
-        yic::command2->submit();
+        yic::command2->submit(); // HACK: hard code (temp)
     }
 
     auto RenderGraph::passDependsOn(const RenderPassNode &A, const RenderPassNode &B) -> bool {
@@ -258,66 +177,112 @@ namespace runtime::flow {
     auto RenderGraph::drawFlowNodeGraph() const -> void {
         yic::imguiHub->to(vot::uiWidget::eNodeWidget, [&] {
             ImNodes::BeginNodeEditor();
-            constexpr float spacingX = 200.0f;
-            constexpr float spacingY = 250.0f;
-            constexpr int nodesPerRow = 5;
-            constexpr auto originOffset = ImVec2(150.0f, 100.0f);
-            static std::unordered_set<int> positionedNodes;
+            constexpr float spacingX = 250.0f;
+            constexpr float spacingY = 180.0f;
+            constexpr auto originOffset = ImVec2(100.0f, 80.0f);
 
             static float zoom = 1.0f;
             const ImGuiIO &io = ImGui::GetIO();
+            if (ImGui::IsWindowHovered() && io.MouseWheel != 0.0f) {
+                zoom = std::clamp(zoom + io.MouseWheel * 0.1f, 0.25f, 2.0f);
+            }
+            ImGui::SetWindowFontScale(zoom);
 
-            if (ImGui::IsWindowHovered()) {
-                if (io.MouseWheel != 0.0f) {
-                    zoom += io.MouseWheel * 0.1f;
-                    zoom = std::clamp(zoom, 0.2f, 2.5f);
+            struct Edge {
+                int from;
+                int to;
+            };
+            std::vector<Edge> edges_all;
+            const size_t N = sorted.size();
+
+            for (size_t i = 0; i < N; ++i)
+                for (size_t j = 0; j < N; ++j)
+                    if (i != j && passDependsOn(sorted[i], sorted[j]))
+                        edges_all.push_back({static_cast<int>(j), static_cast<int>(i)});
+
+            auto hasIndirectPath = [&](int a, int b) {
+                std::queue<int> q;
+                std::unordered_set<int> visited;
+                q.push(a);
+                visited.insert(a);
+                while (!q.empty()) {
+                    int cur = q.front();
+                    q.pop();
+                    for (auto &e: edges_all) {
+                        if (e.from == cur && e.to != b && !visited.contains(e.to)) {
+                            if (e.to == b) return true;
+                            q.push(e.to);
+                            visited.insert(e.to);
+                        }
+                    }
+                }
+                return false;
+            };
+
+            std::vector<Edge> edges;
+            edges.reserve(edges_all.size());
+            for (auto &e: edges_all) {
+                bool redundant = false;
+                for (auto &other: edges_all) {
+                    if (other.from == e.from && other.to != e.to) {
+                        if (hasIndirectPath(other.to, e.to)) {
+                            redundant = true;
+                            break;
+                        }
+                    }
+                }
+                if (!redundant)
+                    edges.push_back(e);
+            }
+
+            static std::unordered_set<int> positionedNodes;
+            std::unordered_map<int, int> layerCount;
+            for (size_t i = 0; i < N; ++i) {
+                const auto &node = sorted[i];
+                const int nodeId = static_cast<int>(i);
+                if (!positionedNodes.contains(nodeId)) {
+                    int layer = static_cast<int>(node.layer);
+                    int row = layerCount[layer]++;
+                    ImVec2 pos{
+                        originOffset.x + layer * spacingX,
+                        originOffset.y + row * spacingY
+                    };
+                    ImNodes::SetNodeEditorSpacePos(nodeId, pos);
+                    positionedNodes.insert(nodeId);
                 }
             }
 
-            ImGui::SetWindowFontScale(zoom);
+            for (size_t i = 0; i < N; ++i) {
+                const auto &pass = sorted[i];
+                const int nodeId = static_cast<int>(i);
+                ImNodes::BeginNode(nodeId);
 
-            for (size_t i = 0; i < sorted.size(); ++i) {
-                const auto& pass = sorted[i];
-
-                if (!positionedNodes.contains(static_cast<int>(i))) {
-                    const int row = static_cast<int>(i) / nodesPerRow;
-                    const int col = static_cast<int>(i) % nodesPerRow;
-
-                    const float posX = originOffset.x + col * spacingX;
-                    const float posY = originOffset.y + row * spacingY;
-
-                    ImNodes::SetNodeEditorSpacePos(static_cast<int>(i), ImVec2(posX, posY));
-                    positionedNodes.insert(static_cast<int>(i));
-                }
-
-                ImNodes::BeginNode(static_cast<int>(i));
                 ImNodes::BeginNodeTitleBar();
                 ImGui::Text("%s", pass.target ? pass.target->va()->id.c_str() : pass.name.c_str());
                 ImNodes::EndNodeTitleBar();
 
                 ImGui::Dummy(ImVec2(150.f, 0.0f));
 
-                ImNodes::BeginInputAttribute(static_cast<int>(i * 100));
-                ImGui::Text("In");
+                ImNodes::BeginInputAttribute(nodeId * 10 + 1);
+                ImGui::Text("Inputs: %d", (int) pass.inputs.size());
                 ImNodes::EndInputAttribute();
 
-                ImNodes::BeginOutputAttribute(static_cast<int>(i * 1000));
-                ImGui::Text("Out");
+                ImNodes::BeginOutputAttribute(nodeId * 10 + 2);
+                ImGui::Text("Outputs: %d", (int) pass.outputs.size());
                 ImNodes::EndOutputAttribute();
 
                 ImNodes::EndNode();
             }
 
-            //HACK 伪连线
-            for (size_t i = 0; i + 1 < sorted.size(); ++i) {
-                const auto out_attr_id = static_cast<int>(i * 1000);
-                const auto in_attr_id  = static_cast<int>((i + 1) * 100);
-                ImNodes::Link(static_cast<int>(i * 10000), out_attr_id, in_attr_id);
+            int link_id = 0;
+            for (auto &[from, to]: edges) {
+                const int outAttr = from * 10 + 2;
+                const int inAttr = to * 10 + 1;
+                ImNodes::Link(link_id++, outAttr, inAttr);
             }
 
             ImNodes::MiniMap(0.2f, ImNodesMiniMapLocation_BottomRight);
             ImNodes::EndNodeEditor();
-
             ImGui::SetWindowFontScale(1.0f);
         });
     }

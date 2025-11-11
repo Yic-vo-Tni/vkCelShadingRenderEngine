@@ -268,8 +268,7 @@ namespace sc {
             cmd.copyImageToBuffer(yic::renderLibrary->RT_IDBuffer->images, vk::ImageLayout::eTransferSrcOptimal, stagBuffer, region);
         });
 
-        //auto entityID = 0u;
-        uint32_t entityID = -1;
+        auto entityID = 0u;
         const void* data = dev->mapMemory(stagDeviceMem, 0, sizeof(uint32_t));
         std::memcpy(&entityID, data, sizeof(uint32_t));
         dev->unmapMemory(stagDeviceMem);

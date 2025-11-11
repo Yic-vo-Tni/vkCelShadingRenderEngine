@@ -1,9 +1,10 @@
-# vkCelShadingRenderEngine
+[//]: # (# vkCelShadingRenderEngine)
+# Hakuro Fabric
 
 > Polished English version by ChatGPT. \
 > ⚠️ Note: During translation and polishing, GPT may have described the features as more complete or functional than they currently are — apologies in advance. : (
 
-[简体中文](README.zh-CN.md)
+[简体中文](README.zh-CN.md) — *If you can read Chinese, it’s recommended to check the Chinese version for a more accurate description.*
 
 🔎 For non-critical bugs, minor optimizations, and TODOs, see  
 [Known Issues & TODOs](KnownIssues.md)
@@ -41,7 +42,9 @@ as the focus shifts entirely toward building this next-generation RenderGraph sy
 > *Note: The following features are goals or planned work. Most are still in progress and not yet available in the
 current codebase.*
 
-**vkCelShadingRenderEngine = Architecture * Atmosphere * Elegance + Bonus**
+**Hakuro Fabric = Architecture * Atmosphere * Elegance + Bonus**
+
+[//]: # (**vkCelShadingRenderEngine = Architecture * Atmosphere * Elegance + Bonus**)
 
 ---
 
