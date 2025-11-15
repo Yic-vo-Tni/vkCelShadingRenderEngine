@@ -19,23 +19,6 @@
 
 <img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
 
-### Newly Added Plan (2025.11.9)
-
-Currently planning to optimize the **RenderGraph** into a truly **parallel architecture**,  
-while expanding the **NodeGraph** visualization to support more diverse and dynamic nodes.
-
-For now, other planned features will be temporarily **paused**,  
-as the focus shifts entirely toward building this next-generation RenderGraph system.
-
-**Future directions include:**
-- Allowing **dynamic creation and deletion** of RenderTargets (RTs) directly within the NodeGraph.
-- Supporting **interactive drag-and-drop reconnection** between any RT nodes.
-- Extracting RenderGraph data into a **custom scripting layer** that can automatically generate GLSL code and descriptor set relationships.
-- Enabling **runtime modification** of the entire render pipeline through this script system.
-- Exploring **AI-based optimization**, where an AI module analyzes the execution time of each RT pass and automatically adjusts the render order for optimal performance.
-
-> In essence, the next stage aims to evolve from a pseudo-sequential RenderGraph  
-> into a fully data-driven, script-controllable, and AI-optimized rendering workflow.
 
 ### Learning Goals & Planned Features （2025.9.6）
 
