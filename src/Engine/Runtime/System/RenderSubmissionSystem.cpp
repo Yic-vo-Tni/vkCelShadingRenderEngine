@@ -13,17 +13,50 @@ namespace sc {
     RenderSubmissionSystem::RenderSubmissionSystem(entt::registry& registry) : ecs{registry}{
         uRenderGraph = std::make_unique<runtime::flow::RenderGraph>();
         uRenderStage = std::make_unique<RenderStage>(ecs);
+        uDynamicEditableRendering = std::make_unique<runtime::flow::DynamicEditableRendering>();
+        yic::derTranslator = runtime::flow::DERTranslator::make(uDynamicEditableRendering.get());
+       // yic::dispatchHelper = runtime::flow::DispatchHelper::make(ecs);
     }
 
     RenderSubmissionSystem::~RenderSubmissionSystem() = default;
 
     auto RenderSubmissionSystem::frame() -> void {
-        uRenderStage->update();
+        // yic::dispatchHelper->frame();
+        // uDynamicEditableRendering->drawEditor();
+        //
+        // using namespace runtime::flow;
+        // RG_DSL::ctx(uRenderGraph)
+        //
+        // | RG_DSL::begin
+        //
+        // | RG_DSL::lambda([&](auto &g) {
+        //     for (auto &[n, nodes]: uDynamicEditableRendering->acquireRF().algorithms) {
+        //         for (auto &node: nodes) {
+        //             g = std::move(g) |
+        //                 std::visit([&]<typename T0>(T0 &&v) {
+        //                     using T = std::decay_t<T0>;
+        //                     if constexpr (std::is_same_v<T, vot::Image_sptr>) {
+        //                         return PassNode{v};
+        //                     } else if constexpr (std::is_same_v<T, vot::string>) {
+        //                         return PassNode{v};
+        //                     }
+        //                 }, node.makePassNode())
+        //                 + Node::read{node.reads}
+        //                 >> Node::invoke{node.dispatch};
+        //         }
+        //     }
+        // })
+        //
+        // | RG_DSL::end;
+
+        /////////////////////////////////////////////////////////
+
+        uRenderStage->update(); //
         auto& RL = yic::renderLibrary;
+
 
         using namespace runtime::flow;
         RG_DSL::ctx(uRenderGraph)
-
         | RG_DSL::begin
 
         | PassNode{"comp_skinning"}

@@ -7,6 +7,7 @@
 
 #include "RenderFlow/RenderGraph.h"
 #include "RenderStage/RenderStage.h"
+#include "DER/DynamicEditableRendering.h"
 
 namespace sc {
 
@@ -19,6 +20,7 @@ namespace sc {
     private:
         entt::registry& ecs;
         std::unique_ptr<runtime::flow::RenderGraph> uRenderGraph;
+        std::unique_ptr<runtime::flow::DynamicEditableRendering> uDynamicEditableRendering;
         std::unique_ptr<RenderStage> uRenderStage;
     };
 

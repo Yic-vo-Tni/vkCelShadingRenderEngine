@@ -29,37 +29,9 @@ namespace rhi {
                 .setWaitSemaphoreValues(submitInfo.waitValues)
                 .setSignalSemaphoreValues(submitInfo.signalValues);
 
-        // auto sub = vk::SubmitInfo()
-        //         .setCommandBuffers(submitInfo.cmds);
-        // yic::logger->warn("sizeof(vk::CommandBuffer)  = {}", sizeof(vk::CommandBuffer));
-        // yic::logger->warn("sizeof(vot::CommandBuffer) = {}", sizeof(vot::CommandBuffer));
-        //
-        // // 检查每个句柄的地址和字节内容
-        // for (size_t i = 0; i < submitInfo.cmds.size(); ++i) {
-        //     auto& src = submitInfo.cmds[i];
-        //     yic::logger->warn(
-        //         fmt::runtime("[src {}] vk handle = {}, first bytes = {:016llx}"),
-        //         i,
-        //         (void*)static_cast<VkCommandBuffer>(src),
-        //         *reinterpret_cast<const uint64_t*>(&src)
-        //     );
-        // }
-        //
-        // // 执行转换
-
-        // 检查转换结果
-        // for (size_t i = 0; i < cmds.size(); ++i) {
-        //     auto& dst = cmds[i];
-        //     yic::logger->warn(
-        //         fmt::runtime("[dst {}] vk handle = {}, first bytes = {:016llx}"),
-        //         i,
-        //         (void*)static_cast<VkCommandBuffer>(dst),
-        //         *reinterpret_cast<const uint64_t*>(&dst)
-        //     );
-        // }
-        auto cmds = vot::vector<vk::CommandBuffer>(submitInfo.cmds.begin(), submitInfo.cmds.end());
+        auto cmds = submitInfo._flattenToVk();
         auto sub = vk::SubmitInfo()
-            .setCommandBuffers(cmds);
+                .setCommandBuffers(cmds);
 
         if (!submitInfo.onetimeSubmit) {
             sub.setWaitDstStageMask(submitInfo.waitStageMasks)

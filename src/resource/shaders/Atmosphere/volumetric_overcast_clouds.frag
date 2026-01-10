@@ -28,7 +28,7 @@ struct volume_sampler_t {
 
 // 参数
 const float PI = 3.14159265359;
-const int cld_march_steps = 64;
+const int cld_march_steps = 128;
 //50
 const float cld_coverage = 0.4;
 //0.3125

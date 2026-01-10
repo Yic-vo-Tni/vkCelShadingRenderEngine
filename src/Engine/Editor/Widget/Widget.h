@@ -38,12 +38,14 @@ namespace ui {
         constexpr char NameRender[] = "Render";
         constexpr char NamePanel[] = "Panel";
         constexpr char NameNode[] = "NodeGraph";
+        constexpr char NameDER[] = "DER";
 
         using view = GenericWidget<vot::uiWidget::eViewWidget, NameView>;
         using console = GenericWidget<vot::uiWidget::eConsoleWidget, NameConsole>;
         using render = GenericWidget<vot::uiWidget::eRenderWidget, NameRender>;
         using panel = GenericWidget<vot::uiWidget::ePanelWidget, NamePanel>;
         using nodeGraph = GenericWidget<vot::uiWidget::eNodeWidget, NameNode>;
+        using der = GenericWidget<vot::uiWidget::eDERWidget, NameDER>;
     }
 } // ui
 

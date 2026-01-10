@@ -4,7 +4,6 @@
 
 #include "Image.h"
 #include "Core/DispatchSystem/SystemHub.h"
-#include "RHI/Allocator.h"
 #include "RHI/Descriptor.h"
 
 using DefaultSampler = rhi::ImGuiDescriptorManager;

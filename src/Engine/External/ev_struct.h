@@ -72,6 +72,10 @@ namespace ev {
         double ypos;
     };
 
+    struct glCharInput {
+        unsigned int codepoint;
+    };
+
     struct glScrollInput {
         double xoffset;
         double yoffset;

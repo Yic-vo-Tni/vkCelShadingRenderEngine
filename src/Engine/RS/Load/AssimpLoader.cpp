@@ -127,7 +127,8 @@ namespace rs {
 
                 if (alloc) {
                     if (rc.diffuseTextures[index] == nullptr) {
-                        const auto utf8str = boost::locale::conv::utf_to_utf<char>(loadPt.value().u16string());
+                        //const auto utf8str = boost::locale::conv::utf_to_utf<char>(loadPt.value().u16string());
+                        const auto utf8str = fo::utf16_to_utf_8(loadPt.value());
                         yic::logger->info(utf8str);
                         rc.diffuseTextures[index] = yic::allocator->loadTexture(utf8str.c_str());
                     }

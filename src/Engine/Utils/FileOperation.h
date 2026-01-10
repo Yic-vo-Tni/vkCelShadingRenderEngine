@@ -35,25 +35,65 @@ namespace fo{
     }
 
     inline auto readFile(const vot::string& path) -> vot::vector<unsigned char> {
-        auto wpt = boost::locale::conv::utf_to_utf<wchar_t>(path.c_str());
-        HANDLE fileHandle = CreateFileW(wpt.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        // auto wpt = boost::locale::conv::utf_to_utf<wchar_t>(path.c_str());
+        // HANDLE fileHandle = CreateFileW(wpt.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        // if (fileHandle == INVALID_HANDLE_VALUE) {
+        //     std::cerr << "Failed to open file" << std::endl;
+        //     return {};
+        // }
+        //
+        // LARGE_INTEGER fileSize;
+        // if (!GetFileSizeEx(fileHandle, &fileSize)) {
+        //     CloseHandle(fileHandle);
+        //     std::cerr << "Failed to get file size" << std::endl;
+        //     return {};
+        // }
+        //
+        // vot::vector<unsigned char> buffer(static_cast<size_t>(fileSize.QuadPart));
+        // DWORD bytesRead;
+        // if (!ReadFile(fileHandle, buffer.data(), static_cast<DWORD>(fileSize.QuadPart), &bytesRead, nullptr) || bytesRead != fileSize.QuadPart) {
+        //     CloseHandle(fileHandle);
+        //     std::cerr << "Failed to read file" << std::endl;
+        //     return {};
+        // }
+        //
+        // CloseHandle(fileHandle);
+        // return buffer;
+        namespace fs = std::filesystem;
+
+        fs::path p = fs::u8path(path); // UTF-8 → UTF-16（Windows）
+
+        HANDLE fileHandle = CreateFileW(
+            p.c_str(),
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            nullptr,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr
+        );
+
         if (fileHandle == INVALID_HANDLE_VALUE) {
-            std::cerr << "Failed to open file" << std::endl;
             return {};
         }
 
-        LARGE_INTEGER fileSize;
+        LARGE_INTEGER fileSize{};
         if (!GetFileSizeEx(fileHandle, &fileSize)) {
             CloseHandle(fileHandle);
-            std::cerr << "Failed to get file size" << std::endl;
             return {};
         }
 
         vot::vector<unsigned char> buffer(static_cast<size_t>(fileSize.QuadPart));
-        DWORD bytesRead;
-        if (!ReadFile(fileHandle, buffer.data(), static_cast<DWORD>(fileSize.QuadPart), &bytesRead, nullptr) || bytesRead != fileSize.QuadPart) {
+
+        DWORD bytesRead = 0;
+        if (!ReadFile(
+                fileHandle,
+                buffer.data(),
+                static_cast<DWORD>(fileSize.QuadPart),
+                &bytesRead,
+                nullptr
+            ) || bytesRead != fileSize.QuadPart) {
             CloseHandle(fileHandle);
-            std::cerr << "Failed to read file" << std::endl;
             return {};
         }
 
@@ -78,17 +118,34 @@ namespace fo{
         return {};
     }
     inline std::optional<fs::path> findFileInDirectory(const fs::path& directory, const char* path){
-        auto pt = boost::locale::conv::utf_to_utf<wchar_t>(path);
-        fs::path filename = pt;
-        if (!fs::exists(directory) || !fs::is_directory(directory)){
-            yic::logger->error("the directory is valid");
+        // auto pt = boost::locale::conv::utf_to_utf<wchar_t>(path);
+        // fs::path filename = pt;
+        // if (!fs::exists(directory) || !fs::is_directory(directory)){
+        //     yic::logger->error("the directory is valid");
+        // }
+        //
+        // for(const auto& subDir : fs::recursive_directory_iterator(directory)){
+        //     if (subDir.is_regular_file()){
+        //         if (subDir.path().filename().wstring() == filename.filename()){
+        //             return subDir.path();
+        //         }
+        //     }
+        // }
+        //
+        // return std::nullopt;
+        fs::path filename = fs::u8path(path);
+
+        if (!fs::exists(directory) || !fs::is_directory(directory)) {
+            yic::logger->error("the directory is invalid");
+            return std::nullopt;
         }
 
-        for(const auto& subDir : fs::recursive_directory_iterator(directory)){
-            if (subDir.is_regular_file()){
-                if (subDir.path().filename().wstring() == filename.filename()){
-                    return subDir.path();
-                }
+        for (const auto& entry : fs::recursive_directory_iterator(directory)) {
+            if (!entry.is_regular_file())
+                continue;
+
+            if (entry.path().filename() == filename.filename()) {
+                return entry.path();
             }
         }
 
@@ -96,11 +153,19 @@ namespace fo{
     }
 
     inline auto utf8_to_utf16(const char* pt) -> std::basic_string<wchar_t>{
-        return boost::locale::conv::utf_to_utf<wchar_t>(pt);
+        //return boost::locale::conv::utf_to_utf<wchar_t>(pt);
+        return fs::u8path(pt);
     }
 
     inline auto utf16_to_utf_8(const fs::path& pt) -> vot::string{
-        return boost::locale::conv::utf_to_utf<char>(pt.u16string()).c_str();
+        //return boost::locale::conv::utf_to_utf<char>(pt.u16string()).c_str();
+        auto u8 = pt.u8string();
+        auto bytes = std::as_bytes(std::span(u8));
+
+        return vot::string(
+            reinterpret_cast<const char*>(bytes.data()),
+            bytes.size()
+        );
     }
 //
 //    inline std::string getFileNameFromPath(const std::string& path){

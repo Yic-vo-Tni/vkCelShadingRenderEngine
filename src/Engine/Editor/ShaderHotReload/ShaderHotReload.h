@@ -113,19 +113,91 @@ namespace ui {
         }
 
         auto compile() -> void{
-            std::string shaderPath = shader_path "/..";
+            // std::string shaderPath = shader_path "/..";
+            //
+            // auto cmake_cmd = "cmake -S " + shaderPath + " -B " + shaderPath + "/build";
+            // auto build_cmd = "cmake --build " + shaderPath + "/build";
 
-            auto cmake_cmd = "cmake -S " + shaderPath + " -B " + shaderPath + "/build";
-            auto build_cmd = "cmake --build " + shaderPath + "/build";
+            // boost::process::system(cmake_cmd, boost::process::std_out > stdout, boost::process::std_err > stderr);
+            // boost::process::system(build_cmd, boost::process::std_out > stdout, boost::process::std_err > stderr);
 
-            boost::process::system(cmake_cmd, boost::process::std_out > stdout, boost::process::std_err > stderr);
-            boost::process::system(build_cmd, boost::process::std_out > stdout, boost::process::std_err > stderr);
+            const std::string shaderPath = shader_path "/..";
+
+            const auto cmake_cmd = "cmake -S \"" + shaderPath + "\" -B \"" + shaderPath + "/build\"";
+
+            const auto build_cmd = "cmake --build \"" + shaderPath + "/build\"";
+
+            run_command(cmake_cmd);
+            run_command(build_cmd);
         }
 
         const auto& getBuildTasks() { return buildTasks; }
         const auto& getBuildOrders() { return buildOrders; }
 
     private:
+        auto run_command(const std::string &cmd_utf8) -> bool {
+            // UTF-8 -> UTF-16
+            int wlen = MultiByteToWideChar(
+                CP_UTF8,
+                0,
+                cmd_utf8.c_str(),
+                -1,
+                nullptr,
+                0
+            );
+
+            std::wstring cmd(wlen, L'\0');
+
+            MultiByteToWideChar(
+                CP_UTF8,
+                0,
+                cmd_utf8.c_str(),
+                -1,
+                cmd.data(),
+                wlen
+            );
+
+            STARTUPINFOW si{};
+            si.cb = sizeof(si);
+            si.dwFlags = STARTF_USESTDHANDLES;
+            si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+            si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+            si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+
+            PROCESS_INFORMATION pi{};
+
+            // 使用 cmd.exe /C，等价于 system()
+            std::wstring full_cmd = L"cmd.exe /C " + cmd;
+
+            BOOL ok = CreateProcessW(
+                nullptr,
+                full_cmd.data(),
+                nullptr,
+                nullptr,
+                TRUE, // 继承 stdout/stderr
+                0,
+                nullptr,
+                nullptr,
+                &si,
+                &pi
+            );
+
+            if (!ok) {
+                return false;
+            }
+
+            WaitForSingleObject(pi.hProcess, INFINITE);
+
+            DWORD exitCode = 0;
+            GetExitCodeProcess(pi.hProcess, &exitCode);
+
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+
+            return exitCode == 0;
+        }
+
+
         auto checkShaderFilesIsUpdateOrNew(const vot::string& shaderDir, ShaderCache& cache) -> void {
             bool needCompile = false;
             for (auto& p : std::filesystem::recursive_directory_iterator(shaderDir)) {

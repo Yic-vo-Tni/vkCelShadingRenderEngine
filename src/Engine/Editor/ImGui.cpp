@@ -67,6 +67,7 @@ namespace ui {
         mWidgets.emplace_back(std::move(std::make_unique<window::console>()));
         mWidgets.emplace_back(std::move(std::make_unique<window::panel>()));
         mWidgets.emplace_back(std::move(std::make_unique<window::nodeGraph>()));
+        mWidgets.emplace_back(std::move(std::make_unique<window::der>()));
 
         yic::imguiHub = ImGuiHub::make();
     }
@@ -106,6 +107,12 @@ namespace ui {
             const auto&[xoffset, yoffset] = yic::glTBuffers[readIndex].scrollInput;
             ImGui_ImplGlfw_ScrollCallback(mWindow, xoffset, yoffset);
             yic::glTBuffers[readIndex].scrollInput = {0, 0};
+        }
+        {
+            const auto readIndex = yic::glT::charInputActive.load(std::memory_order_acquire);
+            const auto& codepoint = yic::glTBuffers[readIndex].charInput.codepoint;
+            ImGui_ImplGlfw_CharCallback(mWindow, codepoint);
+            yic::glTBuffers[readIndex].charInput.codepoint = 0;
         }
 
 

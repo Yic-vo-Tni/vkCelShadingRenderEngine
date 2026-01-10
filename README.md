@@ -160,30 +160,38 @@ current codebase.*
 | VK_KHR_dynamic_rendering_local_read   |   ✔️   |                 |
 | VK_EXT_robustness2                    |   📋   |                 |
 
-| Third-party Libraries  | ✔️ | 🚧 | 📋 | ❌ | Refactor / Plan  |
-|------------------------|:--:|:--:|:--:|:-:|------------------|
-| assimp                 | ✔️ |    |    |   |                  |
-| boost                  | ✔️ |    |    |   | Planned removal  |
-| entt                   | ✔️ |    |    |   |                  |
-| flecs                  |    |    |    | ❌ |                  |
-| glfw                   | ✔️ |    |    |   |                  |
-| glm                    | ✔️ |    |    |   |                  |
-| mimalloc               | ✔️ |    |    |   |                  |
-| miniaudio              | ✔️ |    |    |   |                  |
-| nlohmann               | ✔️ |    |    |   |                  |
-| oneapi                 | ✔️ |    |    |   |                  |
-| ozz                    |    |    | 📋 |   |                  |
-| spdlog                 | ✔️ |    |    |   |                  |
-| stb                    | ✔️ |    |    |   |                  |
-| webview                | ✔️ |    |    |   |                  |
-| saba                   | ✔️ |    |    |   | Being refactored |
-| imgui-docking/imguizmo | ✔️ |    |    |   |                  |
-| cuda                   |    |    | 📋 |   |                  |
-| bullet                 |    |    |    | ❌ |                  |
-| vma                    | ✔️ |    |    |   |                  |
-| jolt physics           |    |    | 📋 |   |                  |
-| ffmpeg                 |    |    | 📋 |   |                  |
-
+| Third-party Libraries          | ✔️ | 🚧 | 📋 | ❌ | Refactor / Plan / Reason |
+|--------------------------------|:--:|:--:|:--:|:-:|--------------------------|
+| assimp                         | ✔️ |    |    |   |                          |
+| boost(hana/locale/filesystem)  |    |    |    | ❌ |                          |
+| entt                           | ✔️ |    |    |   |                          |
+| flecs                          |    |    |    | ❌ |                          |
+| glfw                           | ✔️ |    |    |   |                          |
+| glm                            | ✔️ |    |    |   |                          |
+| mimalloc                       | ✔️ |    |    |   |                          |
+| miniaudio                      | ✔️ |    |    |   |                          |
+| nlohmann                       | ✔️ |    |    |   |                          |
+| oneapi                         | ✔️ |    |    |   | Planned removal          |
+| enkits                         |    |    | 📋 |   |                          |
+| moodycamel                     |    |    | 📋 |   |                          |
+| folly                          |    |    | 📋 |   |                          |
+| absl                           |    |    | 📋 |   |                          |
+| ozz                            |    |    | 📋 |   |                          |
+| spdlog                         | ✔️ |    |    |   |                          |
+| stb                            | ✔️ |    |    |   |                          |
+| webview                        | ✔️ |    |    |   |                          |
+| saba                           | ✔️ |    |    |   | Undergoing refactoring   |
+| imgui-docking/imguizmo/imnodes | ✔️ |    |    |   |                          |
+| cuda                           |    |    | 📋 |   |                          |
+| bullet                         |    |    |    | ❌ |                          |
+| vma                            | ✔️ |    |    |   |                          |
+| jolt physics                   |    |    | 📋 |   |                          |
+| ffmpeg                         |    |    | 📋 |   |                          |
+Note:
+This table is maintained as part of my learning and exploration process.
+Entries marked with ❌ indicate libraries that I have explored or used before,
+but are not currently used in the project.
+This does not represent a negative evaluation of the libraries themselves.
 
 ### Legacy / Deprecated Features
 > The following features were implemented in earlier stages of the engine but have since been removed or replaced.  
@@ -218,23 +226,33 @@ Please make sure your environment is **equal to or newer than mine**, otherwise 
 - Vulkan Runtime (driver): 1.4.312
 - CMake: 3.29  *(3.20+ should work)*
 - Compiler: Clang 21.1.1  
-  *(Clang 18+ work, MinGW not supported due to TBB, MSVC may hit CRT issues)*
+  *(MinGW Clang 18+ work, MSVC may hit CRT issues)*
 - GPU: NVIDIA GeForce RTX 3080 Ti *(RTX 20 series may work, AMD not tested)*
 - OS: Windows 11
 
-### Dependencies (2025.9.4)
+### Dependencies (2026.1.10)
 Currently you need to download or build the following libraries manually:  
-`Assimp, Boost (locale/system), mimalloc, entt, glfw, oneAPI TBB, glm, miniaudio, nlohmann, spdlog, stb, webview, imgui(docking), imguizmo, saba, bullet`.\
+`mimalloc, entt, oneAPI TBB, glm, miniaudio, nlohmann, spdlog, stb, webview, imgui(docking), imguizmo, imnode, saba, bullet`.\
 Place library `third/xxx`,Place built `.lib` in `third/lib` and `.dll` in `third/dll`.
 Notes:
 - **Bullet**: follow Saba's requirement. 
 - **Saba**: needs cleanup (remove internal spdlog to avoid conflicts).
 - After all dependencies are resolved, you can open the project directly in CLion and build.
-- Plan: remove Boost dependency and migrate to **git submodules**.
+- Plan: Gradually migrate dependencies to **git submodules**.  
+  Progress: assimp, glfw :(
 
-> Because the main body of the author's study is Vulkan, many functions will be realized by choosing libraries first.
-> Even if some libraries only use a little function, they may even make a mountain out of a molehill because of the
-> author's level, such as Boost.
+> Since the main focus of the author’s study is Vulkan, many features are implemented by first selecting and integrating existing libraries.
+> In some cases, even if only a small portion of functionality is needed, a relatively heavy dependency may be introduced.
+> This is largely due to the author’s current experience level—for example, Boost was used in this way.
+
+> At the moment, **oneAPI TBB may not be buildable** in the current environment.
+> The current plan is to replace it with a combination of four alternative libraries.
+> This issue is mainly related to the author’s preference for a **MinGW ABI + Clang** toolchain, which causes build incompatibilities with TBB.
+> The replacement will be done gradually, with dependencies migrated to **git submodules** over time.
+
+> For **MSVC**, the main issue is related to **CRT compatibility in Saba**.
+> The current plan is to fork the Saba repository and refactor it internally,
+> with the goal of addressing and improving these CRT-related problems.
 
 ### Validation Report (2025.9.4)
 - **Errors:** none

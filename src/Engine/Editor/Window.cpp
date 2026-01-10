@@ -30,6 +30,13 @@ namespace yic {
 
     };
 
+    inline auto setCharCallback = [](GLFWwindow *w, unsigned int code) {
+        const auto writeIndex = 1 - glT::charInputActive.load(std::memory_order_acquire);
+
+        glTBuffers[writeIndex].charInput.codepoint = code;
+        glT::charInputActive.store(writeIndex, std::memory_order_release);
+    };
+
     inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {
         const auto writeIndex = 1 - glT::mouseInputActive.load(std::memory_order_acquire);
         glTBuffers[writeIndex].mouseInput.button = button;
@@ -108,6 +115,7 @@ namespace yic {
         glfwSetWindowUserPointer(mWindow, (void *) this);
         glfwSetKeyCallback(mWindow, setKeyCallback);
         glfwSetMouseButtonCallback(mWindow, setMouseButtonCallback);
+        glfwSetCharCallback(mWindow, setCharCallback);
         glfwSetCursorPosCallback(mWindow, setCursorPosCallback);
 
         glfwSetFramebufferSizeCallback(mWindow, framebufferSizeCallback);

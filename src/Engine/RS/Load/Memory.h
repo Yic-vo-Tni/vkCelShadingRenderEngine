@@ -7,24 +7,24 @@
 
 namespace rs {
 
-    template <typename T>
-    class MemoryManager {
-    public:
-        MemoryManager()
-                : pool(sizeof(T))
-        {}
-
-        T* allocate(size_t num = 1) {
-            return static_cast<T*>(pool.ordered_malloc(num));
-        }
-
-        void deallocate(T* ptr, size_t num = 1) {
-            pool.ordered_free(ptr, num);
-        }
-
-    private:
-        boost::pool<> pool;
-    };
+    // template <typename T>
+    // class MemoryManager {
+    // public:
+    //     MemoryManager()
+    //             : pool(sizeof(T))
+    //     {}
+    //
+    //     T* allocate(size_t num = 1) {
+    //         return static_cast<T*>(pool.ordered_malloc(num));
+    //     }
+    //
+    //     void deallocate(T* ptr, size_t num = 1) {
+    //         pool.ordered_free(ptr, num);
+    //     }
+    //
+    // private:
+    //     boost::pool<> pool;
+    // };
 
 //    template<typename T>
 //    class MemoryPool {

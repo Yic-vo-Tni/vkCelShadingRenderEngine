@@ -45,7 +45,14 @@ namespace runtime::flow {
         struct read{
             vot::vector<RT_sptr> images;
 
+            explicit read(const vot::vector<vot::Image_sptr>& imgs) {
+                for (auto& img : imgs) {
+                    images.emplace_back(std::make_shared<RenderTarget>(img));
+                }
+            }
+
             template<typename ...Args>
+            requires(sizeof...(Args)>0 && (std::conjunction_v<std::is_same<std::decay_t<Args>, vot::Image_sptr>...>))
             explicit read(Args&&...imgs) {
                 (images.emplace_back(std::make_shared<RenderTarget>(imgs)), ...);
             }
@@ -151,6 +158,27 @@ namespace runtime::flow {
             }
             if (graph) graph->end();
             return dsl;
+        }
+
+        struct Lambda {
+            std::function<void(RG_DSL&)> fn;
+        };
+
+        template<typename F>
+        static Lambda lambda(F&& f) {
+           // return Build{std::function<void(RG_DSL&)>(std::forward<F>(f))};
+            return Lambda{std::function<void(RG_DSL&)>(std::forward<F>(f))};
+        }
+
+        // template<typename F>
+        // friend auto operator|(RG_DSL &&dsl, F &&f)
+        //     -> std::enable_if<std::is_invocable_v<F, RG_DSL &>, RG_DSL> {
+        //     f(dsl);
+        //     return std::move(dsl);
+        // }
+        friend auto operator|(RG_DSL &&dsl, const Lambda &b) -> RG_DSL {
+            b.fn(dsl);
+            return std::move(dsl);
         }
 
     private:

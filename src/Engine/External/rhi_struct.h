@@ -127,8 +127,8 @@ struct DescriptorHandle{
     uint32_t startIndex{};
     vk::DescriptorSet* pSet = nullptr;
 
-    auto va() const { return pSet[0]; }
-    auto span() const { return std::span{pSet, setCount}; }
+    [[nodiscard]] auto va() const { return pSet[0]; }
+    [[nodiscard]] auto span() const { return std::span{pSet, setCount}; }
 };
 
     struct IPipeline{
@@ -141,11 +141,6 @@ struct DescriptorHandle{
     struct CommandBuffer : vk::CommandBuffer {
         vk::Fence fence; //NOTE: Early design defects, the second edition of the command system has been abandoned. o(╥﹏╥)o
         std::uint32_t id{UINT32_MAX};
-
-        // operator vk::CommandBuffer() const noexcept {
-        //     return static_cast<const vk::CommandBuffer&>(*this);
-        // }
-
 
         using cVk = vk::CommandBuffer;
         auto& bindPipeline_(auto& pipeline){
@@ -283,7 +278,6 @@ struct DescriptorHandle{
                 };
             };
             if (desSetLayouts.empty()){
-                //desSetLayouts.emplace_back(buildDesSetLayout(globalSetLayoutBinding));
                 for(auto &bds: setLayoutBindings | std::views::values){
                     desSetLayouts.emplace_back(buildDesSetLayout(bds));
                 }
@@ -427,8 +421,6 @@ struct DescriptorHandle{
         };
 
         RenderPass2CI renderPass2CI;
-//        PipelineDescriptorSetLayoutCI pipelineDescriptorSetLayoutCI;
-//        PipelineDescriptorSetLayoutCI2 pipelineDescriptorSetLayoutCI2;
         std::variant<PipelineDescriptorSetLayoutCI, PipelineDescriptorSetLayoutCI2> pipelineDescriptorSetLayoutCI;
         VertexInputInterfaceCI vertexInputInterfaceCI;
         PreRasterizationShadersCI preRasterizationShadersCI;
@@ -441,8 +433,6 @@ struct DescriptorHandle{
         auto& setFragmentShaderCI(const struct FragmentShaderCI& ci) { fragmentShader = VK_NULL_HANDLE; fragmentShaderCI = ci; return *this; };
         auto& setPipelineDescriptorSetLayoutCI(const struct PipelineDescriptorSetLayoutCI& ci) { refreshPipelineStages(); pipelineLayout = VK_NULL_HANDLE; pipelineDescriptorSetLayoutCI = ci; return *this; };
         auto& setPipelineDescriptorSetLayoutCI2(const struct PipelineDescriptorSetLayoutCI2& ci2) { refreshPipelineStages(); pipelineLayout = VK_NULL_HANDLE; pipelineDescriptorSetLayoutCI = ci2; return *this; };
-//        auto& setPipelineDescriptorSetLayoutCI(const struct PipelineDescriptorSetLayoutCI& ci) { refreshPipelineStages(); pipelineLayout = VK_NULL_HANDLE; pipelineDescriptorSetLayoutCI = ci; return *this; };
-//        auto& setPipelineDescriptorSetLayoutCI2(const struct PipelineDescriptorSetLayoutCI2& ci2) { refreshPipelineStages(); pipelineLayout = VK_NULL_HANDLE; pipelineDescriptorSetLayoutCI2 = ci2; return *this; };
         auto& setRenderPass2CI(const struct RenderPass2CI& ci) { refreshPipelineStages(); renderPass = VK_NULL_HANDLE; renderPass2CI = ci; return *this; }
 //        auto useDynamicRendering() { renderPass = VK_NULL_HANDLE; return *this; }
 
@@ -545,36 +535,42 @@ struct DescriptorHandle{
     };
 
     struct SubmitInfo{
+        // basic sync parm
         vector<uint64_t> waitValues{};
         vector<uint64_t> signalValues{};
-        vector<CommandBuffer> cmds{};
         vector<vk::PipelineStageFlags> waitStageMasks{};
-        vk::Fence fence{};
         vk::Semaphore waitSemaphore{};
         vk::Semaphore signalSemaphore{};
+        vk::Fence fence{};
+
+        // cmd & queue
+        vector<CommandBuffer> cmds{};
         queueType queue{};
         uint32_t selectQueue{};
-        inline static uint64_t counter = 0;
         bool onetimeSubmit{false};
-        void* pNext;
 
-        auto& setWaitValues(timelineStage stage){ auto v = to_u64(stage) + counter; waitValues.emplace_back(v); return *this; }
-        auto& setWaitValues(const vot::vector<timelineStage>& stages){ for(const auto& s : stages){ waitValues.emplace_back(to_u64(s) + counter); } return *this; }
-        auto& setSignalValues(timelineStage stage){ auto v = to_u64(stage) + counter; signalValues.emplace_back(v); return *this;}
-        auto& setSignalValues(const vot::vector<timelineStage>& stages){ for(const auto& s : stages){ signalValues.emplace_back(to_u64(s) + counter); } return *this; }
+        // extra parm
+        void* pNext;
+        inline static uint64_t counter = 0;
+
+        auto& setWaitValues(const timelineStage stage){ auto v = to_u64(stage) + counter; waitValues.emplace_back(v); return *this; }
+        auto& setWaitValues(const vector<timelineStage>& stages){ for(const auto& s : stages){ waitValues.emplace_back(to_u64(s) + counter); } return *this; }
+        auto& setSignalValues(const timelineStage stage){ auto v = to_u64(stage) + counter; signalValues.emplace_back(v); return *this;}
+        auto& setSignalValues(const vector<timelineStage>& stages){ for(const auto& s : stages){ signalValues.emplace_back(to_u64(s) + counter); } return *this; }
         auto& setWaitSemaphore(const vk::Semaphore& wait){ waitSemaphore = wait; return *this; }
         auto& setSignalSemaphore(const vk::Semaphore& signal){ signalSemaphore = signal; return *this; }
-        auto& setWaitStageMasks(const vot::vector<vk::PipelineStageFlags>& waitMasks){ this->waitStageMasks = waitMasks; return *this; }
+        auto& setWaitStageMasks(const vector<vk::PipelineStageFlags>& waitMasks){ this->waitStageMasks = waitMasks; return *this; }
         auto& setWaitStageMasks(const vk::PipelineStageFlags& waitStageMask){ this->waitStageMasks.emplace_back(waitStageMask); return *this; }
         auto& setFence(const vk::Fence& f){ fence = f; return *this; }
-        auto& setCommandBuffers(const vot::CommandBuffer& c){ cmds.emplace_back(c); return *this; }
-        auto& setCommandBuffers(const vot::vector<vot::CommandBuffer>& c){ cmds = c; return *this; }
+        auto& setCommandBuffers(const CommandBuffer& c){ cmds.emplace_back(c); return *this; }
+        auto& setCommandBuffers(const vector<CommandBuffer>& c){ cmds = c; return *this; }
         auto& setQueueType(const queueType& type){ queue = type; return *this; }
         auto& setSelectQueue(const uint32_t& select){ selectQueue = select; return *this; }
         auto& useOnetimeSubmit() { onetimeSubmit = true; return *this; }
 
+        auto _flattenToVk() const -> std::vector<vk::CommandBuffer> { return std::vector<vk::CommandBuffer>{cmds.begin(), cmds.end()}; }
         auto& setRHandle(const RHandle& handle) { pNext = handle; return *this; }
-        static auto increase(){ counter += to_u64(vot::timelineStage::ePresent); }
+        static auto increase(){ counter += to_u64(timelineStage::ePresent); }
     };
 
 
@@ -674,6 +670,9 @@ struct DescriptorLayout2{
     operator vot::vector<vot::vector<vot::vector<descriptorInfo>>>(){
         return std::move(infos);
     }
+
+
+
 private:
     vot::vector<vot::vector<vot::vector<descriptorInfo>>> infos;
 };

@@ -11,6 +11,21 @@
 #include "SM/Scene.h"
 #include "SM/illuminate/DirectionLight.h"
 
+namespace runtime::flow {
+    DispatchHelper::DispatchHelper(entt::registry &registry) : ecs(registry) {
+        ct = yic::systemHub.va<ev::pVkSetupContext>();
+        rt = yic::systemHub.va<ev::pVkRenderContext>();
+    }
+    auto DispatchHelper::frame() -> void {
+        iTime += (1.f / 60.f);
+        iTime += 1.f / std::max(GLOBAL::fps, 0.01f);;
+        fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
+        slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
+        set0 = GLOBAL::entity::set0.va<vot::DescriptorSet0>().handles[fast];
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 namespace sc {
     RenderStage::RenderStage(entt::registry &registry) : ecs(registry) {
         ct = yic::systemHub.va<ev::pVkSetupContext>();
@@ -101,6 +116,8 @@ namespace sc {
                 cmd.bindIndexBuffer(rc.indexBuffer->buffer, 0, rc.indexType);
                 cmd.pushConstants(pipeline.acquirePipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                   sizeof(IDBufferPushConstant), &pushConstants);
+
+
 
                 for (const auto& subMesh : rc.subMeshes | std::views::values | std::views::join) {
                     cmd.drawIndexed(subMesh.indexCount, 1, subMesh.firstIndex, 0, 0);

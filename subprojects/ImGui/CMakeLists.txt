@@ -11,4 +11,4 @@ target_include_directories(imgui PUBLIC
         ../../src/third
 )
 
-target_link_libraries(imgui "Vulkan::Vulkan" dwmapi)
+target_link_libraries(imgui "Vulkan::Vulkan" dwmapi glfw)

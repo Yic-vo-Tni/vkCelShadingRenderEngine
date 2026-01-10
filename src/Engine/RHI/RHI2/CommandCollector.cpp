@@ -86,14 +86,9 @@ namespace rhi2 {
                     }
 
                     auto &cmd = safePool.cmds[safePool.next++];
-                    //cmd.id = framePool.id++;
                     cmd.id = order;
 
                     cmd.render([fn, &cmd] { fn(cmd); });
-
-                    // if (framePool.records.size() <= cmd.id) {
-                    //     framePool.records.resize(cmd.id + 1);
-                    // }
 
                     framePool.records[cmd.id] = cmd;
 

@@ -18,6 +18,8 @@ namespace yic {
         inline static std::atomic<int> scrollInputActive{0};
         ev::glCursorPosInput cursorPosInput;
         inline static std::atomic<int> cursorPosInputActive{0};
+        ev::glCharInput charInput;
+        inline static std::atomic<int> charInputActive{0};
     };
     inline std::array<glT, 2> glTBuffers;
 

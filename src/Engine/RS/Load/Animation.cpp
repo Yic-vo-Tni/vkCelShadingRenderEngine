@@ -15,8 +15,68 @@ namespace rs {
     }
 
     Animation::Animation(const std::shared_ptr<vmd::VmdMotion>& vmd, vot::AnimationComponent& ac) {
-        auto jp_to_utf8 = [](const std::string& sjis) -> vot::string { return boost::locale::conv::to_utf<char>(sjis, "Shift-JIS").c_str(); };
-//        auto vmd = vmd::VmdMotion::LoadFromFile(pt.c_str());
+        auto shift_jis_to_utf8 = [](std::string_view sjis) -> vot::string {
+            if (sjis.empty())
+                return {};
+
+            // Step 1: Shift-JIS (CP932) -> UTF-16
+            int wideSize = MultiByteToWideChar(
+                932, // CP932 = Shift-JIS (Windows Japanese)
+                MB_ERR_INVALID_CHARS,
+                sjis.data(),
+                static_cast<int>(sjis.size()),
+                nullptr,
+                0
+            );
+
+            if (wideSize <= 0)
+                return {};
+
+            std::wstring wide(wideSize, L'\0');
+
+            MultiByteToWideChar(
+                932,
+                MB_ERR_INVALID_CHARS,
+                sjis.data(),
+                static_cast<int>(sjis.size()),
+                wide.data(),
+                wideSize
+            );
+
+            // Step 2: UTF-16 -> UTF-8
+            int utf8Size = WideCharToMultiByte(
+                CP_UTF8,
+                0,
+                wide.data(),
+                wideSize,
+                nullptr,
+                0,
+                nullptr,
+                nullptr
+            );
+
+            if (utf8Size <= 0)
+                return {};
+
+            vot::string utf8(utf8Size, '\0');
+
+            WideCharToMultiByte(
+                CP_UTF8,
+                0,
+                wide.data(),
+                wideSize,
+                utf8.data(),
+                utf8Size,
+                nullptr,
+                nullptr
+            );
+
+            return utf8;
+        };
+        auto jp_to_utf8 = [&](std::string& sjis) -> vot::string { return shift_jis_to_utf8(sjis); };
+        // auto jp_to_utf8 = [](const std::string& sjis) -> vot::string { return boost::locale::conv::to_utf<char>(sjis, "Shift-JIS").c_str(); };
+
+
         mDuration = 0.f;
         mTicksPerSecond = 30.f;
 

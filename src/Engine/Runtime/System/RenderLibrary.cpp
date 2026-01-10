@@ -286,39 +286,31 @@ namespace sc {
     auto RenderLibrary::buildUniqueDSHandle() -> void {
       T_blueNoise64 = yic::allocator->loadTexture(tex_path "LDR_LLL1_0.png");
 
-        GP_Volumetric_Fog.DS = yic::desSystem->allocUpdateDescriptorSets([&] {
-            vot::DescriptorLayout2 layout{};
+      GP_Volumetric_Fog.DS = yic::desSystem->allocUpdateDescriptorSets([&](vot::DescriptorLayout2& layout) {
+          for (auto i = 0u; i < frameImageCount; i++) {
+              const auto base = RT_GBuffer->config.colorAttachmentCount * i;
+              layout.emplace(vot::DescriptorLayout2::_1d{
+                  RT_GBuffer->imageInfo(base + ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                  RT_ShadowMap->imageInfo(i),
+                  T_blueNoise64->imageInfo(),
+              });
+          }
+      }, GP_Volumetric_Fog);
 
-            for (auto i = 0u; i < frameImageCount; i++) {
-                const auto base = RT_GBuffer->config.colorAttachmentCount * i;
-                layout.emplace(vot::DescriptorLayout2::_1d{
-                        RT_GBuffer->imageInfo(base + ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_ShadowMap->imageInfo(i),
-                        T_blueNoise64->imageInfo(),
-                });
-            }
-
-            return layout;
-        }, GP_Volumetric_Fog);
-
-        GP_Post.DS = yic::desSystem->allocUpdateDescriptorSets([&]{
-            vot::DescriptorLayout2 layout{};
-
-            for(auto i = 0u; i < frameImageCount; i++){
-                const auto base = RT_GBuffer->config.colorAttachmentCount * i;
-                layout.emplace(vot::DescriptorLayout2::_1d {
-                        RT_GBuffer->imageInfo(base + eAlbedo, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_GBuffer->imageInfo(base + ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_GBuffer->imageInfo(base + eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
-                        RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eShaderReadOnlyOptimal),
-                        RTX_RayTracing->imageInfo(),
-                        T_blueNoise64->imageInfo(),
-                });
-            }
-
-            return layout;
-        }, GP_Post);
+      GP_Post.DS = yic::desSystem->allocUpdateDescriptorSets([&](vot::DescriptorLayout2& layout) {
+          for (auto i = 0u; i < frameImageCount; i++) {
+              const auto base = RT_GBuffer->config.colorAttachmentCount * i;
+              layout.emplace(vot::DescriptorLayout2::_1d{
+                  RT_GBuffer->imageInfo(base + eAlbedo, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                  RT_GBuffer->imageInfo(base + ePosition, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                  RT_GBuffer->imageInfo(base + eNormal, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                  RT_Volumetric_Fog->imageInfo(i, std::nullopt, vk::ImageLayout::eRenderingLocalReadKHR),
+                  RT_Volumetric_Clouds->imageInfo(i, std::nullopt, vk::ImageLayout::eShaderReadOnlyOptimal),
+                  RTX_RayTracing->imageInfo(),
+                  T_blueNoise64->imageInfo(),
+              });
+          }
+      }, GP_Post);
     }
 
 } // sc

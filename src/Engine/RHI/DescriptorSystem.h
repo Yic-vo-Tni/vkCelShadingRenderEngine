@@ -26,14 +26,24 @@ namespace rhi {
         auto allocUpdateDescriptorSets(const vot::vector<vot::vector<vot::vector<descriptorInfo>>>& infos, vot::PipelineDescriptorSetLayoutCI2 ci2, const uint32_t& startIndex, const uint32_t &sliceCount) -> vot::DescriptorHandle;
         auto allocUpdateDescriptorSets(const vot::vector<vot::vector<descriptorInfo>>& infos, vot::PipelineDescriptorSetLayoutCI2 ci2, const uint32_t& startIndex, const uint32_t &sliceCount) -> vot::DescriptorHandle;
         auto allocUpdateDescriptorSets(const vot::vector<descriptorInfo>& infos, vot::PipelineDescriptorSetLayoutCI2 ci2, const uint32_t& startIndex, const uint32_t &sliceCount) -> vot::DescriptorHandle ;
-        auto allocUpdateDescriptorSets(const std::function<vot::DescriptorLayout2()>& layout, const vot::PipelineDescriptorSetLayoutCI2& ci2, const uint32_t& startIndex = 1, const uint32_t &sliceCount = 0)-> vot::DescriptorHandle  {
-            return allocUpdateDescriptorSets(layout(), ci2, startIndex, sliceCount);
-        };
+        // auto allocUpdateDescriptorSets(const std::function<vot::DescriptorLayout2()>& layout, const vot::PipelineDescriptorSetLayoutCI2& ci2, const uint32_t& startIndex = 1, const uint32_t &sliceCount = 0)-> vot::DescriptorHandle  {
+        //     return allocUpdateDescriptorSets(layout(), ci2, startIndex, sliceCount);
+        // };
         auto allocUpdateDescriptorSets(const std::function<vot::DescriptorLayout2()>& layout, GraphicsPipeline& graphicsPipeline, const uint32_t& startIndex = 1, const uint32_t &sliceCount = 0)-> vot::DescriptorHandle  {
             return allocUpdateDescriptorSets(layout(), std::get<vot::PipelineDescriptorSetLayoutCI2>(graphicsPipeline.acquirePipelineLibrary().pipelineDescriptorSetLayoutCI), startIndex, sliceCount);
         };
+        auto allocUpdateDescriptorSets(const std::function<void(vot::DescriptorLayout2&)>& layout, GraphicsPipeline& graphicsPipeline, const uint32_t& startIndex = 1, const uint32_t &sliceCount = 0)-> vot::DescriptorHandle  {
+            vot::DescriptorLayout2 layout2;
+            layout(layout2);
+            return allocUpdateDescriptorSets(layout2, std::get<vot::PipelineDescriptorSetLayoutCI2>(graphicsPipeline.acquirePipelineLibrary().pipelineDescriptorSetLayoutCI), startIndex, sliceCount);
+        };
         auto allocUpdateDescriptorSets(const std::function<vot::DescriptorLayout2()>& layout, RayTracingPipeline& rayTracingPipeline, const uint32_t& startIndex = 1, const uint32_t &sliceCount = 0)-> vot::DescriptorHandle  {
             return allocUpdateDescriptorSets(layout(), rayTracingPipeline.getDescriptorSetLayoutCI2(), startIndex, sliceCount);
+        };
+        auto allocUpdateDescriptorSets(const std::function<void(vot::DescriptorLayout2&)>& layout, RayTracingPipeline& rayTracingPipeline, const uint32_t& startIndex = 1, const uint32_t &sliceCount = 0)-> vot::DescriptorHandle  {
+            vot::DescriptorLayout2 layout2;
+            layout(layout2);
+            return allocUpdateDescriptorSets(layout2, rayTracingPipeline.getDescriptorSetLayoutCI2(), startIndex, sliceCount);
         };
         auto updateDescriptorSets( const vot::vector<vot::vector<vot::vector<DescriptorSystem::descriptorInfo>>> &infos, vot::PipelineDescriptorSetLayoutCI2 ci2, vot::DescriptorHandle& handle) -> void;
         auto updateDescriptorSets(const vot::vector<vot::vector<descriptorInfo>>& infos, vot::PipelineDescriptorSetLayoutCI2 ci2, vot::DescriptorHandle& handle) -> void;

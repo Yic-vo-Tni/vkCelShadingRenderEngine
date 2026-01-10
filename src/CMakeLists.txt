@@ -1,6 +1,40 @@
 cmake_minimum_required(VERSION 3.29)
 project(renderer LANGUAGES CXX)
 
+set(IS_CLANG FALSE)
+set(IS_GNU FALSE)
+set(IS_MSVC FALSE)
+set(IS_LIBCXX FALSE)
+
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-stdlib=libc++")
+check_cxx_source_compiles("
+#include <string>
+int main(){ std::string s; return 0; }
+" IS_LIBCXX)
+unset(CMAKE_REQUIRED_FLAGS)
+
+message(STATUS "Compiler ID      : ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Compiler Target  : ${CMAKE_CXX_COMPILER_TARGET}")
+message(STATUS "Using libc++     : ${IS_LIBCXX}")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(IS_CLANG TRUE)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(IS_GNU TRUE)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(IS_MSVC TRUE)
+endif ()
+
+#if (IS_MSVC)
+#    file(GLOB_RECURSE THIRD_LIBS "third/lib/msvc/*.lib")
+#elseif (IS_CLANG AND IS_LIBCXX)
+#    file(GLOB_RECURSE THIRD_LIBS "third/lib/ucrt_clang/*.a")
+#elseif (IS_CLANG OR IS_GNU)
+#    file(GLOB_RECURSE THIRD_LIBS "third/lib/mingw/*.a")
+#endif ()
+
+
 if (MSVC)
     enable_language(CUDA)
     file(GLOB_RECURSE SRCs "engine/*.h" "engine/*.cpp" "Engine/*.cuh" "Engine/*.cu")
@@ -66,12 +100,15 @@ elseif (MINGW)
             ${MinGW_Libs}
             ${common_libs}
             iconv
+
+            assimp
+            glfw
     )
 
     foreach (dll_file IN LISTS MinGW_DLLs)
         message("Installing: ${MinGW_DLLs}")
         message("binary dir: ${CMAKE_BINARY_DIR}")
-        file(INSTALL ${dll_file} DESTINATION ${CMAKE_BINARY_DIR})
+        file(INSTALL ${dll_file} DESTINATION ${CMAKE_BINARY_DIR}/bin)
     endforeach ()
 endif ()
 
@@ -79,7 +116,8 @@ set_target_properties(renderer PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
 )
 
-file(INSTALL ../subprojects/saba/viewer/Saba/Viewer/resource DESTINATION ${CMAKE_BINARY_DIR})
+file(INSTALL ../subprojects/saba/viewer/Saba/Viewer/resource DESTINATION ${CMAKE_BINARY_DIR}/bin)
+
 
 
 
