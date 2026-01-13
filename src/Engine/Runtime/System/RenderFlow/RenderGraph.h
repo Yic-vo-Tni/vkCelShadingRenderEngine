@@ -112,18 +112,6 @@ namespace runtime::flow {
         static constexpr RG_Begin_t begin{};
         static constexpr RG_End_t end{};
 
-        template<typename T>
-        static auto ctx(T &&ptr) -> RenderGraph * {
-            if constexpr (std::is_pointer_v<std::decay_t<T> >) {
-                graph = ptr;
-            } else if constexpr (requires { ptr.get(); }) {
-                graph = ptr.get();
-            } else {
-                static_assert(false, "ctx() requires pointer or smart pointer to RenderGraph");
-            }
-            return graph;
-        }
-
         ~RG_DSL() = default;
 
         auto operator|(const PassNode& node)&& -> RG_DSL {
@@ -132,31 +120,39 @@ namespace runtime::flow {
         }
 
         friend auto operator|(RenderGraph* g, RG_Begin_t) -> RG_DSL {
-            if (!g) throw std::runtime_error("RenderGraph context not set!");
+            if (!g) throw std::runtime_error("RG_Begin_t is null");
+            graph = g;
             g->begin();
-            RG_DSL dsl{};
-            return dsl;
+            return RG_DSL{};
+        }
+
+        friend auto operator|(const std::unique_ptr<RenderGraph>& g, RG_Begin_t) -> RG_DSL {
+            if (!g) throw std::runtime_error("RG_Begin_t is null");
+            graph = g.get();
+            g->begin();
+            return RG_DSL{};
         }
 
         friend auto operator|(RG_DSL&& dsl, std::nullptr_t) -> RG_DSL {
-            if (!graph) throw std::runtime_error("RenderGraph context not set!");
+            if (!dsl.graph) throw std::runtime_error("RenderGraph context not set!");
             for (auto &n : dsl.passes) {
                 RenderPassNode pass{};
                 for (auto &f : n.passes) f(pass);
-                graph->addPass(pass);
+                dsl.graph->addPass(pass);
             }
-            if (graph) graph->end();
+            dsl.graph->end();
 
             return dsl;
         }
         friend auto operator|(RG_DSL&& dsl, RG_End_t) -> RG_DSL {
-            if (!graph) throw std::runtime_error("RenderGraph context not set!");
-            for (auto &n : dsl.passes) {
+            if (!dsl.graph) throw std::runtime_error("RenderGraph context not set!");
+
+            for (auto& n : dsl.passes) {
                 RenderPassNode pass{};
-                for (auto &f : n.passes) f(pass);
-                graph->addPass(pass);
+                for (auto& f : n.passes) f(pass);
+                dsl.graph->addPass(pass);
             }
-            if (graph) graph->end();
+            dsl.graph->end();
             return dsl;
         }
 
@@ -166,19 +162,12 @@ namespace runtime::flow {
 
         template<typename F>
         static Lambda lambda(F&& f) {
-           // return Build{std::function<void(RG_DSL&)>(std::forward<F>(f))};
             return Lambda{std::function<void(RG_DSL&)>(std::forward<F>(f))};
         }
 
-        // template<typename F>
-        // friend auto operator|(RG_DSL &&dsl, F &&f)
-        //     -> std::enable_if<std::is_invocable_v<F, RG_DSL &>, RG_DSL> {
-        //     f(dsl);
-        //     return std::move(dsl);
-        // }
         friend auto operator|(RG_DSL &&dsl, const Lambda &b) -> RG_DSL {
             b.fn(dsl);
-            return std::move(dsl);
+            return dsl;
         }
 
     private:

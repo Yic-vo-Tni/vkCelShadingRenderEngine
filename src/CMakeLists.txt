@@ -49,6 +49,7 @@ file(GLOB_RECURSE MSVC_DLLs "third/dll/msvc/*.dll")
 file(GLOB_RECURSE MinGW_DLLs "third/dll/mingw/*.dll")
 file(GLOB_RECURSE PCHs "Engine/External/*.h")
 
+add_library(Compose SHARED "Engine/Runtime/System/RenderStage/AlgorithmNode/Forward.cpp")
 add_library(renderer STATIC ${SRCs} "Engine/Runtime/Model/common_device.cu")
 
 #target_compile_options(renderer PRIVATE /MDd)
@@ -56,6 +57,7 @@ add_library(renderer STATIC ${SRCs} "Engine/Runtime/Model/common_device.cu")
 find_package(Vulkan REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
+target_precompile_headers(Compose PUBLIC ${PCHs})
 target_precompile_headers(renderer PUBLIC ${PCHs})
 
 set(shader_path "${CMAKE_SOURCE_DIR}/src/resource/shaders/")
@@ -73,7 +75,14 @@ set(common_libs
 )
 configure_file("Engine/External/config.h.in" "${CMAKE_SOURCE_DIR}/src/Engine/External/config.h")
 
-
+target_include_directories(Compose PUBLIC
+        engine
+        third
+        ../subprojects
+        ${CUDAToolkit_INCLUDE_DIRS}
+        ../subprojects/saba/src
+        third/flecs/include
+)
 target_include_directories(renderer PUBLIC
         engine
         third
@@ -96,6 +105,16 @@ if (MSVC)
         file(INSTALL ${dll_file} DESTINATION ${CMAKE_BINARY_DIR})
     endforeach ()
 elseif (MINGW)
+    target_link_libraries(Compose PUBLIC
+            ${MinGW_Libs}
+            ${common_libs}
+            iconv
+
+            assimp
+            glfw
+            renderer
+    )
+
     target_link_libraries(renderer PUBLIC
             ${MinGW_Libs}
             ${common_libs}

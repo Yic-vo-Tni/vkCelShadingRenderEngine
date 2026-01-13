@@ -9,41 +9,18 @@ namespace ui {
 
 
     auto ImGuiHub::to(const vot::uiWidget &widget, const std::function<void()> &fn) -> void {
-        // tasks[widget].push(fn);
-        slots[widget].tasks.push(std::move(fn));
+        slots[widget].tasks.push(fn);
     }
 
     auto ImGuiHub::to_fixed(const vot::uiWidget &widget, const std::function<void()> &fn) -> void {
-        // pers[widget].emplace_back(fn);
-        slots[widget].fixed.emplace_back(std::move(fn));
+        slots[widget].fixed.emplace_back(fn);
     }
 
     auto ImGuiHub::bind(const vot::uiWidget &widget, const std::function<void()> &fn) -> void {
-        //binds[widget] = fn;
-        slots[widget].bind = std::move(fn);
+        slots[widget].bind = fn;
     }
 
     auto ImGuiHub::exe(const vot::uiWidget &widget) -> void {
-        // auto it_ = binds.find(widget);
-        // if (it_ != binds.end()) {
-        //     it_->second();
-        // }
-        //
-        // auto it = pers.find(widget);
-        //
-        // if (it != pers.end()){
-        //     for(auto& fnn : it->second){
-        //         fnn();
-        //     }
-        // }
-        //
-        //
-        // std::function<void()> fn;
-        //
-        // while (tasks[widget].try_pop(fn)){
-        //     fn();
-        // }
-
         auto& slot = slots[widget];
 
         if (slot.bind)
