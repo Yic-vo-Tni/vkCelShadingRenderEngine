@@ -105,6 +105,44 @@
 #include "mimalloc/include/mimalloc.h"
 
 
+////////////
+
+namespace vot {
+    template<typename E>
+    struct enable_bitmask_operators : std::false_type {
+    };
+
+    template<typename E>
+        requires enable_bitmask_operators<E>::value
+    constexpr E operator|(E lhs, E rhs) {
+        using T = std::underlying_type_t<E>;
+        return static_cast<E>(
+            static_cast<T>(lhs) | static_cast<T>(rhs)
+        );
+    }
+
+    template<typename E>
+        requires enable_bitmask_operators<E>::value
+    constexpr E &operator|=(E &lhs, E rhs) {
+        lhs = lhs | rhs;
+        return lhs;
+    }
+
+    template<typename E>
+        requires enable_bitmask_operators<E>::value
+    constexpr E operator&(E lhs, E rhs) {
+        using T = std::underlying_type_t<E>;
+        return static_cast<E>(
+            static_cast<T>(lhs) & static_cast<T>(rhs)
+        );
+    }
+}
+
+#include "stl_mimalloc.h"
+#include "base.h"
+#include "RHI/GpuRuntime/Alloctor/AllocatorTypes.h"
+
+
 /// forward
 namespace rhi{ class Descriptor; }
 using DescriptorInterface = rhi::Descriptor;

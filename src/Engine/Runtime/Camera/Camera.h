@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_CAMERA_H
 #define VKCELSHADINGRENDERER_CAMERA_H
 
-#include "RHI/Allocator.h"
+#include "../../RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "Core/Management/TripleBufferIndexManager.h"
 
 namespace sc {

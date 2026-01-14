@@ -5,17 +5,15 @@
 #ifndef VKCELSHADINGRENDERER_ALLOCATOR_H
 #define VKCELSHADINGRENDERER_ALLOCATOR_H
 
-#include "Buffer.h"
-#include "Image.h"
-#include "RHI2/Allocator.h"
+#include "RHI/Buffer.h"
+#include "RHI/Image.h"
+#include "ThreadSafeLRUCache.h"
 
 namespace rhi {
 
     class Allocator {
-        using bufferHandle = std::pair<VkBuffer, VmaAllocation>;
         using imageHandle = std::pair<VkImage, VmaAllocation>;
         using imagePath = std::variant<vot::string, vot::vector<vot::string>>;
-        using stagingBufferHandle = std::tuple<VkBuffer, VmaAllocation, vk::DeviceSize>;
         struct BufferCI{
             vk::DeviceSize devSize;
             vk::BufferUsageFlags flags;
@@ -29,15 +27,21 @@ namespace rhi {
 
         auto clear() -> void;
 
+    public: // new
+        auto buildBuffer(const vot::gfx::api::BufferCI& ci) -> vot::Buffer_sptr;
+    public: // old
         auto allocBuffer(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, vot::memoryUsage usage = vot::memoryUsage::eCpuToGpu,
                          const vot::string& id = IdGenerator::uniqueId(), bool unmap = false) -> vot::Buffer_sptr;
         auto allocBuffer(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, const vot::string& id) -> vot::Buffer_sptr;
         auto allocBuffer(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, const vot::string& id) -> vot::Buffer_sptr ;
-        auto allocBufferStaging(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, vot::memoryUsage usage = vot::memoryUsage::eGpuOnly,
-                                vot::allocStrategy strategy = vot::allocStrategy::eMapped, const vot::string& id = IdGenerator::uniqueId()) -> vot::Buffer_sptr ;
+
         auto allocBufferStaging(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, const vot::string& id) -> vot::Buffer_sptr;
         auto allocBufferStaging(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, const vot::string& id = IdGenerator::uniqueId()) -> vot::Buffer_sptr;
-        auto allocDedicatedBufferStaging(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, const vot::string& id = IdGenerator::uniqueId()) -> vot::Buffer_sptr ;
+
+        auto allocBufferStaging(vk::DeviceSize deviceSize, const void* data, vk::BufferUsageFlags flags, vot::memoryUsage usage = vot::memoryUsage::eGpuOnly,
+                                vot::allocStrategy strategy = vot::allocStrategy::eMapped, const vot::string& id = IdGenerator::uniqueId()) -> vot::Buffer_sptr ;
+
+        auto allocDedicatedBufferStaging(vk::DeviceSize deviceSize, vk::BufferUsageFlags flags, const vot::string& id = IdGenerator::uniqueId()) -> vot::Buffer_sptr;
 
         auto allocAccel(vk::AccelerationStructureCreateInfoKHR& createInfoKhr) -> vot::Accel_sptr ;
         auto allocAccel(vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfoKhr, vk::AccelerationStructureTypeKHR type) -> vot::Accel_sptr;
@@ -72,7 +76,7 @@ namespace rhi {
             (processArgs(imageBarrier2s, bufferBarrier2s, memoryBarrier2s, std::forward<Args>(args)), ...);
 
             pipelineBarrier2I(imageBarrier2s, bufferBarrier2s, memoryBarrier2s, cmd, info);
-        }
+        } // FIXME: move this function to command system
 
         auto glmMatToVkTransformMatrix(const glm::mat4 &mat = glm::mat4(1.f)) -> vk::TransformMatrixKHR {
             vk::TransformMatrixKHR tfMatrix;
@@ -81,8 +85,8 @@ namespace rhi {
             return tfMatrix;
         }
     private:
-        auto createBuffer(const BufferCI& ci) -> bufferHandle;
-        auto mapBuffer(const VmaAllocation& alloc, VkDeviceSize devSize, const void* data, bool unmap) -> void*;
+        auto createBuffer(const BufferCI& ci) const -> vot::gfx::detail::BufferAllocation;
+        auto mapBuffer(const VmaAllocation& alloc, VkDeviceSize devSize, const void* data) -> void*;
         static auto copyBuffer(VkBuffer stagingBuffer, VkBuffer destBuffer, VkDeviceSize deviceSize, vot::CommandBuffer& cmd) -> void;
         static auto resetBuffer(VkBuffer& buffer, vot::CommandBuffer& cmd) -> void;
 
@@ -97,11 +101,7 @@ namespace rhi {
     private:
         ev::pVkSetupContext ct{};
         VmaAllocator mVmaAllocator{};
-
-    private:
-        auto acquireCache(vk::DeviceSize deviceSize) -> stagingBufferHandle;
-
-        rhi2::ThreadSafeLRUCache<vk::DeviceSize, stagingBufferHandle> mCaches;
+        std::unique_ptr<vot::gfx::LRUStagingBufferCache> mCaches;
     };
 
 } // r// hi

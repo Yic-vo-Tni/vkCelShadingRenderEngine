@@ -6,12 +6,12 @@
 #include "Rhi.h"
 #include "TimelineSemaphore.h"
 #include "Command.h"
-#include "Allocator.h"
+#include "GpuRuntime/Alloctor/Allocator.h"
 #include "Descriptor.h"
 #include "DescriptorSystem.h"
 
-#include "RHI2/CommandCollector.h"
-#include "RHI2/Allocator.h"
+#include "GpuRuntime/CommandCollector.h"
+#include "RenderDescription/ResourceBindingSystem.h"
 
 
 namespace rhi {
@@ -26,7 +26,7 @@ namespace rhi {
         vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeaturesKhr{vk::True};
         vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKhr{vk::True};
         vk::PhysicalDeviceMultiviewFeaturesKHR multiviewFeatures{};
-        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{vk::True};
         vk::PhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeaturesExt{vk::True, vk::True};
         vk::PhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeaturesExt{};
         vk::PhysicalDeviceConditionalRenderingFeaturesEXT conditionalRenderingFeaturesExt{};
@@ -97,6 +97,8 @@ namespace rhi {
         yic::desSystem = rhi::DescriptorSystem::make();
         yic::imguiImage = rhi::ImGuiDescriptorManager::make();
         yic::command2 = rhi2::CommandCollector::make();
+
+        auto x = std::make_shared<vot::gfx::ResourceBindingSystem>();
     }
 
     Rhi::~Rhi() {

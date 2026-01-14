@@ -7,7 +7,7 @@
 #include "Core/DispatchSystem/SystemHub.h"
 #include "TimelineSemaphore.h"
 #include "Command.h"
-#include "Allocator.h"
+#include "GpuRuntime/Alloctor/Allocator.h"
 
 namespace rhi {
     Swapchain::Swapchain() : ct(yic::systemHub.va<ev::pVkSetupContext>()),

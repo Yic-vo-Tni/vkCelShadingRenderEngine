@@ -4,7 +4,9 @@
 
 #include "RenderTarget.h"
 
-#include "RHI/Allocator.h"
+#include "RHI/GpuRuntime/Alloctor/Allocator.h"
+#include "RHI/Image.h"
+
 
 namespace runtime::flow {
 

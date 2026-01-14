@@ -5,7 +5,7 @@
 #include "DynamicEditableRendering.h"
 
 #include "Editor/ImGuiHub.h"
-#include "RHI/Allocator.h"
+#include "RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "Runtime/System/RenderStage/RenderStage.h"
 #include "Runtime/System/RenderStage/AlgorithmNode/Forward.h"
 
@@ -101,22 +101,6 @@ namespace runtime::flow {
 
             yic::imguiHub->collapsingHeader("Temp Test", [&] {
                 yic::imguiHub->button("Add Compose", [&] {
-                    // rf.algorithms.emplace_back(
-                    //     DER::flow | [&](DER::AlgorithmFlow &flow) {
-                    //         flow.name = "Compose";
-                    //         flow.nodes.emplace_back(
-                    //             DER::node | [&](DER::AlgorithmNode &node) {
-                    //                 node.id = ++nodeId;
-                    //                 assert(nodeId < (1u << 23));
-                    //                 node.name = "Compose";
-                    //                 node.buildTarget = Compose_Target;
-                    //                 node.buildPipeline = Compose_Pipline;
-                    //                 node.dispatch = Compose_Dispatch;
-                    //                 node.THandle = node.buildTarget();
-                    //                 node.PHandle = node.buildPipeline();
-                    //             });
-                    //
-                    //     });
                     using PFN_Compose_Target = vot::ImageCI(*)();
                     using PFN_Compose_Pipeline = vot::PipelineLibrary(*)();
                     using PFN_Compose_Dispatch = void(*)(vot::CommandBuffer &, const DERTranslator*);
@@ -149,11 +133,6 @@ namespace runtime::flow {
                         assert(loaded && "Failed to load Compose.dll");
                     }
 
-                    // const std::function buildT = composeDll.buildTarget;
-                    // auto t = yic::allocator->allocImage(buildT(), "Compose");
-                    // const std::function<PipelineHandle()> buildPipelineFn = composeDll.buildPipeline;
-                    // auto pipeline = buildPipelineFn();
-
 
                     rf.algorithms.emplace_back(
                         DER::flow | [&](DER::AlgorithmFlow &flow) {
@@ -163,11 +142,6 @@ namespace runtime::flow {
                                     node.id = ++nodeId;
                                     assert(nodeId < (1u << 23));
                                     node.name = "Compose";
-                                    // node.buildTarget = composeDll.buildTarget;
-                                    // node.buildPipeline = composeDll.buildPipeline;
-                                    // node.dispatch = composeDll.dispatch;
-                                    // node.THandle = node.buildTarget();
-                                    // node.PHandle = node.buildPipeline();
                                     node.buildTarget = []{ return yic::allocator->allocImage(composeDll.buildTarget(), "Compose");};
                                     node.THandle = node.buildTarget();
                                     node.buildPipeline = [] {

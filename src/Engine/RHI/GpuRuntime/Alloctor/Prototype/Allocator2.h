@@ -5,82 +5,15 @@
 #ifndef VKCELSHADINGRENDERER_TIMELINE_H
 #define VKCELSHADINGRENDERER_TIMELINE_H
 
+#include "RHI/GpuRuntime/Alloctor/ThreadSafeLRUCache.h"
+
 namespace rhi2 {
-    template<typename Key, typename Value>
-    class ThreadSafeLRUCache {
-        struct Node {
-            Key key;
-            Value value;
-        };
 
-        size_t capacity;
-        std::list<Node> lruList;
-        std::unordered_map<Key, typename std::list<Node>::iterator> map;
-        std::function<void(Value&)> destroyFn;
-        mutable std::shared_mutex mutex;
-        std::atomic<int> activeCount{0};
+    class Allocator2 {
     public:
-        explicit ThreadSafeLRUCache(const size_t cap, const std::function<void(Value&)>& destroyFn) : capacity(cap), destroyFn(destroyFn) {}
-        ~ThreadSafeLRUCache() { clear(); }
-
-        bool get(const Key &key, Value &out) {
-            std::unique_lock lock(mutex);
-            auto it = map.find(key);
-            if (it == map.end()) return false;
-            lruList.splice(lruList.begin(), lruList, it->second);
-            out = it->second->value;
-            return true;
-        }
-
-        void put(const Key &key, Value val) {
-            std::unique_lock lock(mutex);
-            auto it = map.find(key);
-
-            if (it != map.end()) {
-                destroyFn(it->second->value);
-                //--activeCount;
-                lruList.erase(it->second);
-                map.erase(it);
-            }
-
-            if (lruList.size() >= capacity) {
-                auto& back = lruList.back();
-                destroyFn(back.value);
-             //   --activeCount;
-                lruList.pop_back();
-                map.erase(back.key);
-            }
-
-            lruList.push_front({key, std::move(val)});
-            map[key] = lruList.begin();
-          //  ++activeCount;
-        }
-
-        void clear() {
-            std::unique_lock lock(mutex);
-            while (!lruList.empty()) {
-                auto it = std::prev(lruList.end());
-                destroyFn(it->value);
-                lruList.erase(it);
-            }
-            map.clear();
-
-            // if (activeCount != 0) {
-            //     std::cerr << "[LRUCache] Warning: " << activeCount.load()
-            //               << " items not released!" << std::endl;
-            // }
-        }
-
-        int getActiveCount() const {
-            return activeCount.load();
-        }
-    };
-
-    class Allocator {
-    public:
-        Allocator();
-        ~Allocator();
-        MAKE_SINGLETON(Allocator);
+        Allocator2();
+        ~Allocator2();
+        MAKE_SINGLETON(Allocator2);
 
         template<typename T>
         auto update(const handle::buffer& handle, const T& src, const vk::DeviceSize& offset = 0) -> void {
@@ -124,13 +57,13 @@ namespace rhi2 {
         // std::atomic<uint8_t> mStagBufferCounter{};
         // std::atomic<uint8_t> mDestroyCount{};
         // oneapi::tbb::concurrent_map<vk::DeviceSize , oneapi::tbb::concurrent_queue<std::shared_ptr<BufferMata>>> mStagingBuffers;
-        ThreadSafeLRUCache<vk::DeviceSize, std::shared_ptr<BufferMata>> mBufferCaches;
+        vot::gfx::ThreadSafeLRUCache<vk::DeviceSize, std::shared_ptr<BufferMata>> mBufferCaches;
         // oneapi::tbb::concurrent_lru_cache<vk::DeviceSize, std::shared_ptr<BufferMata>> mBufferCaches;
     };
 } // rhi2
 
 namespace yic {
-    inline rhi2::Allocator* allocator2;
+    inline rhi2::Allocator2* allocator2;
 }
 
 

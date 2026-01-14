@@ -8,7 +8,7 @@
 
 #include "Core/DispatchSystem/SystemHub.h"
 #include "Core/Management/TripleBufferIndexManager.h"
-#include "RHI/Allocator.h"
+#include "../RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "RHI/Command.h"
 
 namespace sm {

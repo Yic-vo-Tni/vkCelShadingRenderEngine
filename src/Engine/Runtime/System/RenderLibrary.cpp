@@ -3,7 +3,7 @@
 //
 
 #include "RenderLibrary.h"
-#include "RHI/Allocator.h"
+#include "RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "Editor/ImGuiHub.h"
 #include "Core/DispatchSystem/SystemHub.h"
 #include "RHI/DescriptorSystem.h"

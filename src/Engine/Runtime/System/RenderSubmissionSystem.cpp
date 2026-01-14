@@ -21,73 +21,72 @@ namespace sc {
     RenderSubmissionSystem::~RenderSubmissionSystem() = default;
 
     auto RenderSubmissionSystem::frame() -> void {
-        yic::dispatchHelper->frame();
-        uDynamicEditableRendering->drawEditor();
-
-        using namespace runtime::flow;
-        uRenderGraph | RG_DSL::begin
-
-                | RG_DSL::lambda([&](auto &g) {
-                    for (auto &[n, nodes]: uDynamicEditableRendering->acquireRF().algorithms) {
-                        for (auto &node: nodes) {
-                            g = std::move(g) |
-                                std::visit([&]<typename T0>(T0 &&v) {
-                                    using T = std::decay_t<T0>;
-                                    if constexpr (std::is_same_v<T, vot::Image_sptr>) {
-                                        return PassNode{v};
-                                    } else if constexpr (std::is_same_v<T, vot::string>) {
-                                        return PassNode{v};
-                                    }
-                                }, node.makePassNode())
-                                + Node::read{node.reads}
-                                >> Node::invoke{node.dispatch};
-                        }
-                    }
-                })
-
-                | RG_DSL::end;
+        // yic::dispatchHelper->frame();
+        // uDynamicEditableRendering->drawEditor();
+        //
+        // using namespace runtime::flow;
+        // uRenderGraph | RG_DSL::begin
+        //
+        //         | RG_DSL::lambda([&](auto &g) {
+        //             for (auto &[n, nodes]: uDynamicEditableRendering->acquireRF().algorithms) {
+        //                 for (auto &node: nodes) {
+        //                     g = std::move(g) |
+        //                         std::visit([&]<typename T0>(T0 &&v) {
+        //                             using T = std::decay_t<T0>;
+        //                             if constexpr (std::is_same_v<T, vot::Image_sptr>) {
+        //                                 return PassNode{v};
+        //                             } else if constexpr (std::is_same_v<T, vot::string>) {
+        //                                 return PassNode{v};
+        //                             }
+        //                         }, node.makePassNode())
+        //                         + Node::read{node.reads}
+        //                         >> Node::invoke{node.dispatch};
+        //                 }
+        //             }
+        //         })
+        //
+        //         | RG_DSL::end;
 
         /////////////////////////////////////////////////////////
 
-        // uRenderStage->update(); //
-        // auto& RL = yic::renderLibrary;
-        //
-        //
-        // using namespace runtime::flow;
-        // //RG_DSL::ctx(uRenderGraph)
-        // uRenderGraph
-        // | RG_DSL::begin
-        //
-        // | PassNode{"comp_skinning"}
-        // >> Node::invoke{RG_STAGE(comp_skinning)}
-        //
-        // | PassNode{RL->RT_GBuffer}
-        // >> Node::invoke{RG_STAGE(drawing_gBuffer)}
-        //
-        // | PassNode{RL->RT_ShadowMap}
-        // + Node::read{RL->RT_GBuffer}
-        // >> Node::invoke{RG_STAGE(drawing_shadowMap)} //FIXME: lie over
-        //
-        // | PassNode{RL->RT_IDBuffer}
-        // + Node::read{RL->RT_GBuffer}
-        // >> Node::invoke{RG_STAGE(drawing_IDBuffer)}
-        //
-        // | PassNode{RL->RT_Volumetric_Clouds}
-        // + Node::read{RL->RT_GBuffer}
-        // >> Node::invoke{RG_STAGE(drawing_volumetricClouds)}
-        //
-        // | PassNode{RL->RT_Volumetric_Fog}
-        // + Node::read{RL->RT_GBuffer}
-        // >> Node::invoke{RG_STAGE(drawing_volumetricFog)} //FIXME: no effect
-        //
-        // | PassNode{RL->RTX_RayTracing}
-        // >> Node::invoke{RG_STAGE(draw_RTShadow)}
-        //
-        // | PassNode{RL->RT_Post}
-        // + Node::read{RL->RT_Volumetric_Clouds, RL->RT_GBuffer, RL->RTX_RayTracing}
-        // >> Node::invoke{RG_STAGE(drawing_post)}
-        //
-        // | RG_DSL::end;
+        uRenderStage->update(); //
+        auto& RL = yic::renderLibrary;
+
+
+        using namespace runtime::flow;
+        uRenderGraph
+        | RG_DSL::begin
+
+        | PassNode{"comp_skinning"}
+        >> Node::invoke{RG_STAGE(comp_skinning)}
+
+        | PassNode{RL->RT_GBuffer}
+        >> Node::invoke{RG_STAGE(drawing_gBuffer)}
+
+        | PassNode{RL->RT_ShadowMap}
+        + Node::read{RL->RT_GBuffer}
+        >> Node::invoke{RG_STAGE(drawing_shadowMap)} //FIXME: lie over
+
+        | PassNode{RL->RT_IDBuffer}
+        + Node::read{RL->RT_GBuffer}
+        >> Node::invoke{RG_STAGE(drawing_IDBuffer)}
+
+        | PassNode{RL->RT_Volumetric_Clouds}
+        + Node::read{RL->RT_GBuffer}
+        >> Node::invoke{RG_STAGE(drawing_volumetricClouds)}
+
+        | PassNode{RL->RT_Volumetric_Fog}
+        + Node::read{RL->RT_GBuffer}
+        >> Node::invoke{RG_STAGE(drawing_volumetricFog)} //FIXME: no effect
+
+        | PassNode{RL->RTX_RayTracing}
+        >> Node::invoke{RG_STAGE(draw_RTShadow)}
+
+        | PassNode{RL->RT_Post}
+        + Node::read{RL->RT_Volumetric_Clouds, RL->RT_GBuffer, RL->RTX_RayTracing}
+        >> Node::invoke{RG_STAGE(drawing_post)}
+
+        | RG_DSL::end;
     }
 
 

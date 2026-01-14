@@ -2,7 +2,7 @@
 // Created by lenovo on 9/1/2025.
 
 
-#include "Allocator.h"
+#include "Allocator2.h"
 #include "Core/DispatchSystem/SystemHub.h"
 #include "RHI/Command.h"
 
@@ -15,7 +15,7 @@ namespace rhi2 {
     constexpr vk::DeviceSize k64Mb = 64 * 1024 * 1024;
     constexpr vk::DeviceSize k512Mb = 512 * 1024 * 1024;
 
-    Allocator::Allocator() : ct(yic::systemHub.va<ev::pVkSetupContext>()), mBufferCaches(32, [&](const std::shared_ptr<BufferMata>& bufferMata) {
+    Allocator2::Allocator2() : ct(yic::systemHub.va<ev::pVkSetupContext>()), mBufferCaches(32, [&](const std::shared_ptr<BufferMata>& bufferMata) {
 
     }) {
 
@@ -57,7 +57,7 @@ namespace rhi2 {
         vmaCreatePool(mVmaAllocator, &bigInfo, &mStaticMaxPool);
     }
 
-    Allocator::~Allocator() {
+    Allocator2::~Allocator2() {
         for(const auto& buffer : mBuffers) {
             ct.device->destroy(buffer->buffer);
             vmaFreeMemory(mVmaAllocator, buffer->allocation);
@@ -71,7 +71,7 @@ namespace rhi2 {
         vmaDestroyAllocator(mVmaAllocator);
     }
 
-    auto Allocator::allocBuffer(BufferAttachment bufferCI) -> handle::buffer {
+    auto Allocator2::allocBuffer(BufferAttachment bufferCI) -> handle::buffer {
         switch (bufferCI.type) {
             case BufferAttachment::eForceHost:    return allocBufferMin(bufferCI);
             case BufferAttachment::eForceStaging: return allocBufferMax(bufferCI);
@@ -83,11 +83,11 @@ namespace rhi2 {
         return allocBufferMax(bufferCI);
     }
 
-    auto Allocator::unLoad(const handle::buffer &handle) -> void {
+    auto Allocator2::unLoad(const handle::buffer &handle) -> void {
 
     }
 
-    auto Allocator::updateT(const handle::buffer& handle, const void* data, const vk::DeviceSize& size, const vk::DeviceSize& offset) -> void {
+    auto Allocator2::updateT(const handle::buffer& handle, const void* data, const vk::DeviceSize& size, const vk::DeviceSize& offset) -> void {
         if (offset + size > handle.mata->attach.size) { yic::logger->warn("failed to update buffer, the data is over, buffer name:{0}", handle.mata->attach.debugName); return; }
 
         if (handle.mata->attach.type == BufferAttachment::eForceHost) {
@@ -119,7 +119,7 @@ namespace rhi2 {
         }
     }
 
-    auto Allocator::allocBufferMin(const BufferAttachment &attach) -> handle::buffer {
+    auto Allocator2::allocBufferMin(const BufferAttachment &attach) -> handle::buffer {
         auto mata = createBuffer(attach);
         mata->attach = attach;
         mata->attach.type = BufferAttachment::eForceHost;
@@ -138,7 +138,7 @@ namespace rhi2 {
         return handle;
     }
 
-    auto Allocator::allocBufferMax(BufferAttachment &attach) -> handle::buffer {
+    auto Allocator2::allocBufferMax(BufferAttachment &attach) -> handle::buffer {
         attach.usage |= vk::BufferUsageFlagBits::eTransferDst;
         attach.type = BufferAttachment::eForceStaging;
 
@@ -167,7 +167,7 @@ namespace rhi2 {
         return handle;
     }
 
-    auto Allocator::createBuffer(const BufferAttachment &attach) const -> std::shared_ptr<BufferMata> {
+    auto Allocator2::createBuffer(const BufferAttachment &attach) const -> std::shared_ptr<BufferMata> {
         VkBuffer buffer{};
         VmaAllocation allocation{};
 
@@ -188,7 +188,7 @@ namespace rhi2 {
         return std::make_shared<BufferMata>(buffer, allocation, nullptr, attach);
     }
 
-    auto Allocator::mapBufferPersistent(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size) -> void * {
+    auto Allocator2::mapBufferPersistent(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size) -> void * {
         if (bufferMata.mapped) {
             memcpy(static_cast<char *>(bufferMata.mapped), data, size);
         } else {
@@ -204,7 +204,7 @@ namespace rhi2 {
         return nullptr;
     }
 
-    auto Allocator::updateTransient(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size, const bool unmap) const -> void * {
+    auto Allocator2::updateTransient(const BufferMata &bufferMata, const void* data, const vk::DeviceSize size, const bool unmap) const -> void * {
         void* mapped = nullptr;
 
         if (!unmap) {
@@ -219,20 +219,20 @@ namespace rhi2 {
         return mapped;
     }
 
-    auto Allocator::copyBuffer(const BufferMata &src, const BufferMata &dst, const vk::DeviceSize &size,
+    auto Allocator2::copyBuffer(const BufferMata &src, const BufferMata &dst, const vk::DeviceSize &size,
         const vot::CommandBuffer &cmd) -> void {
         const vk::BufferCopy copy{0, 0, size};
         cmd.copyBuffer((vk::Buffer)src.buffer, (vk::Buffer)dst.buffer, copy);
     }
 
 
-    auto Allocator::resetBuffer(const BufferMata &bufferMata, vot::CommandBuffer &cmd) -> void {
+    auto Allocator2::resetBuffer(const BufferMata &bufferMata, vot::CommandBuffer &cmd) -> void {
         constexpr vk::MemoryBarrier copyBarrier{vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead};
         cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, copyBarrier, {}, {});
         cmd.fillBuffer(bufferMata.buffer, 0, VK_WHOLE_SIZE, 0);
     }
 
-    auto Allocator::pickPool(const BufferAttachment& attach) const -> VmaPool {
+    auto Allocator2::pickPool(const BufferAttachment& attach) const -> VmaPool {
         switch (attach.vmaPoolType) {
             case VmaPoolType::eTransient: return mTransientPool;
             case VmaPoolType::eStaticMin: return mStaticMinPool;
@@ -251,7 +251,7 @@ namespace rhi2 {
         }
     }
 
-    auto Allocator::acquireBufferCache(const vk::DeviceSize& size) -> std::shared_ptr<BufferMata> {
+    auto Allocator2::acquireBufferCache(const vk::DeviceSize& size) -> std::shared_ptr<BufferMata> {
         std::shared_ptr<BufferMata> mata;
         if (!mBufferCaches.get(size, mata)) {
             mata = createBuffer(BufferAttachment()

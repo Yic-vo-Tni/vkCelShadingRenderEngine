@@ -25,7 +25,7 @@ namespace vot::inline rhi {
         template<typename T>
         auto update(const std::pmr::vector<T> &src) { if (!src.empty()) updateFn(src.data()); }
 
-        auto bufferAddr() const -> vk::DeviceAddress {
+        [[nodiscard]] auto bufferAddr() const -> vk::DeviceAddress {
             if (!buffer) return 0;
             return device.getBufferAddress(buffer);
         }
@@ -53,7 +53,7 @@ namespace vot::inline rhi {
 
         ~Accel() override;
 
-        auto accelAddr() const -> vk::DeviceSize {
+        [[nodiscard]] auto accelAddr() const -> vk::DeviceSize {
             const vk::AccelerationStructureDeviceAddressInfoKHR addressInfoKhr{accel};
             return device.getAccelerationStructureAddressKHR(addressInfoKhr, dyDispatch);
         }

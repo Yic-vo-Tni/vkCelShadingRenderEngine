@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "RHI/Allocator.h"
+#include "../../RHI/GpuRuntime/Alloctor/Allocator.h"
 
 namespace rs{
     class AssimpGLMHelpers

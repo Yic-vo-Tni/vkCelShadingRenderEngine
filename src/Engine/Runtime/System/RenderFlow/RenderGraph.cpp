@@ -7,7 +7,7 @@
 #include "Editor/ImGuiHub.h"
 #include "RS/ResourceSystem.h"
 #include "RHI/Command.h"
-#include "RHI/RHI2/CommandCollector.h"
+#include "RHI/GpuRuntime/CommandCollector.h"
 
 namespace runtime::flow {
     RenderGraph::RenderGraph() {

@@ -107,7 +107,7 @@ namespace runtime::flow {
 
         auto drawEditor() -> void;
 
-        auto queryNode(const vot::string& name) const -> const DER::AlgorithmNode& {
+        [[nodiscard]] auto queryNode(const vot::string& name) const -> const DER::AlgorithmNode& {
             for (auto &algo: rf.algorithms) {
                 for (auto &node: algo.nodes) {
                     if (node.name == name) {
@@ -117,7 +117,7 @@ namespace runtime::flow {
             }
             throw std::runtime_error("DER::node view: node not found");
         }
-        auto acquireRF() const { return rf;}
+        [[nodiscard]] auto acquireRF() const { return rf;}
     private:
         std::uint32_t rfActive{0};
         std::uint32_t nodeId{0};
@@ -130,11 +130,11 @@ namespace runtime::flow {
         explicit DERTranslator(const DynamicEditableRendering* der) : r(der) {}
         ~DERTranslator() = default;
 
-        auto target(const vot::string &name) const -> vot::Image_sptr {
+        [[nodiscard]] auto target(const vot::string &name) const -> vot::Image_sptr {
             return r->queryNode(name).THandle;
         }
 
-        auto descriptor(const vot::string &name) const -> vot::DescriptorHandle {
+        [[nodiscard]] auto descriptor(const vot::string &name) const -> vot::DescriptorHandle {
             return r->queryNode(name).DHandle;
         }
 

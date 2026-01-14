@@ -8,7 +8,7 @@
 #include <saba/src/Saba/Model/MMD/VMDFile.h>
 
 #include "Core/Management/TripleBufferIndexManager.h"
-#include "RHI/Allocator.h"
+#include "../../RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "RHI/DescriptorSystem.h"
 #include "Runtime/System/RenderLibrary.h"
 

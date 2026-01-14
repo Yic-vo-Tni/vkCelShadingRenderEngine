@@ -5,7 +5,7 @@
 #include "RayTracingPipeline.h"
 #include "Utils/FileOperation.h"
 #include "Core/DispatchSystem/SystemHub.h"
-#include "RHI/Allocator.h"
+#include "RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "Editor/ShaderHotReload/ShaderHotReload.h"
 
 namespace rhi {
