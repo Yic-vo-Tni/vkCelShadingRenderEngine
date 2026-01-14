@@ -24,10 +24,13 @@ namespace runtime::flow {
     }
 
     auto RenderGraph::compile() -> void {
-        if (sorted.empty()) {
-            inferOutputs();
-            sorted = topologicalSortWithLayer(); //FIXME: temp
-        }
+        // if (sorted.empty()) {
+        //     inferOutputs();
+        //     sorted = topologicalSortWithLayer(); //FIXME: temp
+        // }
+        sorted.clear();
+        inferOutputs();
+        sorted = topologicalSortWithLayer(); // HACK: temporary, and need eventhub to control when to restart
 
         tbb::parallel_for_each(sorted, [&](auto &pass) {
             yic::command2->bind(pass.order, sorted.size(),[&](vot::CommandBuffer &cmd) {
@@ -44,7 +47,7 @@ namespace runtime::flow {
             });
         });
 
-        yic::command2->submit(); // HACK: hard code (temp)
+        yic::command2->submit(); // CRITICAL: hard-coded logic, causes when sorted is empty
     }
 
     auto RenderGraph::passDependsOn(const RenderPassNode &A, const RenderPassNode &B) -> bool {

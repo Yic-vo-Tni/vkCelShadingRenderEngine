@@ -43,6 +43,13 @@ namespace rhi {
             mHitCount = 0; mCallCount = 0;
             mShaderStages.clear(); mShaderGroups.clear();
         }
+
+        auto combine(const vot::RayTracingPipelineCI& createInfo) {
+            for (auto shader : createInfo.shaders) {
+                addShader(shader.path, shader.flags, shader.type, shader.role);
+            }
+            build(createInfo.descriptorSetLayoutCI2);
+        }
     private:
         auto cSBT() -> void;
 

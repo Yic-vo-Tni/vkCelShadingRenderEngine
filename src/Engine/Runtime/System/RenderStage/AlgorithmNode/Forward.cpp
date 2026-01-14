@@ -22,13 +22,18 @@ vot::ImageCI Compose_Target() {
 
 
 __declspec(dllexport)
-vot::PipelineLibrary Compose_Pipeline() {
-    return vot::PipelineLibrary()
-            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-                .setShaderPath("Common/screen_triangle.vert"))
+vot::PipelineCI Compose_Pipeline() {
+    return vot::PipelineCI{
+        .graphicsPipelineCI = vot::PipelineLibrary()
+        .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+        .setShaderPath("Common/screen_triangle.vert"))
 
-            .setFragmentShaderCI(vot::FragmentShaderCI()
-                .setShaderPath("Common/dummy.frag"));
+        .setFragmentShaderCI(vot::FragmentShaderCI()
+        .setShaderPath("Common/dummy.frag"))
+
+        .setRenderPass2CI(vot::RenderPass2CI()
+        .setRenderingDepth(vk::True))
+    };
 }
 
 

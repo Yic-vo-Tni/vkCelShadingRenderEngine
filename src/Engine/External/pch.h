@@ -141,6 +141,7 @@ namespace vot {
 #include "stl_mimalloc.h"
 #include "base.h"
 #include "RHI/GpuRuntime/Alloctor/AllocatorTypes.h"
+#include "RHI/RenderDescription/RenderDescriptionTypes.h"
 
 
 /// forward

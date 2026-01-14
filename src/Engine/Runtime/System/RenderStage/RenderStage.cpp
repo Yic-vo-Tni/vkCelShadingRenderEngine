@@ -150,7 +150,8 @@ namespace sc {
 
         cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
         draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_Assimp, ecs.view<const vot::mark::eVisible, const vot::mark::eAssimp, const vot::RenderComponent>());
-        draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_PMX, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());}
+        draw_meshes_shadowMap(yic::renderLibrary->GP_ShadowMap_PMX, ecs.view<const vot::mark::eVisible, const vot::mark::eMMD, const vot::RenderComponent>());
+    }
 
 
 

@@ -43,7 +43,7 @@ namespace rhi {
         vk::PhysicalDevicePresentModeFifoLatestReadyFeaturesEXT presentModeFifoLatestReadyFeatures{vk::True};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
-     //    .addInstanceLayers("VK_LAYER_KHRONOS_validation")
+     .addInstanceLayers("VK_LAYER_KHRONOS_validation")
          .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
          .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
          .addInstanceExtensions(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)

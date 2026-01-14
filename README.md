@@ -187,6 +187,7 @@ current codebase.*
 | vma                            | ✔️ |    |    |   |                          |
 | jolt physics                   |    |    | 📋 |   |                          |
 | ffmpeg                         |    |    | 📋 |   |                          |
+
 Note:
 This table is maintained as part of my learning and exploration process.
 Entries marked with ❌ indicate libraries that I have explored or used before,

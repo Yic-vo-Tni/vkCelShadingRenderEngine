@@ -249,11 +249,11 @@ struct DescriptorHandle{
     };
 
     struct PipelineDescriptorSetLayoutCI2{
-        vot::vector<vk::DescriptorSetLayoutBinding> globalSetLayoutBinding = []{
-            return vot::vector<vk::DescriptorSetLayoutBinding>{
-                    vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment}
-            };
-        }();
+        // vot::vector<vk::DescriptorSetLayoutBinding> globalSetLayoutBinding = []{
+        //     return vot::vector<vk::DescriptorSetLayoutBinding>{
+        //             vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment}
+        //     };
+        // }();
 
     public:
         vot::map<uint32_t, vot::vector<vk::DescriptorSetLayoutBinding>> setLayoutBindings{};
@@ -637,6 +637,39 @@ struct DescriptorHandle{
     private:
         uint32_t mMaxSets{};
         vot::vector<vk::DescriptorPoolSize> sizes;
+    };
+
+    struct RayTracingShader {
+        vot::string path;
+        vk::ShaderStageFlagBits flags;
+        vk::RayTracingShaderGroupTypeKHR type;
+        vot::RTShaderRole role;
+    };
+
+    struct RayTracingPipelineCI {
+        vot::vector<RayTracingShader> shaders;
+        PipelineDescriptorSetLayoutCI2 descriptorSetLayoutCI2;
+
+        auto& addShader(const vot::string& path, const vk::ShaderStageFlagBits& flags, const vk::RayTracingShaderGroupTypeKHR& type, const vot::RTShaderRole& role = vot::RTShaderRole::eGeneral) {
+            shaders.emplace_back(RayTracingShader{path, flags, type, role});
+            return *this;
+        }
+
+        auto& setPipelineDescriptorSetLayoutCI2(const PipelineDescriptorSetLayoutCI2& layout){ descriptorSetLayoutCI2 = layout; return *this; }
+    };
+
+    struct ComputePipelineCI {
+        string shaderPath;
+        PipelineDescriptorSetLayoutCI2 descriptorSetLayoutCI2;
+
+        auto& setShaderPath(const string& path){ shaderPath = path; return *this; }
+        auto& setPipelineDescriptorSetLayoutCI2(const PipelineDescriptorSetLayoutCI2& layout){ descriptorSetLayoutCI2 = layout; return *this; }
+    };
+
+    struct PipelineCI {
+        std::optional<PipelineLibrary> graphicsPipelineCI = std::nullopt;
+        std::optional<RayTracingPipelineCI> rayTracingPipelineCI = std::nullopt;
+        std::optional<ComputePipelineCI> computePipelineCI = std::nullopt;
     };
 
 struct DescriptorLayout2{

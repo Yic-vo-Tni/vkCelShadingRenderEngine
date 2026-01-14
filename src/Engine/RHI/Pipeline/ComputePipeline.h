@@ -15,6 +15,9 @@ namespace rhi {
         auto addShader(vot::string path) const -> vk::ShaderModule;
         auto build(const vot::string& pt, vot::PipelineDescriptorSetLayoutCI2 descriptor_set_layout_ci2) -> ComputePipeline&;
         auto dispatch(const vot::CommandBuffer& cmd, std::uint32_t x, std::uint32_t y, std::uint32_t z) const -> void;
+        auto combine(const vot::ComputePipelineCI& createInfo) -> void {
+            build(createInfo.shaderPath, createInfo.descriptorSetLayoutCI2);
+        };
 
         [[nodiscard]] auto acquire() const { return mPipeline; }
         auto acquirePipelineBindPoint() { return vk::PipelineBindPoint::eCompute; }

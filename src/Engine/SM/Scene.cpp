@@ -44,6 +44,13 @@ namespace sm {
         mActiveScene->bufferAddrBuffer = yic::allocator->allocBufferStaging(sizeof (uint64_t ) * 2 * bufferAddr.size(), bufferAddr.data(), vk::BufferUsageFlagBits::eStorageBuffer);
 
         syncTLAS();
+        // FIXME:
+        // When models are loaded asynchronously, this descriptor set may be updated once
+        // (TLAS / storage buffer bindings) while the main render command buffer from a
+        // previous frame is still in-flight.
+        //
+        // This causes update-after-bind validation errors under Vulkan,
+        // especially for ray tracing pipelines.
     }
 
     auto SceneSystem::frame() -> void {
@@ -222,6 +229,17 @@ namespace sm {
         } else {
             yic::desSystem->updateDescriptorSets(layout, yic::renderLibrary->RP_Shadow, DS_RP_Shadow);
         }
+        // BUG:
+        // Ray tracing descriptor set is currently a single shared instance across frames.
+        // TLAS updates here implicitly require descriptor updates, which are unsafe
+        // while previous frames are still in-flight.
+        //
+        // Proper fix:
+        // - Allocate RT descriptor sets per-frame (per in-flight frame)
+        // - Update them in a round-robin fashion (e.g. triple buffering)
+        //
+        // This will be fixed when migrating to a per-frame descriptor model
+        // or descriptor buffers.
     }
 
 } // sm
