@@ -20,10 +20,10 @@ namespace sm {
         auto loadAssets() -> void;
         auto createPipeline() -> void;
 
-        rhi::GraphicsPipeline GP_Clouds;
-        rhi::GraphicsPipeline GP_FarSky;
-        rhi::ComputePipeline CP_TransmittanceLUT;
-        rhi::ComputePipeline CP_SkyViewLUT;
+        // rhi::GraphicsPipeline GP_Clouds;
+        // rhi::GraphicsPipeline GP_FarSky;
+        // rhi::ComputePipeline CP_TransmittanceLUT;
+        // rhi::ComputePipeline CP_SkyViewLUT;
 
         CloudsParametersBuffer cloudsParameters{};
         PostProcessParamsBuffer postProcessParameters{};

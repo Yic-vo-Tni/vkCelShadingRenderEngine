@@ -23,8 +23,6 @@ namespace rhi {
     }
 
     RayTracingPipeline::~RayTracingPipeline() {
-//        mDesSetLayoutCI.clear();
-
         std::visit([&](auto&& arg){
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, vot::PipelineDescriptorSetLayoutCI>){
@@ -85,8 +83,8 @@ namespace rhi {
         const uint32_t numGroup = mShaderGroups.size();
         const uint32_t sbtSize = numGroup * hsAligned;
 
-        auto handles = ct.device->getRayTracingShaderGroupHandlesKHR<uint8_t >(mRTPipeline, 0, numGroup, sbtSize, *ct.dynamicDispatcher);
-        auto bufUsage = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        const auto handles = ct.device->getRayTracingShaderGroupHandlesKHR<uint8_t >(mRTPipeline, 0, numGroup, sbtSize, *ct.dynamicDispatcher);
+        const auto bufUsage = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         mRgenSBT = yic::allocator->allocBuffer(hs, handles.data(), bufUsage, "rgen sbt");
         mMissSBT = yic::allocator->allocBuffer(hs * mMissCount, handles.data() + hsAligned * mRgenCount, bufUsage, "rmiss sbt");

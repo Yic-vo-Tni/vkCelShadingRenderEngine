@@ -5,6 +5,9 @@
 #ifndef VKCELSHADINGRENDERER_COMPUTEPIPELINE_H
 #define VKCELSHADINGRENDERER_COMPUTEPIPELINE_H
 
+#include "PipelineTypes.h"
+#include "RHI/Pipeline/PipelineDescriptorSetLayout.h"
+
 namespace rhi {
     class ComputePipeline{
     public:
@@ -12,21 +15,16 @@ namespace rhi {
         ComputePipeline();
         ~ComputePipeline();
 
-        auto addShader(vot::string path) const -> vk::ShaderModule;
-        auto build(const vot::string& pt, vot::PipelineDescriptorSetLayoutCI2 descriptor_set_layout_ci2) -> ComputePipeline&;
+        auto combine(const vot::gfx::api::ComputePipelineCI& createInfo) -> void;
         auto dispatch(const vot::CommandBuffer& cmd, std::uint32_t x, std::uint32_t y, std::uint32_t z) const -> void;
-        auto combine(const vot::ComputePipelineCI& createInfo) -> void {
-            build(createInfo.shaderPath, createInfo.descriptorSetLayoutCI2);
-        };
 
         [[nodiscard]] auto acquire() const { return mPipeline; }
-        auto acquirePipelineBindPoint() { return vk::PipelineBindPoint::eCompute; }
-        auto acquirePipelineLayout() { return mPipelineLayout; }
+        constexpr auto acquirePipelineBindPoint() const noexcept { return vk::PipelineBindPoint::eCompute; }
+        auto acquirePipelineLayout() const { return pdSetLayout->vaPipelineLayout(); }
     private:
         ev::pVkSetupContext ct{};
         vk::Pipeline mPipeline{};
-        vk::PipelineLayout mPipelineLayout{};
-        vot::PipelineDescriptorSetLayoutCI2 mDesSetLayoutCI;
+        std::shared_ptr<vot::gfx::PipelineDescriptorSetLayout> pdSetLayout;
     };
 } // rhi
 

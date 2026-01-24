@@ -14,7 +14,7 @@ namespace rhi {
 
     auto DescriptorSystem::buildDescriptorPool(const uint32_t& maxSets) -> void {
         auto ci = vot::DescriptorPoolCreateInfo()
-                .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+                .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind)
                 .setMaxSets(maxSets)
                 .setPoolSizes({
                     {.type = vk::DescriptorType::eUniformBuffer, .countOrRatio = 0.3f},

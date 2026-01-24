@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_DSL_H
 #define VKCELSHADINGRENDERER_DSL_H
 
-#include "pch.h"
+#include "../External/pch.h"
 
 namespace vot::dsl {
 
@@ -29,9 +29,11 @@ namespace vot::dsl {
         }
     }
 
+    template<typename T, typename F = void>
+    struct Match;
 
     template<typename T>
-    struct Match {
+    struct Match<T, void> {
         const T& value;
         bool matched{false};
 
@@ -55,6 +57,36 @@ namespace vot::dsl {
         template<typename F>
         auto default_(F &&func) -> void {
             if (!matched) func();
+        }
+    };
+
+    template<typename T, typename R>
+    struct Match {
+        const T &value;
+        bool matched{false};
+        std::optional<R> result;
+
+        template<typename U, typename F>
+        Match &case_(U &&expected, F &&func) {
+            if (!matched && value == expected) {
+                result = func();
+                matched = true;
+            }
+            return *this;
+        }
+
+        template<typename F>
+        R default_(F &&func) {
+            if (!matched)
+                return func();
+            return std::move(*result);
+        }
+
+        R unreachable_default() {
+            if (!matched) {
+                std::unreachable();
+            }
+            return std::move(*result);
         }
     };
 

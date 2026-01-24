@@ -138,10 +138,19 @@ namespace vot {
     }
 }
 
-#include "stl_mimalloc.h"
-#include "base.h"
+#include "Foundation/stl_mimalloc.h"
+#include "Foundation/config.h"
+#include "Foundation/base.h"
+#include "Foundation/DSL.h"
+#include "Foundation/spdlog.h"
+
+#include "Foundation/Path.h"
+
+///
+
 #include "RHI/GpuRuntime/Alloctor/AllocatorTypes.h"
 #include "RHI/RenderDescription/RenderDescriptionTypes.h"
+#include "RHI/Pipeline/PipelineTypes.h"
 
 
 /// forward

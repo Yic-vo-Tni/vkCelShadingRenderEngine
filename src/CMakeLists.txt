@@ -73,7 +73,7 @@ set(common_libs
         Saba
         ws2_32
 )
-configure_file("Engine/External/config.h.in" "${CMAKE_SOURCE_DIR}/src/Engine/External/config.h")
+configure_file("Engine/Foundation/config.h.in" "${CMAKE_SOURCE_DIR}/src/Engine/Foundation/config.h")
 
 target_include_directories(Compose PUBLIC
         engine

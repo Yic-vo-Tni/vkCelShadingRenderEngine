@@ -73,41 +73,41 @@ namespace sm {
     }
 
     auto Atmosphere::createPipeline() -> void {
-        CP_TransmittanceLUT.build("PreAtmosphere/transmittanceLUT", vot::PipelineDescriptorSetLayoutCI2()
-            .SET0
-            // TODO: commonUbo, skyConstantUbo, computerLUTTexs
-            );
-
-        CP_SkyViewLUT.build("PreAtmosphere/skyViewLUT", vot::PipelineDescriptorSetLayoutCI2()
-            .SET0
-            // TODO: commonUbo, skyConstantUbo, computeLutTexs
-            );
-
-        GP_Clouds.combinePipelineLibrary(vot::PipelineLibrary()
-            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
-            .SET0
-            // TODO: commonUbo, skyConstantUbo, CloudsParamsUbo, DepthOne, worleyNoise, TransmittanceLUT,
-            )
-
-            .setRenderPass2CI(vot::RenderPass2CI()
-            .setRenderingDepth(vk::True))
-
-            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-            .setShaderPath("Common/screen_triangle.vert"))
-
-            .setFragmentShaderCI(vot::FragmentShaderCI()
-            .setShaderPath("PreAtmosphere/clouds.frag")));
-
-        GP_FarSky.combinePipelineLibrary(vot::PipelineLibrary()
-            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
-            .SET0
-            // TODO: commonUbo, skyConstantUbo, SkyViewLUT, DepthOne
-            )
-
-            .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
-            .setShaderPath("Common/screen_triangle.vert"))
-
-            .setFragmentShaderCI(vot::FragmentShaderCI() //NOTE: blendAlpha maybe should 0
-            .setShaderPath("PreAtmosphere/farSky.frag")));
+        // CP_TransmittanceLUT.build("PreAtmosphere/transmittanceLUT", vot::PipelineDescriptorSetLayoutCI2()
+        //     .SET0
+        //     // TODO: commonUbo, skyConstantUbo, computerLUTTexs
+        //     );
+        //
+        // CP_SkyViewLUT.build("PreAtmosphere/skyViewLUT", vot::PipelineDescriptorSetLayoutCI2()
+        //     .SET0
+        //     // TODO: commonUbo, skyConstantUbo, computeLutTexs
+        //     );
+        //
+        // GP_Clouds.combinePipelineLibrary(vot::PipelineLibrary()
+        //     .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+        //     .SET0
+        //     // TODO: commonUbo, skyConstantUbo, CloudsParamsUbo, DepthOne, worleyNoise, TransmittanceLUT,
+        //     )
+        //
+        //     .setRenderPass2CI(vot::RenderPass2CI()
+        //     .setRenderingDepth(vk::True))
+        //
+        //     .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+        //     .setShaderPath("Common/screen_triangle.vert"))
+        //
+        //     .setFragmentShaderCI(vot::FragmentShaderCI()
+        //     .setShaderPath("PreAtmosphere/clouds.frag")));
+        //
+        // GP_FarSky.combinePipelineLibrary(vot::PipelineLibrary()
+        //     .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
+        //     .SET0
+        //     // TODO: commonUbo, skyConstantUbo, SkyViewLUT, DepthOne
+        //     )
+        //
+        //     .setPreRasterizationShadersCI(vot::PreRasterizationShadersCI()
+        //     .setShaderPath("Common/screen_triangle.vert"))
+        //
+        //     .setFragmentShaderCI(vot::FragmentShaderCI() //NOTE: blendAlpha maybe should 0
+        //     .setShaderPath("PreAtmosphere/farSky.frag")));
     }
 } // sm

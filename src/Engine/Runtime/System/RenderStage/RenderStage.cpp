@@ -17,8 +17,9 @@ namespace runtime::flow {
         rt = yic::systemHub.va<ev::pVkRenderContext>();
     }
     auto DispatchHelper::frame() -> void {
-        iTime += (1.f / 60.f);
-        iTime += 1.f / std::max(GLOBAL::fps, 0.01f);;
+        // iTime += (1.f / 60.f);
+        // iTime += 1.f / std::max(GLOBAL::fps, 0.01f);;
+        iTime += GLOBAL::dt.load(std::memory_order_relaxed);
         fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
         slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
         set0 = GLOBAL::entity::set0.va<vot::DescriptorSet0>().handles[fast];
@@ -33,8 +34,7 @@ namespace sc {
     }
 
     auto RenderStage::update() -> void {
-        iTime += (1.f / 60.f);
-        iTime += 1.f / std::max(GLOBAL::fps, 0.01f);;
+        iTime += GLOBAL::dt.load(std::memory_order_relaxed);
         fast = yic::indexRing.get(vot::LogicBufferType::eFast).render_cur();
         slow = yic::indexRing.get(vot::LogicBufferType::eSlow).render_cur();
         set0 = GLOBAL::entity::set0.va<vot::DescriptorSet0>().handles[fast];

@@ -21,7 +21,6 @@ Engine::~Engine() {
 
     ui::ShaderHotReload::destroy();
     mEngineRuntime.reset();
-    mRhi.reset();
     mWindow.reset();
 }
 
@@ -34,12 +33,11 @@ auto Engine::run() -> void {
 
             yic::shaderHot = ui::ShaderHotReload::make();
 
-            mRhi = std::make_unique<rhi::Rhi>();
             mEngineRuntime = std::make_unique<sc::EngineRuntime>();
 
             mEngineRuntime->fastLogic();
             mEngineRuntime->fastLogic();
-            mEngineRuntime->fastLogic();
+            mEngineRuntime->fastLogic(); // HACK:
 
             mInit = true;
             mInitCondVar.notify_all();
@@ -75,7 +73,6 @@ auto Engine::run() -> void {
 
         while (!mWindow->shouldClose().load(std::memory_order_relaxed)){
             mEngineRuntime->render();
-            mRhi->render();
         }
         mWindow->renderClosed();
         {

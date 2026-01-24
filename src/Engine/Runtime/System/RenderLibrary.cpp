@@ -17,6 +17,9 @@ namespace sc {
 #define SET0  addDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR) \
     .addDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
 
+#define BD0  bindDescriptorSetLayoutBinding(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eRaygenKHR) \
+.bindDescriptorSetLayoutBinding(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment) \
+
     RenderLibrary::RenderLibrary() {
         frameImageCount = yic::systemHub.va<ev::pVkRenderContext>().frameEntries->size();
         buildPipelines();
@@ -59,9 +62,9 @@ namespace sc {
             .setShaderPath("Basic/model.vert"))
 
             .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
-            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(),
-                                            rhi::GraphicsPipeline::makeBlendAttachment(),
-                                            rhi::GraphicsPipeline::makeBlendAttachment()}))
+            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeColorBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeColorBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeColorBlendAttachment()}))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/model.frag")));
@@ -83,9 +86,9 @@ namespace sc {
             .setShaderPath("Basic/Light.vert"))
 
             .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
-            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(),
-                                            rhi::GraphicsPipeline::makeBlendAttachment(),
-                                            rhi::GraphicsPipeline::makeBlendAttachment()}))
+            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeColorBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeColorBlendAttachment(),
+                                            rhi::GraphicsPipeline::makeColorBlendAttachment()}))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/Light.frag")));
@@ -107,7 +110,7 @@ namespace sc {
             .setShaderPath("Basic/IDBuffer.vert"))
 
             .setFragmentOutputInterfaceCI(vot::FragmentOutputInterfaceCI()
-            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeBlendAttachment(std::nullopt, vk::False)}))
+            .setColorBlendAttachmentStates({rhi::GraphicsPipeline::makeColorBlendAttachment(vot::gfx::api::PipelineColorBlendAttachmentStateCI{.blendEnable = vk::False})}))
 
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/IDBuffer.frag"))
@@ -199,25 +202,6 @@ namespace sc {
             .setFragmentShaderCI(vot::FragmentShaderCI()
             .setShaderPath("Basic/post.frag")));
 
-       // RP_Shadow.addShader("RT/gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
-       //      .addShader("RT/miss.rmiss", vk::ShaderStageFlagBits::eMissKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
-       //      .addShader("RT/shadow_miss.rmiss", vk::ShaderStageFlagBits::eMissKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
-       //      .addShader("RT/hit.rchit", vk::ShaderStageFlagBits::eClosestHitKHR, vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup, vot::RTShaderRole::eClosestHit)
-       //
-       //      .build(vot::PipelineDescriptorSetLayoutCI2()
-       //      .SET0
-       //      .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eAccelerationStructureKHR, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
-       //      .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
-       //      .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR));
-
-        // CP_Skinning.build("Basic/skinning.comp", vot::PipelineDescriptorSetLayoutCI2()
-        //     .SET0
-        //     .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
-        //     .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
-        //     .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
-        //     .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
-        //     .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eCompute, 0, sizeof(std::uint32_t)}));
-
         RP_Shadow.combine(vot::RayTracingPipelineCI()
             .addShader("RT/gen.rgen", vk::ShaderStageFlagBits::eRaygenKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
             .addShader("RT/miss.rmiss", vk::ShaderStageFlagBits::eMissKHR, vk::RayTracingShaderGroupTypeKHR::eGeneral)
@@ -229,16 +213,15 @@ namespace sc {
             .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenKHR)
             .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eClosestHitKHR)));
 
-
-        CP_Skinning.combine(vot::ComputePipelineCI()
-            .setShaderPath("Basic/skinning.comp")
-            .setPipelineDescriptorSetLayoutCI2(vot::PipelineDescriptorSetLayoutCI2()
-            .SET0
-            .addDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
-            .addDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
-            .addDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
-            .addDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
-            .addPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eCompute, 0, sizeof(std::uint32_t)}))
+        CP_Skinning.combine(vot::gfx::api::ComputePipelineCI()
+            .bindComputerShader("Basic/skinning")
+            .setPipelineDescriptorSetLayoutCI(vot::gfx::api::PipelineDescriptorSetLayoutCI()
+            .setMustConfigure(vot::gfx::api::DescriptorLayoutMode::eModernIndexing, vot::gfx::api::GlobalBindingPolicy::eInclude)
+            .bindDescriptorSetLayoutBinding(1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
+            .bindDescriptorSetLayoutBinding(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
+            .bindDescriptorSetLayoutBinding(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+            .bindDescriptorSetLayoutBinding(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+            .bindPushConstantRange(vk::PushConstantRange{vk::ShaderStageFlagBits::eCompute, 0, sizeof(std::uint32_t)}))
         );
     }
 

@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_RS_STRUCT_H
 
 #include "pch.h"
-#include "stl_mimalloc.h"
+#include "../Foundation/stl_mimalloc.h"
 #include "rhi_struct.h"
 #include "ozz/base/memory/unique_ptr.h"
 #include "ozz/animation/runtime/animation.h"

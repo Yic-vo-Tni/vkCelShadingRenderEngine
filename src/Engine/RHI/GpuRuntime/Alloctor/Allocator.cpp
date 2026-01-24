@@ -66,18 +66,19 @@ namespace rhi {
     }
 
     auto Allocator::buildBuffer(const vot::gfx::api::BufferCI &ci) -> vot::Buffer_sptr {
-        vot::dsl::Match{ci.residency}
-                .case_(vot::gfx::api::BufferResidency::eDefault, [&] {
-                    return allocBuffer(ci.device_size, ci.data, ci.buffer_usage_flags);
-                })
-                .case_(vot::gfx::api::BufferResidency::eStaging, [&] {
-                    return allocBufferStaging(ci.device_size, ci.data, ci.buffer_usage_flags);
-                })
-                .case_(vot::gfx::api::BufferResidency::eDedicated, [&] {
-                    return allocDedicatedBufferStaging(ci.device_size, ci.buffer_usage_flags);
-                });
-        // TODO:
-        return nullptr;
+        //format-off
+        return vot::dsl::Match<vot::gfx::api::BufferResidency, vot::Buffer_sptr>{ci.residency}
+               .case_(vot::gfx::api::BufferResidency::eDefault, [&] {
+                   return allocBuffer(ci.device_size, ci.data, ci.buffer_usage_flags);
+               })
+               .case_(vot::gfx::api::BufferResidency::eStaging, [&] {
+                   return allocBufferStaging(ci.device_size, ci.data, ci.buffer_usage_flags);
+               })
+               .case_(vot::gfx::api::BufferResidency::eDedicated, [&] {
+                   return allocDedicatedBufferStaging(ci.device_size, ci.buffer_usage_flags);
+               })
+               .unreachable_default();
+        //format-on
     }
 
     auto Allocator::allocBuffer(const vk::DeviceSize deviceSize, const void *data, const vk::BufferUsageFlags flags,

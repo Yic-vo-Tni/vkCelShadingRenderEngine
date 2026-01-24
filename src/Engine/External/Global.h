@@ -6,17 +6,16 @@
 #define VKCELSHADINGRENDERER_GLOBAL_H
 
 #include "pch.h"
-#include "base.h"
+#include "../Foundation/base.h"
 #include "ecs_struct.h"
 
 namespace GLOBAL{
     inline bool visibleZMO{true};
     inline ImGuizmo::OPERATION gizmoOperation{ImGuizmo::TRANSLATE};
     inline vot::string pickON{};
-    inline float fps;
-    //inline entt::entity camera;
-    // inline entt::entity set0;
-    // inline vot::EntityView camera;
+    inline float fps; // legacy
+    inline std::atomic<float> dt;
+
 
     inline bool showVolumetricClouds{false};
     inline bool showVolumetricFog{false};

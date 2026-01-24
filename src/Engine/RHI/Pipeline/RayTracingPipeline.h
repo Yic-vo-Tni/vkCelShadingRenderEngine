@@ -57,7 +57,6 @@ namespace rhi {
         ev::pVkSetupContext ct;
         vk::Pipeline mRTPipeline;
         vk::PipelineLayout mRTPipelineLayout;
-//        vot::PipelineDescriptorSetLayoutCI mDesSetLayoutCI;
         std::variant<vot::PipelineDescriptorSetLayoutCI, vot::PipelineDescriptorSetLayoutCI2> mDesSetLayoutCI;
         vot::vector<ReBuild> mRebuilds;
 

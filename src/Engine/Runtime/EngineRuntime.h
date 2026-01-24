@@ -5,6 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_ECS_H
 #define VKCELSHADINGRENDERER_ECS_H
 
+#include "RHI/GpuRuntime.h"
 #include "System/InspectorPanel.h"
 #include "System/RenderSubmissionSystem.h"
 
@@ -29,6 +30,7 @@ namespace sc {
         ev::pVkSetupContext ct{};
         ev::pVkRenderContext rt{};
 
+        std::unique_ptr<rhi::GpuRuntime> gpuRuntime;
         std::unique_ptr<InspectorPanel> inspectorPanel;
         std::unique_ptr<RenderSubmissionSystem> submissionSystem;
     };

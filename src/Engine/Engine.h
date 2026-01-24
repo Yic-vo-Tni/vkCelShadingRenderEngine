@@ -7,7 +7,6 @@
 
 #include "Editor/Window.h"
 #include "Runtime/EngineRuntime.h"
-#include "RHI/Rhi.h"
 
 class Engine {
 public:
@@ -18,7 +17,6 @@ public:
 private:
     std::unique_ptr<yic::Window> mWindow;
 
-    std::unique_ptr<rhi::Rhi> mRhi;
     std::unique_ptr<sc::EngineRuntime> mEngineRuntime;
     std::atomic_bool mLoopStop = true;
     std::unique_ptr<std::thread> mRenderThread;

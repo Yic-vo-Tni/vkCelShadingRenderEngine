@@ -12,27 +12,27 @@
 namespace runtime::flow {
 
     DynamicEditableRendering::DynamicEditableRendering() {
-        rf.algorithms.emplace_back(
-                        DER::flow | [&](DER::AlgorithmFlow &flow) {
-                            flow.name = "rtName";
-                            flow.nodes.emplace_back(
-                                DER::node | [&](DER::AlgorithmNode &node) {
-                                    node.id = ++nodeId;
-                                    assert(nodeId < (1u << 23));
-                                    node.name = "rtName";
-                                    node.buildTarget = [&] {
-                                        return yic::allocator->allocImage(vot::ImageCI()
-                                            .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
-                                            .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
-                                            .setFormat(vk::Format::eR16G16B16A16Sfloat)
-                                            .setImageCount(3)
-                                            .setExtent(vot::Resolutions::eQHDExtent)
-                                            .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
-                                    };
-                                    node.THandle = node.buildTarget();
-                                }
-                            );
-                        });
+        // rf.algorithms.emplace_back(
+        //                 DER::flow | [&](DER::AlgorithmFlow &flow) {
+        //                     flow.name = "rtName";
+        //                     flow.nodes.emplace_back(
+        //                         DER::node | [&](DER::AlgorithmNode &node) {
+        //                             node.id = ++nodeId;
+        //                             assert(nodeId < (1u << 23));
+        //                             node.name = "rtName";
+        //                             node.buildTarget = [&] {
+        //                                 return yic::allocator->allocImage(vot::ImageCI()
+        //                                     .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
+        //                                     .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+        //                                     .setFormat(vk::Format::eR16G16B16A16Sfloat)
+        //                                     .setImageCount(3)
+        //                                     .setExtent(vot::Resolutions::eQHDExtent)
+        //                                     .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
+        //                             };
+        //                             node.THandle = node.buildTarget();
+        //                         }
+        //                     );
+        //                 });
     };
 
     DynamicEditableRendering::~DynamicEditableRendering() = default;
@@ -167,7 +167,7 @@ namespace runtime::flow {
                                     node.buildTarget = []{ return yic::allocator->allocImage(composeDll.buildTarget(), "Compose");};
                                     node.THandle = node.buildTarget();
                                     node.buildPipeline = [] {
-                                        auto pipelineCI = composeDll.buildPipeline();
+                                        const auto pipelineCI = composeDll.buildPipeline();
                                         auto pipeline = std::make_shared<rhi::GraphicsPipeline>();
                                         if (pipelineCI.graphicsPipelineCI.has_value()) {
                                             pipeline->combinePipelineLibrary(pipelineCI.graphicsPipelineCI.value());
@@ -181,31 +181,6 @@ namespace runtime::flow {
                                 });
                         });
 
-                    // rf.algorithms[0] = DER::flow | [&](DER::AlgorithmFlow &flow) {
-                    //     flow.name = "Compose";
-                    //     flow.nodes.emplace_back(
-                    //         DER::node | [&](DER::AlgorithmNode &node) {
-                    //             node.id = ++nodeId;
-                    //             assert(nodeId < (1u << 23));
-                    //             node.name = "Compose";
-                    //             node.buildTarget = []{ return yic::allocator->allocImage(composeDll.buildTarget(), "Compose");};
-                    //             node.THandle = node.buildTarget();
-                    //             node.buildPipeline = [] {
-                    //                 auto pipelineCI = composeDll.buildPipeline();
-                    //                 auto pipeline = std::make_shared<rhi::GraphicsPipeline>();
-                    //                 if (pipelineCI.graphicsPipelineCI.has_value()) {
-                    //                     pipeline->combinePipelineLibrary(pipelineCI.graphicsPipelineCI.value());
-                    //                 }
-                    //                 return pipeline;
-                    //             };
-                    //             node.PHandle = node.buildPipeline();
-                    //             node.dispatch = [&](vot::CommandBuffer &cmd) {
-                    //                 composeDll.dispatch(cmd, yic::derTranslator);
-                    //             };
-                    //         });
-                    // };
-
-                    //
                 });
             });
         });

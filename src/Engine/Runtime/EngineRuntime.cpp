@@ -35,9 +35,17 @@ namespace sc {
         RenderLibrary::destroy();
         rs::ResourceSystem::destroy();
         sm::SceneSystem::destroy();
+
+        submissionSystem.reset();
+        inspectorPanel.reset();
+
+        ecs.clear();
+        gpuRuntime.reset();
     };
 
     auto EngineRuntime::prepose() -> void {
+        gpuRuntime = std::make_unique<rhi::GpuRuntime>();
+
         ct = yic::systemHub.va<ev::pVkSetupContext>();
         rt = yic::systemHub.va<ev::pVkRenderContext>();
 
@@ -58,6 +66,8 @@ namespace sc {
 
             yic::sceneSystem->frame();
             submissionSystem->frame(); // TODO: Split into -> RHI thread
+
+            gpuRuntime->present();
         }, vot::eFast, vot::eSlow);
     }
 
@@ -100,10 +110,8 @@ namespace sc {
 
         auto& [set0] = GLOBAL::entity::set0.make_va<vot::DescriptorSet0>();
         std::ranges::for_each(std::views::iota(0, 3), [&](auto i) -> void {
-            set0[i] = yic::desSystem->allocUpdateDescriptorSets([&] {
-                vot::DescriptorLayout2 layout2;
+            set0[i] = yic::desSystem->allocUpdateDescriptorSets([&](vot::DescriptorLayout2& layout2) {
                 layout2.emplace({cam.vpBufferInfo(i), meta.ssbo->bufferInfo()});
-                return layout2;
             }, yic::renderLibrary->GP_Basic_Assimp, 0, 1);
         });
     }

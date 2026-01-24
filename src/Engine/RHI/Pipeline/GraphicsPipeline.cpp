@@ -53,7 +53,7 @@ namespace rhi {
                 mPipelineLibrary.fragmentOutputInterface,
                 mPipelineLibrary.fragmentShader
         };
-        auto libraryCI = vk::PipelineLibraryCreateInfoKHR()
+        const auto libraryCI = vk::PipelineLibraryCreateInfoKHR()
                 .setLibraries(libraries);
 
         if (mFinalPipeline){
@@ -144,7 +144,9 @@ namespace rhi {
         auto libraryInfo = vk::GraphicsPipelineLibraryCreateInfoEXT()
                 .setFlags(vk::GraphicsPipelineLibraryFlagBitsEXT::eFragmentOutputInterface);
 
-        auto colorBlendAttach = libraryCI.colorBlendAttachmentStates.empty() ? std::initializer_list<vk::PipelineColorBlendAttachmentState>{makePipelineColorBlendAttachments()} : libraryCI.colorBlendAttachmentStates;
+        auto colorBlendAttach = libraryCI.colorBlendAttachmentStates.empty()
+                                    ? std::initializer_list{makeColorBlendAttachment()}
+                                    : libraryCI.colorBlendAttachmentStates;
         auto colorBlendState = vk::PipelineColorBlendStateCreateInfo()
                 .setAttachments(colorBlendAttach)
                 .setLogicOpEnable({});
@@ -182,7 +184,7 @@ namespace rhi {
             yic::shaderHot->rego(libraryCI.shaderPt, {.gp = this, .flags = vk::ShaderStageFlagBits::eFragment});
         }
 
-        auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+        const auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
                 .setDepthTestEnable(libraryCI.depthTestEnable.value_or(vk::True))
                 .setDepthWriteEnable(libraryCI.depthWriteEnable.value_or(vk::True))
                 .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
@@ -192,10 +194,10 @@ namespace rhi {
                 .setBack(vk::StencilOpState{})
                 .setMinDepthBounds({})
                 .setMaxDepthBounds({});
-        auto multisampleState = vk::PipelineMultisampleStateCreateInfo()
+        const auto multisampleState = vk::PipelineMultisampleStateCreateInfo()
                 .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
-        auto ci = vk::GraphicsPipelineCreateInfo()
+        const auto ci = vk::GraphicsPipelineCreateInfo()
                 .setFlags(vk::PipelineCreateFlagBits::eLibraryKHR |
                           vk::PipelineCreateFlagBits::eRetainLinkTimeOptimizationInfoEXT)
                 .setStages(shaderStageCIs)
@@ -211,8 +213,8 @@ namespace rhi {
     auto GraphicsPipeline::buildPipelineLayout(vot::PipelineLibrary &pipelineLibrary) const -> void {
         auto& setLayoutCI = pipelineLibrary.pipelineDescriptorSetLayoutCI;
 
-        std::visit([&](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
+        std::visit([&]<typename T0>(T0 &&arg) {
+            using T = std::decay_t<T0>;
             if constexpr (std::is_same_v<T, vot::PipelineDescriptorSetLayoutCI>)
                 pipelineLibrary.pipelineLayout = PipeRSManager->gPipeLayoutHandle(arg.buildPipelineSetLayout(ct.device));
             if constexpr (std::is_same_v<T, vot::PipelineDescriptorSetLayoutCI2>)

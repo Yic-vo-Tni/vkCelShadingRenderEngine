@@ -8,7 +8,7 @@
 #include <type_traits>
 
 #include "External/pch.h"
-#include "External/stl_mimalloc.h"
+#include "../../../Foundation/stl_mimalloc.h"
 #include "External/rhi_struct.h"
 
 

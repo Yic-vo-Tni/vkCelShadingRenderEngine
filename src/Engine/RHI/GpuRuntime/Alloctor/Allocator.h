@@ -85,13 +85,13 @@ namespace rhi {
             return tfMatrix;
         }
     private:
-        auto createBuffer(const BufferCI& ci) const -> vot::gfx::detail::BufferAllocation;
+        [[nodiscard]] auto createBuffer(const BufferCI& ci) const -> vot::gfx::detail::BufferAllocation;
         auto mapBuffer(const VmaAllocation& alloc, VkDeviceSize devSize, const void* data) -> void*;
         static auto copyBuffer(VkBuffer stagingBuffer, VkBuffer destBuffer, VkDeviceSize deviceSize, vot::CommandBuffer& cmd) -> void;
         static auto resetBuffer(VkBuffer& buffer, vot::CommandBuffer& cmd) -> void;
 
         auto createImage(const vot::ImageCI& config) -> imageHandle ;
-        auto createImageView(const vot::ImageCI& config, const vk::Image& image) const -> vk::ImageView;
+        [[nodiscard]] auto createImageView(const vot::ImageCI& config, const vk::Image& image) const -> vk::ImageView;
         inline auto copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t w, uint32_t h, vot::CommandBuffer& cmd) -> void;
 
         static auto pipelineBarrier2I(const vot::vector<vk::ImageMemoryBarrier2>& imageMemoryBarrier2,

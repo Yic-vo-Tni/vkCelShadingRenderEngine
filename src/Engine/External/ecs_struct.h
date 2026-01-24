@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_ECS_STRUCT_H
 
 #include "pch.h"
-#include "spdlog.h"
+#include "../Foundation/spdlog.h"
 
 namespace vot::inline sc{
 

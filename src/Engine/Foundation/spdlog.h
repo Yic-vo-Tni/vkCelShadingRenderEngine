@@ -6,7 +6,7 @@
 #define VKCELSHADINGRENDERER_SPDLOG_H
 
 #include "base.h"
-#include "pch.h"
+
 
 namespace hide{
 
@@ -15,7 +15,7 @@ namespace hide{
         Make = []{ return Singleton<SpdLog>::make_ptr(); };
         SpdLog(){
             spdlog::set_pattern("%^[%T] %n: %v%$");
-            mLogger = spdlog::stdout_color_mt("vk");
+            mLogger = spdlog::stdout_color_mt("vot");
             mLogger->set_level(spdlog::level::trace);
         }
 

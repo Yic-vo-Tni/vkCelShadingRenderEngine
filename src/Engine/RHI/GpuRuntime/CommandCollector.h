@@ -13,7 +13,8 @@ namespace rhi2 {
         constexpr static std::uint32_t numExpandCmd = 32;
         struct SafeCommandPool {
             vk::CommandPool commandPool;
-            oneapi::tbb::spin_rw_mutex mutex;
+            //oneapi::tbb::spin_rw_mutex mutex;
+            std::mutex mutex;
             std::atomic<std::uint32_t> next = 0;
             vot::vector<vot::CommandBuffer> cmds;
 

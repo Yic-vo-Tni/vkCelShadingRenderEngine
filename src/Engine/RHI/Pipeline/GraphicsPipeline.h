@@ -46,54 +46,25 @@ namespace rhi {
     };
     inline PipeRSManager* PipeRSManager;
 
-    class GraphicsPipeline : public vot::IPipeline{
+    class GraphicsPipeline final : public vot::IPipeline{
     public:
         vot::DescriptorHandle DS;
     public:
         GraphicsPipeline();
-        ~GraphicsPipeline();
+        ~GraphicsPipeline() override;
 
         auto combinePipelineLibrary(vot::PipelineLibrary pipelineLibrary) -> void;
-        static auto makePipelineColorBlendAttachments(
-                vk::ColorComponentFlags colorFlags = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG
-                                                     | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
-                vk::Bool32 blendEnable = true,
-                vk::BlendFactor srcColorBF = vk::BlendFactor::eSrcAlpha, vk::BlendFactor dstColorBF = vk::BlendFactor::eOneMinusSrcAlpha,
-                vk::BlendOp colorBlendOp = vk::BlendOp::eAdd,
-                vk::BlendFactor srcAlphaBF = vk::BlendFactor::eSrcAlpha, vk::BlendFactor dstAlphaBF = vk::BlendFactor::eOneMinusSrcAlpha,
-                vk::BlendOp alphaBlendOp = vk::BlendOp::eAdd) -> vk::PipelineColorBlendAttachmentState{
-            vk::PipelineColorBlendAttachmentState att{blendEnable,
-                                                      srcColorBF, dstColorBF, colorBlendOp,
-                                                      srcAlphaBF, dstAlphaBF, alphaBlendOp,
-                                                      colorFlags};
-            return att;
-        };
-        static vk::PipelineColorBlendAttachmentState makeBlendAttachment(
-                std::optional<vk::ColorComponentFlags> colorFlags = std::nullopt,
-                std::optional<vk::Bool32> blendEnable = std::nullopt,
-                std::optional<vk::BlendFactor> srcColorBF = std::nullopt,
-                std::optional<vk::BlendFactor> dstColorBF = std::nullopt,
-                std::optional<vk::BlendOp> colorBlendOp = std::nullopt,
-                std::optional<vk::BlendFactor> srcAlphaBF = std::nullopt,
-                std::optional<vk::BlendFactor> dstAlphaBF = std::nullopt,
-                std::optional<vk::BlendOp> alphaBlendOp = std::nullopt
-        ){
-            vk::PipelineColorBlendAttachmentState att{};
-            att.setColorWriteMask(colorFlags.value_or(
-                    vk::ColorComponentFlagBits::eR |
-                    vk::ColorComponentFlagBits::eG |
-                    vk::ColorComponentFlagBits::eB |
-                    vk::ColorComponentFlagBits::eA));
-            att.setBlendEnable(blendEnable.value_or(VK_TRUE));
-            att.setSrcColorBlendFactor(srcColorBF.value_or(vk::BlendFactor::eSrcAlpha));
-            att.setDstColorBlendFactor(dstColorBF.value_or(vk::BlendFactor::eOneMinusSrcAlpha));
-            att.setColorBlendOp(colorBlendOp.value_or(vk::BlendOp::eAdd));
-            att.setSrcAlphaBlendFactor(srcAlphaBF.value_or(vk::BlendFactor::eSrcAlpha));
-            att.setDstAlphaBlendFactor(dstAlphaBF.value_or(vk::BlendFactor::eOneMinusSrcAlpha));
-            att.setAlphaBlendOp(alphaBlendOp.value_or(vk::BlendOp::eAdd));
-            return att;
+
+        static vk::PipelineColorBlendAttachmentState makeColorBlendAttachment(
+            const vot::gfx::api::PipelineColorBlendAttachmentStateCI &state = {}) {
+            //format-off
+            return vk::PipelineColorBlendAttachmentState(
+                state.blendEnable,
+                state.srcColorBF, state.dstColorBF, state.colorBlendOp,
+                state.srcAlphaBF, state.dstAlphaBF, state.alphaBlendOp,
+                state.colorFlags);
+            //format-on
         }
-//        auto acquirePipelineLibrary() { return mPipelineLibrary; }
         auto acquirePipelineLibrary() { return mPipelineLibrary; }
 
         vk::Pipeline& acquire() override { return mFinalPipeline; }

@@ -61,7 +61,8 @@ namespace fo{
         // return buffer;
         namespace fs = std::filesystem;
 
-        fs::path p = fs::u8path(path); // UTF-8 → UTF-16（Windows）
+        //fs::path p = fs::u8path(path); // UTF-8 → UTF-16（Windows）
+        fs::path p(reinterpret_cast<const char8_t*>(path.c_str()));
 
         HANDLE fileHandle = CreateFileW(
             p.c_str(),

@@ -174,8 +174,6 @@ current codebase.*
 | oneapi                         | ✔️ |    |    |   | Planned removal          |
 | enkits                         |    |    | 📋 |   |                          |
 | moodycamel                     |    |    | 📋 |   |                          |
-| folly                          |    |    | 📋 |   |                          |
-| absl                           |    |    | 📋 |   |                          |
 | ozz                            |    |    | 📋 |   |                          |
 | spdlog                         | ✔️ |    |    |   |                          |
 | stb                            | ✔️ |    |    |   |                          |

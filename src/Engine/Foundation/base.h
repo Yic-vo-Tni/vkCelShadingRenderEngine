@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_BASE_H
 #define VKCELSHADINGRENDERER_BASE_H
 
-#include "pch.h"
+#include "../External/pch.h"
 #include "stl_mimalloc.h"
 
 class nonCopyable{

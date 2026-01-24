@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_STL_MIMALLOC_H
 #define VKCELSHADINGRENDERER_STL_MIMALLOC_H
 
-#include "pch.h"
+#include "../External/pch.h"
 
 namespace vot{
 
@@ -95,6 +95,43 @@ namespace vot{
         }
     };
 
+}
+
+namespace vot::container {
+    template<typename T>
+    using vector = vector<T>;
+
+    template<typename T>
+    using deque = deque<T>;
+
+    template<typename T>
+    using list = list<T>;
+
+    template<typename Key, typename Comp = std::less<Key>>
+    using set = set<Key, Comp>;
+
+    template<typename Key, typename T, typename Comp = std::less<Key>>
+    using map = map<Key, T, Comp>;
+
+    template<typename Key, typename Hash = std::hash<Key>, typename Eq = std::equal_to<Key>>
+    using unordered_set = unordered_set<Key, Hash, Eq>;
+
+    template<typename Key, typename T, typename Hash = std::hash<Key>, typename Eq = std::equal_to<Key>>
+    using unordered_map = unordered_map<Key, T, Hash, Eq>;
+
+    template<typename T, typename Container = deque<T>>
+    using queue = queue<T, Container>;
+
+    template<typename T, typename Container = deque<T>>
+    using stack = stack<T, Container>;
+
+    using string = string;
+    using uint32L = uint32L;
+
+    template<typename T>
+    using smart_vector = smart_vector<T>;
+
+    using pmr_mimalloc_resource = pmr_mimalloc_resource;
 }
 
 

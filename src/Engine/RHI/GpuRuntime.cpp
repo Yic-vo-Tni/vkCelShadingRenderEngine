@@ -3,7 +3,7 @@
 //
 
 #include "Core/DispatchSystem/SystemHub.h"
-#include "Rhi.h"
+#include "GpuRuntime.h"
 #include "TimelineSemaphore.h"
 #include "Command.h"
 #include "GpuRuntime/Alloctor/Allocator.h"
@@ -15,8 +15,8 @@
 
 
 namespace rhi {
-    Rhi::Rhi() {
-        mFrameRate = std::make_unique<FrameRate>();
+    GpuRuntime::GpuRuntime() {
+       // mFrameRate = std::make_unique<FrameRate>();
 
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeaturesKhr{vk::True};
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeaturesKhr{vk::True};
@@ -43,8 +43,10 @@ namespace rhi {
         vk::PhysicalDevicePresentModeFifoLatestReadyFeaturesEXT presentModeFifoLatestReadyFeatures{vk::True};
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
-     .addInstanceLayers("VK_LAYER_KHRONOS_validation")
+#ifndef   NDBUG
+         .addInstanceLayers("VK_LAYER_KHRONOS_validation")
          .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
+#endif
          .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)
          .addInstanceExtensions(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)
 
@@ -98,10 +100,10 @@ namespace rhi {
         yic::imguiImage = rhi::ImGuiDescriptorManager::make();
         yic::command2 = rhi2::CommandCollector::make();
 
-        auto x = std::make_shared<vot::gfx::ResourceBindingSystem>();
+       // auto x = std::make_shared<vot::gfx::ResourceBindingSystem>();
     }
 
-    Rhi::~Rhi() {
+    GpuRuntime::~GpuRuntime() {
         if_debug yic::logger->warn("~ rhi");
         mSwapchain->clear();
         yic::allocator->clear();
@@ -116,9 +118,10 @@ namespace rhi {
         mVkInit.reset();
     }
 
-    auto Rhi::render() -> void {
+    auto GpuRuntime::present() -> void {
         mSwapchain->draw();
-        mFrameRate->update();
+        //mFrameRate->update();
+        mTimeSystem.update();
     }
 
 } // rhi

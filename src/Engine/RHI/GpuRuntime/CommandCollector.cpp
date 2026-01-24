@@ -31,70 +31,124 @@ namespace rhi2 {
 
     auto CommandCollector::bind(const CommandFn &fn) -> void {
         while (true) {
+            auto &framePool = frames[*index];
             for (auto i = 0; i < numThread; i++) {
-                auto &framePool = frames[*index];
                 auto &safePool = framePool.commandPools[i];
 
-                if (safePool.mutex.try_lock()) {
-                    const auto& fence = framePool.fence;
-                    if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
-                        if (ct.device->waitForFences(fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
-                            throw std::runtime_error("failed to submit command buffer submission");
-                        }
+                std::unique_lock lock(safePool.mutex, std::try_to_lock);
+
+                if (!lock.owns_lock()) continue;
+
+                const auto& fence = framePool.fence;
+                if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
+                    if (ct.device->waitForFences(fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
+                        throw std::runtime_error("failed to submit command buffer submission");
                     }
-
-                    if (safePool.cmds.empty() || safePool.next > safePool.cmds.size()) {
-                        expand(safePool);
-                    }
-
-                    auto &cmd = safePool.cmds[safePool.next++];
-                    cmd.id = framePool.id++;
-
-                    cmd.render([fn, &cmd] { fn(cmd); });
-
-                    if (framePool.records.size() <= cmd.id) {
-                        framePool.records.resize(cmd.id + 1);
-                    }
-
-                    framePool.records[cmd.id] = cmd;
-
-                    safePool.mutex.unlock();
-                    return;
                 }
+
+                if (safePool.cmds.empty() || safePool.next >= safePool.cmds.size()) {
+                    expand(safePool);
+                }
+
+                auto &cmd = safePool.cmds[safePool.next++];
+                cmd.id = framePool.id++;
+
+                cmd.render([fn, &cmd] { fn(cmd); });
+
+                if (framePool.records.size() <= cmd.id) {
+                    framePool.records.resize(cmd.id + 1);
+                }
+
+                framePool.records[cmd.id] = cmd;
+
+                return;
+
+                // if (safePool.mutex.try_lock()) {
+                //     const auto& fence = framePool.fence;
+                //     if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
+                //         if (ct.device->waitForFences(fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
+                //             throw std::runtime_error("failed to submit command buffer submission");
+                //         }
+                //     }
+                //
+                //     if (safePool.cmds.empty() || safePool.next > safePool.cmds.size()) {
+                //         expand(safePool);
+                //     }
+                //
+                //     auto &cmd = safePool.cmds[safePool.next++];
+                //     cmd.id = framePool.id++;
+                //
+                //     cmd.render([fn, &cmd] { fn(cmd); });
+                //
+                //     if (framePool.records.size() <= cmd.id) {
+                //         framePool.records.resize(cmd.id + 1);
+                //     }
+                //
+                //     framePool.records[cmd.id] = cmd;
+                //
+                //     safePool.mutex.unlock();
+                //     return;
+                // }
             }
+            std::this_thread::yield();
         }
     }
 
     auto CommandCollector::bind(const std::uint32_t &order, const std::uint32_t& grow, const CommandFn &fn) -> void {
         while (true) {
+            auto &framePool = frames[*index];
             for (auto i = 0; i < numThread; i++) {
-                auto &framePool = frames[*index];
                 auto &safePool = framePool.commandPools[i];
 
-                if (safePool.mutex.try_lock()) {
-                    framePool.records.grow_to_at_least(grow);
+                std::unique_lock lock(safePool.mutex, std::try_to_lock);
+                if (!lock.owns_lock()) continue;
 
-                    const auto& fence = framePool.fence;
-                    if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
-                        if (ct.device->waitForFences(fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
-                            throw std::runtime_error("failed to submit command buffer submission");
-                        }
+                framePool.records.grow_to_at_least(grow);
+
+                const auto& fence = framePool.fence;
+                if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
+                    if (ct.device->waitForFences(fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
+                        throw std::runtime_error("failed to submit command buffer submission");
                     }
-
-                    if (safePool.cmds.empty() || safePool.next > safePool.cmds.size()) {
-                        expand(safePool);
-                    }
-
-                    auto &cmd = safePool.cmds[safePool.next++];
-                    cmd.id = order;
-
-                    cmd.render([fn, &cmd] { fn(cmd); });
-
-                    framePool.records[cmd.id] = cmd;
-
-                    safePool.mutex.unlock();
-                    return;
                 }
+
+                if (safePool.cmds.empty() || safePool.next >= safePool.cmds.size()) {
+                    expand(safePool);
+                }
+
+                auto &cmd = safePool.cmds[safePool.next++];
+                cmd.id = order;
+
+                cmd.render([fn, &cmd] { fn(cmd); });
+
+                framePool.records[cmd.id] = cmd;
+
+                return;
+
+                // if (safePool.mutex.try_lock()) {
+                //     framePool.records.grow_to_at_least(grow);
+                //
+                //     const auto& fence = framePool.fence;
+                //     if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
+                //         if (ct.device->waitForFences(fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
+                //             throw std::runtime_error("failed to submit command buffer submission");
+                //         }
+                //     }
+                //
+                //     if (safePool.cmds.empty() || safePool.next > safePool.cmds.size()) {
+                //         expand(safePool);
+                //     }
+                //
+                //     auto &cmd = safePool.cmds[safePool.next++];
+                //     cmd.id = order;
+                //
+                //     cmd.render([fn, &cmd] { fn(cmd); });
+                //
+                //     framePool.records[cmd.id] = cmd;
+                //
+                //     safePool.mutex.unlock();
+                //     return;
+                // }
             }
         }
     }

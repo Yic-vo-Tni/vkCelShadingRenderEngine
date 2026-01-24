@@ -55,7 +55,8 @@ namespace sm {
 
     auto SceneSystem::frame() -> void {
         static double elapsedTime = 0.0;
-        elapsedTime += (1 / GLOBAL::fps);
+        //elapsedTime += GLOBAL::dt;
+        elapsedTime += GLOBAL::dt.load(std::memory_order_relaxed);
 
         auto playAnim = false;
         ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::RenderComponent, vot::RayTracingComponent, vot::AnimationComponent>()

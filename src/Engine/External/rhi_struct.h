@@ -5,8 +5,8 @@
 #ifndef VKCELSHADINGRENDERER_RHI_STRUCT_H
 #define VKCELSHADINGRENDERER_RHI_STRUCT_H
 
-#include "stl_mimalloc.h"
-#include "spdlog.h"
+#include "../Foundation/stl_mimalloc.h"
+#include "../Foundation/spdlog.h"
 
 namespace vot {
 
@@ -249,13 +249,6 @@ struct DescriptorHandle{
     };
 
     struct PipelineDescriptorSetLayoutCI2{
-        // vot::vector<vk::DescriptorSetLayoutBinding> globalSetLayoutBinding = []{
-        //     return vot::vector<vk::DescriptorSetLayoutBinding>{
-        //             vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment}
-        //     };
-        // }();
-
-    public:
         vot::map<uint32_t, vot::vector<vk::DescriptorSetLayoutBinding>> setLayoutBindings{};
         vot::vector<vk::PushConstantRange> pushConstantRange{};
         vot::vector<vk::DescriptorSetLayout> desSetLayouts{};
@@ -272,6 +265,12 @@ struct DescriptorHandle{
 
         auto& buildDescriptorSetLayouts(const vk::Device* device) {
             auto buildDesSetLayout = [&](vot::vector<vk::DescriptorSetLayoutBinding>& bindings){
+                vot::vector<vk::DescriptorBindingFlags> bindingFlags;
+                bindingFlags.reserve(bindings.size());
+                for (auto& b : bindings) {
+                    bindingFlags.push_back(vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending);
+                }
+
                 vk::DescriptorSetLayoutCreateInfo ci{{}, bindings};
                 return vot::create("create descriptor set layout") = [&]{
                     return device->createDescriptorSetLayout(ci);
@@ -665,6 +664,7 @@ struct DescriptorHandle{
         auto& setShaderPath(const string& path){ shaderPath = path; return *this; }
         auto& setPipelineDescriptorSetLayoutCI2(const PipelineDescriptorSetLayoutCI2& layout){ descriptorSetLayoutCI2 = layout; return *this; }
     };
+
 
     struct PipelineCI {
         std::optional<PipelineLibrary> graphicsPipelineCI = std::nullopt;
