@@ -6,7 +6,6 @@
 #include "RHI/QueueFamily.h"
 #include "Core/DispatchSystem/SystemHub.h"
 
-#include "Window.h"
 #include "ImGuiHub.h"
 
 namespace ui {
@@ -17,8 +16,9 @@ namespace ui {
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
         io.IniFilename = imgui_ini_path "ImGui.ini";
-        const auto fontPt = tex_path "../TTF/JetBrainsMono-Regular.ttf";
-        io.Fonts->AddFontFromFileTTF(fontPt, 18.f);
+        //const auto fontPt = tex_path "../TTF/JetBrainsMono-Regular.ttf";
+        const auto fontPt = vot::core::path::join({vot::core::path::Texture, "../TTF/JetBrainsMono-Regular.ttf"});
+        io.Fonts->AddFontFromFileTTF(fontPt.c_str(), 18.f);
 
         const auto wt = yic::systemHub.va<ev::pWindowContext>();
         const auto ct = yic::systemHub.va<ev::pVkSetupContext>();
@@ -58,8 +58,6 @@ namespace ui {
         };
         ImGui_ImplVulkan_Init(&info);
 
-        callback(wt.window);
-
         ImGui_ImplVulkan_CreateFontsTexture();
 
         mWidgets.emplace_back(std::move(std::make_unique<window::render>()));
@@ -85,34 +83,18 @@ namespace ui {
     }
 
     auto ImGuiLauncher::draw(vk::CommandBuffer &cmd) -> void {
- //       auto window = yic::systemHub.val<ev::pWindowContext>().window;
-
-        {
-            const auto readIndex = yic::glT::keyInputActive.load(std::memory_order_acquire);
-            const auto&[key, action, scancode, mods] = yic::glTBuffers[readIndex].keyInput;
-            ImGui_ImplGlfw_KeyCallback(mWindow, key, scancode, action, mods);
+        const auto key = yic::systemHub.frame_read<ev::glKeyInput>();
+        ImGui_ImplGlfw_KeyCallback(mWindow, key.key, key.scancode, key.action, key.mods);
+        const auto mouseButton = yic::systemHub.frame_read<ev::glMouseInput>();
+        ImGui_ImplGlfw_MouseButtonCallback(mWindow, mouseButton.button, mouseButton.action, mouseButton.mods);
+        const auto cursorPos = yic::systemHub.frame_read<ev::glCursorPosInput>();
+        ImGui_ImplGlfw_CursorPosCallback(mWindow, cursorPos.xpos, cursorPos.ypos);
+        if (auto scroll = yic::systemHub.frame_consume<ev::glScrollInput>();
+            scroll.xoffset != 0 || scroll.yoffset != 0) {
+            ImGui_ImplGlfw_ScrollCallback(mWindow, scroll.xoffset, scroll.yoffset);
         }
-        {
-            const auto readIndex = yic::glT::mouseInputActive.load(std::memory_order_acquire);
-            const auto&[button, action, mods] = yic::glTBuffers[readIndex].mouseInput;
-            ImGui_ImplGlfw_MouseButtonCallback(mWindow, button, action, mods);
-        }
-        {
-            const auto readIndex = yic::glT::cursorPosInputActive.load(std::memory_order_acquire);
-            const auto&[xpos, ypos] = yic::glTBuffers[readIndex].cursorPosInput;
-            ImGui_ImplGlfw_CursorPosCallback(mWindow, xpos, ypos);
-        }
-        {
-            const auto readIndex = yic::glT::scrollInputActive.load(std::memory_order_acquire);
-            const auto&[xoffset, yoffset] = yic::glTBuffers[readIndex].scrollInput;
-            ImGui_ImplGlfw_ScrollCallback(mWindow, xoffset, yoffset);
-            yic::glTBuffers[readIndex].scrollInput = {0, 0};
-        }
-        {
-            const auto readIndex = yic::glT::charInputActive.load(std::memory_order_acquire);
-            const auto& codepoint = yic::glTBuffers[readIndex].charInput.codepoint;
-            ImGui_ImplGlfw_CharCallback(mWindow, codepoint);
-            yic::glTBuffers[readIndex].charInput.codepoint = 0;
+        if (const auto charInput = yic::systemHub.frame_consume<ev::glCharInput>(); charInput.codepoint != 0) {
+            ImGui_ImplGlfw_CharCallback(mWindow, charInput.codepoint);
         }
 
 
@@ -252,22 +234,6 @@ namespace ui {
         ImGui::End();
     }
 
-    auto ImGuiLauncher::callback(GLFWwindow* window) -> void {
-        // yic::systemHub.subscribe([&](const ev::glKeyInput& input){
-        //
-        // });
-        //
-        // yic::systemHub.subscribe([&](const ev::glMouseInput& input){
-        //
-        // });
-        //
-        // yic::systemHub.subscribe([&](const ev::glCursorPosInput& input){
-        //
-        // });
-        // yic::systemHub.subscribe([&](const ev::glScrollInput& input){
-        //
-        // });
-    }
 
     auto ImGuiLauncher::updateSwap() -> void {
         auto currentTime = std::chrono::steady_clock::now();

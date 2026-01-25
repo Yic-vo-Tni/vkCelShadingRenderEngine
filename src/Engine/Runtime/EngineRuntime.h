@@ -9,21 +9,18 @@
 #include "System/InspectorPanel.h"
 #include "System/RenderSubmissionSystem.h"
 
-namespace sc {
+namespace sc { //rename runtime
 
     class EngineRuntime {
     public:
         EngineRuntime();
         ~EngineRuntime();
 
-        auto render() -> void;
-        auto fastLogic() -> void;
-        auto slowLogic() -> void;
+        auto tickF() -> void;
+        auto tickS() -> void;
+        auto tickR() -> void;
     private:
         auto prepose() -> void;
-    private:
-        auto buildSet0() -> void;
-        static auto calFnTimeConsuming(const std::function<void()>& fn) -> void;
     private:
         entt::registry ecs;
 

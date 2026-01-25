@@ -6,7 +6,6 @@
 #include "Editor/ImGuiHub.h"
 #include "Runtime/System/DER/DynamicEditableRendering.h"
 
-extern "C" {
 
 __declspec(dllexport)
 vot::ImageCI Compose_Target() {
@@ -48,5 +47,4 @@ void Compose_Dispatch(vot::CommandBuffer &cmd, const runtime::flow::DERTranslato
     cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
     cmd.bindPipeline_(*compose_pipe);
     cmd.draw(3, 1, 0, 0);
-}
 }

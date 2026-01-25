@@ -53,6 +53,20 @@ namespace ev {
         double yOffset = 0.0;
     };
 
+    struct CameraControlKeyLevel {
+        bool W = false;
+        bool A = false;
+        bool S = false;
+        bool D = false;
+        bool RMB = false;
+    };
+
+    struct CameraControlDelta {
+        float mouseDx = 0.f;
+        float mouseDy = 0.f;
+        float scrollDy = 0.f;
+    };
+
 
     struct glKeyInput {
         int key;

@@ -8,8 +8,10 @@
 
 #include "Core/DispatchSystem/SystemHub.h"
 #include "Core/Management/TripleBufferIndexManager.h"
-#include "../RHI/GpuRuntime/Alloctor/Allocator.h"
+#include "RHI/GpuRuntime/Alloctor/Allocator.h"
 #include "RHI/Command.h"
+#include "RS/ResourceSystem.h"
+#include "Runtime/Camera/Camera.h"
 
 namespace sm {
 
@@ -18,8 +20,7 @@ namespace sm {
         rt = yic::systemHub.va<ev::pVkRenderContext>();
 
         loadScene();
-
-
+        buildSet0();
     }
 
     auto SceneSystem::loadScene(const vot::string &id) -> void {
@@ -76,6 +77,35 @@ namespace sm {
         if (GLOBAL::visibleZMO || playAnim) {
             syncTLAS();
         }
+    }
+
+    auto SceneSystem::buildSet0() -> void {
+        auto& cam = GLOBAL::entity::camera.make_va<sc::Camera>();
+        cam.computeViewProjMatrix();
+
+        vot::comp::Light::Meta meta{};
+        meta.entries.resize(30); // HACK: dynamic increase
+        meta.ssbo = yic::allocator->allocBuffer(sizeof(vot::comp::Light::Entry) * 30, vk::BufferUsageFlagBits::eStorageBuffer, "Light entries");
+        meta.ssbo->update(meta.entries);
+
+        vot::BasicInfoComponent basicInfoComponent{};
+        vot::VertexDataComponent vertexDataComponent{};
+        vot::RenderComponent renderComponent{};
+        vot::AnimationComponent animationComponent{};
+
+        yic::resourceSystem->mLoader->mAssimpLoader->Load(tex_path "../Model/Light/Sphere.gltf", basicInfoComponent, vertexDataComponent, renderComponent, animationComponent);
+        // FIXME: tex_path -> mod_path
+
+        vot::EntityView<vot::bit::eEntityViewDefault>::create()
+            .mark<vot::mark::eVisible>()
+            .emplace(meta, basicInfoComponent, vertexDataComponent, renderComponent);
+
+        auto& [set0] = GLOBAL::entity::set0.make_va<vot::DescriptorSet0>();
+        std::ranges::for_each(std::views::iota(0, 3), [&](auto i) -> void {
+            set0[i] = yic::desSystem->allocUpdateDescriptorSets([&](vot::DescriptorLayout2& layout2) {
+                layout2.emplace({cam.vpBufferInfo(i), meta.ssbo->bufferInfo()});
+            }, yic::renderLibrary->GP_Basic_Assimp, 0, 1);
+        });
     }
 
     auto SceneSystem::syncBLAS(const vot::VertexDataComponent &vc, const vot::RenderComponent &rc,

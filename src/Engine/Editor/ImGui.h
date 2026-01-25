@@ -17,7 +17,6 @@ namespace ui {
         auto draw(vk::CommandBuffer& cmd) -> void;
     private:
         auto base() -> void;
-        auto callback(GLFWwindow* window) -> void;
     private:
         bool mShowDemo{true};
         GLFWwindow* mWindow{};
@@ -26,15 +25,6 @@ namespace ui {
         vk::DescriptorPool mDescriptorPool{};
         vot::vector<std::unique_ptr<Widget>> mWidgets{};
 
-        // t
-//        ev::glKeyInput keyInput[2];
-//        ev::glMouseInput mouseInput[2];
-//        ev::glCursorPosInput cursorPosInput[2];
-//        ev::glScrollInput scrollInput[2];
-//        oneapi::tbb::spin_rw_mutex keyInputMutex;
-//        oneapi::tbb::spin_rw_mutex mouseInputMutex;
-//        oneapi::tbb::spin_rw_mutex cursorPosInputMutex;
-//        oneapi::tbb::spin_rw_mutex scrollInputMutex;
         std::atomic_bool bSwap = false;
         bool mFocusMainWindow = true;
         auto updateSwap() -> void;

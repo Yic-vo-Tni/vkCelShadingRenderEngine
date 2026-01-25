@@ -51,7 +51,8 @@ namespace hide{
     class SystemGraph {
     public:
         auto reg_node(const SystemNode& node) -> void{
-            NodeKey key{typeid(*node.system), node.system->name()};
+            auto& sys = *node.system;
+            NodeKey key{typeid(sys), node.system->name()};
             assert(!nodeMap.contains(key) && "system already exists!");
             nodeMap[key] = node;
         }

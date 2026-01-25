@@ -1,220 +1,112 @@
-[//]: # (# vkCelShadingRenderEngine)
 # Hakuro Fabric
 
-> Polished English version by ChatGPT. \
-> ⚠️ Note: During translation and polishing, GPT may have described the features as more complete or functional than they currently are — apologies in advance. : (
+Hakuro Fabric is a Vulkan-based rendering engine prototype focused on exploring dynamic,
+decoupled, and editable rendering system design.
 
-[简体中文](README.zh-CN.md) — *If you can read Chinese, it’s recommended to check the Chinese version for a more accurate description.*
+Rather than chasing higher performance or better visual fidelity,
+this project emphasizes smoother workflows, freer composition of rendering pipelines,
+more flexible system-level organization, and explicit expression of rendering behavior
 
-🔎 For non-critical bugs, minor optimizations, and TODOs, see  
-[Known Issues & TODOs](KnownIssues.md)
+## Design Goals and Exploration Scope
+Hakuro Fabric initially began as a renderer for MMD content.
+During the process of learning and experimenting with Vulkan,
+the project gradually evolved beyond the original use case
+into a broader exploration of rendering system design.
 
-## Overview
+Rather than pursuing a single fixed end goal, Hakuro Fabric
+serves as an exploration space for investigating different
+approaches to rendering workflows and system organization.
+Some of these explorations may be refined and carried forward,
+while others may be paused or discarded as their trade-offs
+and limitations become clearer.
 
-- This repository is a personal record of self-learning and engineering practice, mainly for learning and personal use.
-  Any suggestions or feedback are welcome!
-- Mainly used for exploring and learning Vulkan by myself. All comments and advice are appreciated. (╹▽╹)
+
+### Exploration Areas
+
+Hakuro Fabric explores multiple aspects of rendering system design,
+with a focus on how modern Vulkan capabilities can enable more
+dynamic, decoupled, and adaptive rendering workflows.
+
+These exploration areas are closely related and often overlap.
+They are not independent features, but different layers of the
+same design space.
+
+#### 1. Rendering Workflow Expression (DER)
+
+Exploring **Dynamic Editable Rendering (DER)**, where render nodes
+are defined by behavior rather than static descriptions.
+
+Each render node is constructed through explicit build stages
+(target creation, pipeline creation, descriptor binding, and
+command dispatch), allowing rendering workflows to be composed,
+replaced, or reconfigured at runtime.
+
+#### 2. System Graph and Global Scheduling
+
+Exploring a system-level graph that extends beyond rendering,
+where rendering workflows are treated as part of a larger system
+graph alongside resource management, scene updates, and tool systems.
+
+DER is considered a sub-layer within this broader system graph,
+rather than an isolated rendering concept.
+
+#### 3. Execution and Parallelism Model
+
+Exploring unified and decoupled execution models, where window handling,
+fast logic, slow logic, rendering, and submission are treated as
+independently schedulable units.
+
+This includes investigating global scheduling strategies that prevent
+slow CPU-side workloads from stalling unrelated rendering progress,
+enabling full decoupling between system components.
+
+#### 4. Adaptive and AI-Assisted Workflow Decisions
+
+Exploring how higher-level decision systems, including AI-driven
+approaches, could participate in selecting, modifying, or replacing
+rendering workflows at runtime based on system state, performance
+characteristics, or execution feedback.
+
+#### 5. Modern Vulkan Capabilities and Pipeline Alternatives
+
+Exploring how newer Vulkan features and extensions—such as dynamic
+rendering, descriptor buffers, and mesh shaders—can simplify or
+replace traditional rendering pipelines and reduce fixed upfront
+structure in rendering workflows.
+
+### Current Capabilities
+
+This section describes the current, observable state of the codebase,
+rather than a complete or finalized feature set.
+
+Hakuro Fabric was originally developed with MMD rendering as a concrete starting point.
+As the project evolved, the renderer grew to support more general model workflows as well.
+The current codebase supports model loading via Assimp, basic skeletal animation,
+and VMD playback for MMD content.
+
+The renderer already adopts a subset of modern Vulkan features, including dynamic rendering
+(with local read), timeline semaphores, pipeline libraries, and ray tracing extensions.
+A minimal MVP of Dynamic Editable Rendering (DER) is implemented, allowing simple render
+target workflows to be replaced at runtime through dynamically loaded modules.
+Command buffers are collected and built in parallel at a global level, although the
+current framework is still incomplete and under active iteration.
+
+At the system level, the engine is organized around four major execution paths:
+window handling, fast logic, slow logic, and rendering.
+This structure allows animation updates and resource processing to run without blocking
+rendering or input handling. Basic shader hot-reloading and a lightweight temporary editor
+are also present to support rapid iteration during development.
+
+Visual quality is not a primary focus of the project at this stage.
+Rendering output is intentionally minimal, consisting of basic rasterization,
+ray-traced directional light shadows, and a hacked volumetric cloud implementation
+adapted from Shadertoy experiments.
 
 ### Screenshots
+The following screenshots illustrate the current rendering output,
+which primarily serves as a validation tool rather than a visual showcase.
 
 <img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
-
-
-### Learning Goals & Planned Features （2025.9.6）
-
-> *Note: The following features are goals or planned work. Most are still in progress and not yet available in the
-current codebase.*
-
-**Hakuro Fabric = Architecture * Atmosphere * Elegance + Bonus**
-
-[//]: # (**vkCelShadingRenderEngine = Architecture * Atmosphere * Elegance + Bonus**)
-
----
-
-- **System Graph**
-
-  Unified management and scheduling of global systems, including subsystems such as the render graph.
-
-> Current understanding: The render graph can automatically allocate and distribute tasks to worker systems, with all
-> construction work submitted outside of the render thread. This further decouples the render thread, aiming for zero
-> blocking. Later, this concept can be extended to other engine modules.
-
-- **Advanced Vulkan Extensions**
-
-  GPU-side parallel command buffer construction.
-
-> Current understanding: A new Vulkan workflow with dll + dy_dispatch + swapchain maintain + pipeline library +
-> dynamic rendering + descriptor buffer + GPU command generation + timeline semaphores + VMA 3-pool + mesh shader +
-> shader obj.
-
-- **High-End Rendering Effects**
-
-  Voxel grid volumetric fog/clouds and physically-based precomputed atmosphere.
-
-> Current understanding: Abandoning Shadertoy hacks as references and instead studying IQ’s tutorials. The learning
-> route is: small cubic volume → slab → world-space noise → lighting → voxelization.
-
-- **Animation System**
-
-  Deconstructing Saba library for future experiments in VR, physics, and cloth simulation.
-
-> Current understanding: Re-implement and refactor by first extracting only the data structures for ECS integration.
-> Keep the rest unchanged for now. Step one is to decouple the data layer from the original library.
-
-- **Optimization && AI**
-
-### Current Project Status （2025.9.6）
-
-> Each item is marked with one of the following statuses:
->
-> - ✔️  A basic implementation exists and is functional (may not be fully complete).
-> - 📋  Work in progress: partially implemented or planned but not fully realized.
-> - ❌  Deprecated or abandoned: feature has been removed or is no longer supported.
->
-> This section reflects the **actual progress and core features** of the engine,
-> rather than long-term aspirations or experimental prototypes.
-
-| Engine Architecture | Status | Notes     / Progress                                                  | Refactor / Plan                            |
-|---------------------|:------:|-----------------------------------------------------------------------|--------------------------------------------|
-| Event               |   ✔️   | Global pub/sub, async, unique events                                  | Sub-event mounting on main event, sync     |
-| Task                |   📋   |                                                                       | Global task execution via tbb_graph        |
-| Storage             |   ✔️   | Thread-safe storage, type-safe opt                                    | Refactor into central storage, remove HANA |
-| ECS                 |   ✔️   | EnTT-based, modular                                                   |                                            |
-| Threads             |   ✔️   | Window / fast logic / slow logic / render threads, triple-buffer sync | Further split render thread, decouple cmd  |
-| Animation           |   ✔️   | Assimp+Saba, skin+VMD, parallel multi-model playback                  | Deconstruct Saba, move data into ECS       |
-| Audio/video         |   ✔️   | miniaudio, music playback & pause                                     | Support for exporting mp4, ffmpeg          |
-| Material            |   📋   |                                                                       | In the new folder  :)                      |
-| Physical            |   📋   | Too far away                                                          | plan to learn jolt                         |
-| Scene               |   ✔️   | Scene management, global TLAS                                         | Dynamic TLAS / Static TLAS                 |
-| Light               |   📋   |                                                                       | Add point light support                    |
-
-| Rendering System   | Status | Notes / Progress                                                            | Refactor / Plan                     |
-|--------------------|:------:|-----------------------------------------------------------------------------|-------------------------------------|
-| Dynamic Rendering  |   ✔️   | VK_KHR_dynamic_rendering, no framebuffer                                    |                                     |
-| Render Graph       |   ✔️   | Basic graph, auto dependency resolution                                     | Async scheduling, GPU timing        |
-| Deferred Rendering |   ✔️   | G-buffer pipeline                                                           | /                                   |
-| Sync (Semaphore)   |   ✔️   | Timeline semaphore, VK_KHR_synchronization2                                 |                                     |
-| Descriptor System  |   ✔️   | Global set0, bindless ready                                                 | Migrate to VK_EXT_descriptor_buffer |
-| Pipeline Library   |   ✔️   | Precompiled pipelines, dynamic switching                                    | /                                   |
-| Allocator          |   ✔️   | VMA-based, LRU allocator                                                    | Three-pool, lighter interface       |
-| Command System     |   ✔️   | Thread-local cmd pools, efficient recycling                                 | Parallel build path                 |
-| FIFO-latest        |   ❌    | Swapchain bug occurs at high frame rates                                    |                                     |
-| RT Shadows         |   ✔️   | VK_KHR_ray_tracing, dynamic BLAS                                            | Multiple light source support       |
-| Shadow Map         |   ❌    | halfway done, but not need it for the time being.                           | if need later                       |
-| Volumetric Clouds  |   ✔️   | Ray-marching, Shadertoy migrated                                            | Learn precomputed atmosphere        |
-| Volumetric Fog     |   ✔️   | Ray-marching, screen-space fog                                              | Semi-voxel grid volumetric fog      |
-| HDR                |   ❌    | Swapchain & post-process images replaced with HDR layout, no visible effect | shelve                              |
-| Mesh Shader        |   📋   | VK_EXT_mesh_shader planned                                                  | replace vertex shader               |
-
-| Resource Systems       | Status | Notes / Progress                          | Refactor / Plan                                     |
-|------------------------|:------:|-------------------------------------------|-----------------------------------------------------|
-| Async Resource Loading |   ✔️   | Async loading, avoid main thread, barrier | Parallelization, Unified construction tlas          |
-| Standard Model         |   ✔️   | Assimp loading, std::pmr::vector          | Combine pmr with mimalloc                           |
-| Standard Images        |   ✔️   | stb_image loading                         | Split Image class, move part to RT                  |
-| MMD Support            |   ✔️   | Saba-based implementation                 | Same refactor plan as Assimp Model                  |
-| Chinese Path           |   ✔️   | Boost_locale for Windows path issues      | Remove locale (over-engineered solution)            |
-| Resource pool          |   📋   | std::pmr::unsynchronized_pool_resource    | Multi-pool to avoid fragmentation，std::pmr+mimalloc |
-
-| Toolchain / Editor Systems  | Status | Notes / Progress                                              | Refactor / Plan          |
-|-----------------------------|:------:|---------------------------------------------------------------|--------------------------|
-| Shader Hot Reload           |   ✔️   | Monaco-editor + webview, Ctrl+S hot compile                   | VK_EXT_shader_object     |
-| Window Drag & Docking       |   ✔️   | ImGui docking                                                 |                          |
-| Model Basic Manipulation    |   ✔️   | ImGuizmo support                                              |                          |
-| Model Selection (ID buffer) |   ✔️   | Render ID buffer, mouse mapping via ImGui, EnTT entity ID map | multiple-choice          |
-| Debug Output                |   📋   | Planned Vulkan debug output / GPU markers                     |                          |
-| Folder                      |   📋   |                                                               | Display engine resources |
-
-| Vulkan Extension / Feature            | Status | Refactor / Plan |
-|---------------------------------------|:------:|-----------------|
-| VK_LAYER_KHRONOS_validation           |   ✔️   |                 |
-| VK_EXT_debug_utils                    |   ✔️   |                 |
-| ShaderInt64 (feature)                 |   📋   |                 |
-| SamplerAnisotropy (feature)           |   📋   |                 |
-| GeometryShader (feature)              |   📋   |                 |
-| RobustBufferAccess (feature)          |   📋   |                 |
-| TessellationShader (feature)          |   📋   |                 |
-| VK_KHR_swapchain                      |   ✔️   |                 |
-| VK_KHR_deferred_host_operations       |   📋   |                 |
-| VK_KHR_spirv_1_4                      |   📋   |                 |
-| VK_KHR_create_renderpass2             |   ❌    |                 |
-| VK_KHR_pipeline_library               |   ✔️   |                 |
-| VK_KHR_shader_non_semantic_info       |   📋   |                 |
-| VK_EXT_pipeline_creation_feedback     |   ✔️   |                 |
-| VK_KHR_ray_tracing_pipeline           |   ✔️   |                 |
-| VK_KHR_acceleration_structure         |   ✔️   |                 |
-| VK_KHR_buffer_device_address          |   ✔️   |                 |
-| VK_KHR_synchronization2               |   ✔️   |                 |
-| VK_KHR_timeline_semaphore             |   ✔️   |                 |
-| VK_KHR_dynamic_rendering              |   ✔️   |                 |
-| VK_KHR_pipeline_executable_properties |   📋   |                 |
-| VK_EXT_shader_object                  |   📋   |                 |
-| VK_EXT_descriptor_indexing            |   ✔️   |                 |
-| VK_EXT_descriptor_buffer              |   📋   |                 |
-| VK_EXT_transform_feedback             |   📋   |                 |
-| VK_EXT_conditional_rendering          |   📋   |                 |
-| VK_EXT_graphics_pipeline_library      |   ✔️   |                 |
-| VK_EXT_shader_module_identifier       |   📋   |                 |
-| VK_NVX_multiview_per_view_attributes  |   📋   |                 |
-| VK_NV_device_generated_commands       |   📋   |                 |
-| VK_EXT_mesh_shader                    |   📋   |                 |
-| VK_KHR_dynamic_rendering_local_read   |   ✔️   |                 |
-| VK_EXT_robustness2                    |   📋   |                 |
-
-| Third-party Libraries          | ✔️ | 🚧 | 📋 | ❌ | Refactor / Plan / Reason |
-|--------------------------------|:--:|:--:|:--:|:-:|--------------------------|
-| assimp                         | ✔️ |    |    |   |                          |
-| boost(hana/locale/filesystem)  |    |    |    | ❌ |                          |
-| entt                           | ✔️ |    |    |   |                          |
-| flecs                          |    |    |    | ❌ |                          |
-| glfw                           | ✔️ |    |    |   |                          |
-| glm                            | ✔️ |    |    |   |                          |
-| mimalloc                       | ✔️ |    |    |   |                          |
-| miniaudio                      | ✔️ |    |    |   |                          |
-| nlohmann                       | ✔️ |    |    |   |                          |
-| oneapi                         | ✔️ |    |    |   | Planned removal          |
-| enkits                         |    |    | 📋 |   |                          |
-| moodycamel                     |    |    | 📋 |   |                          |
-| ozz                            |    |    | 📋 |   |                          |
-| spdlog                         | ✔️ |    |    |   |                          |
-| stb                            | ✔️ |    |    |   |                          |
-| webview                        | ✔️ |    |    |   |                          |
-| saba                           | ✔️ |    |    |   | Undergoing refactoring   |
-| imgui-docking/imguizmo/imnodes | ✔️ |    |    |   |                          |
-| cuda                           |    |    | 📋 |   |                          |
-| bullet                         |    |    |    | ❌ |                          |
-| vma                            | ✔️ |    |    |   |                          |
-| jolt physics                   |    |    | 📋 |   |                          |
-| ffmpeg                         |    |    | 📋 |   |                          |
-
-Note:
-This table is maintained as part of my learning and exploration process.
-Entries marked with ❌ indicate libraries that I have explored or used before,
-but are not currently used in the project.
-This does not represent a negative evaluation of the libraries themselves.
-
-### Legacy / Deprecated Features
-> The following features were implemented in earlier stages of the engine but have since been removed or replaced.  
-> They are kept here as a record of experimentation and evolution.
-
-| Legacy Feature              | Notes / Reason for Removal                     |
-|-----------------------------|------------------------------------------------|
-| Secondary Cmd Parallel      | Rewritten, replaced with improved design       |
-| ShadowMap + PCF             | Replaced by real-time ray traced shadows       |
-| Skybox (cube map)           | Legacy, replaced by volumetric atmosphere      |
-| Simple Volumetric Fog/Noise | FastNoiseLite, replaced by full volumetric fog |
-| wx_widget Shader Reload     | Replaced by Monaco-editor + webview solution   |
-| 120fps Window Lock          | Removed, unnecessary with new thread system    |
-| Model Selection (Ray pick)  | Replaced by ID buffer-based picking            |
-
-### Development Philosophy
-
-The project evolves through an iterative refactoring cycle.  
-Many systems were implemented in different phases (from prototype to stable architecture),  
-so certain modules may appear inconsistent in style or abstraction level.
-
-This is intentional — the engine prioritizes *functional completeness* and *architecture verification* first,  
-with stylistic and structural refinement following after each milestone.
-
 
 ## How to Build
 This project is mainly for personal learning, so it always targets the **latest toolchains and hardware**.  
@@ -234,7 +126,7 @@ Currently you need to download or build the following libraries manually:
 `mimalloc, entt, oneAPI TBB, glm, miniaudio, nlohmann, spdlog, stb, webview, imgui(docking), imguizmo, imnode, saba, bullet`.\
 Place library `third/xxx`,Place built `.lib` in `third/lib` and `.dll` in `third/dll`.
 Notes:
-- **Bullet**: follow Saba's requirement. 
+- **Bullet**: follow Saba's requirement.
 - **Saba**: needs cleanup (remove internal spdlog to avoid conflicts).
 - After all dependencies are resolved, you can open the project directly in CLion and build.
 - Plan: Gradually migrate dependencies to **git submodules**.  
@@ -262,5 +154,9 @@ Notes:
 Other subsystems (e.g. animation, editor logic, resource loading) may contain bugs or unfinished logic.  
 These are secondary to my learning goal, so I may only fix them when I find a good solution.
 
+## Implementation Status
 
-`
+To avoid overloading this README with engineering details,
+the concrete implementation status of Hakuro Fabric is documented separately.
+
+📄 **Full status document:** [Implementation Status & Feature Matrix](EngineStatus.md)

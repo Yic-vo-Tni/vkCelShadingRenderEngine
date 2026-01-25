@@ -5,27 +5,11 @@
 #ifndef VKCELSHADINGRENDERER_WINDOW_H
 #define VKCELSHADINGRENDERER_WINDOW_H
 
-//#include "ShaderHotReload/ShaderEditor.h"
-
 namespace yic {
-
-    struct glT{
-        ev::glKeyInput keyInput;
-        inline static std::atomic<int> keyInputActive{0};
-        ev::glMouseInput mouseInput;
-        inline static std::atomic<int> mouseInputActive{0};
-        ev::glScrollInput scrollInput;
-        inline static std::atomic<int> scrollInputActive{0};
-        ev::glCursorPosInput cursorPosInput;
-        inline static std::atomic<int> cursorPosInputActive{0};
-        ev::glCharInput charInput;
-        inline static std::atomic<int> charInputActive{0};
-    };
-    inline std::array<glT, 2> glTBuffers;
 
     class Window {
     public:
-        Window(const int& w, const int& h, vot::string name);
+        Window(vot::string name);
         ~Window();
 
         auto loop(const std::function<void()>& fn) const -> bool;
@@ -39,7 +23,7 @@ namespace yic {
         auto controller() -> void;
         auto createWindow() -> GLFWwindow*;
         auto setWindowIcon(GLFWwindow* window, const char* filename) const -> void;
-
+        auto compWindowSize() -> void;
     private:
         int mWidth{}, mHeight{};
         vot::string mName{};
@@ -49,14 +33,8 @@ namespace yic {
         bool isRightMouseDown = false;
         double xLast{}, yLast{};
 
-      //  ev::freeCameraController controller_{};
         std::atomic<bool> closeRequested{false};
         std::atomic<bool> closeRender{false};
-
-    //    std::uint32_t deleteState = GLFW_RELEASE, XState = GLFW_RELEASE;
-
-///
-//        mutable ui::ShaderEditor shaderEditor;
     };
 
 } // yic

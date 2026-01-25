@@ -17,46 +17,27 @@ namespace yic {
     };
 
     inline auto setKeyCallback = [](GLFWwindow *w, int key, int scancode, int action, int mods) {
-        const auto writeIndex = 1 - glT::keyInputActive.load(std::memory_order_acquire);
-        glTBuffers[writeIndex].keyInput.key = key;
-        glTBuffers[writeIndex].keyInput.scancode = scancode;
-        glTBuffers[writeIndex].keyInput.action = action;
-        glTBuffers[writeIndex].keyInput.mods = mods;
-        glT::keyInputActive.store(writeIndex, std::memory_order_release);
+        systemHub.frame_write(ev::glKeyInput{key, scancode, action, mods});
 
         if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
             GLOBAL::visibleZMO = !GLOBAL::visibleZMO;
         }
-
     };
 
     inline auto setCharCallback = [](GLFWwindow *w, unsigned int code) {
-        const auto writeIndex = 1 - glT::charInputActive.load(std::memory_order_acquire);
-
-        glTBuffers[writeIndex].charInput.codepoint = code;
-        glT::charInputActive.store(writeIndex, std::memory_order_release);
+        systemHub.frame_write(ev::glCharInput{code});
     };
 
     inline auto setMouseButtonCallback = [](GLFWwindow *w, int button, int action, int mods) {
-        const auto writeIndex = 1 - glT::mouseInputActive.load(std::memory_order_acquire);
-        glTBuffers[writeIndex].mouseInput.button = button;
-        glTBuffers[writeIndex].mouseInput.action = action;
-        glTBuffers[writeIndex].mouseInput.mods = mods;
-        glT::mouseInputActive.store(writeIndex, std::memory_order_release);
+        systemHub.frame_write(ev::glMouseInput{button, action, mods});
     };
 
     inline auto setCursorPosCallback = [](GLFWwindow*w, double xpos, double ypos){
-        const auto writeIndex = 1 - glT::cursorPosInputActive.load(std::memory_order_acquire);
-        glTBuffers[writeIndex].cursorPosInput.xpos = xpos;
-        glTBuffers[writeIndex].cursorPosInput.ypos = ypos;
-        glT::cursorPosInputActive.store(writeIndex, std::memory_order_release);
+        systemHub.frame_write(ev::glCursorPosInput{xpos, ypos});
     };
 
-    inline auto setScrollBack = [](GLFWwindow *w, double xoffset, double yoffset){
-        const auto writeIndex = 1 - glT::scrollInputActive.load(std::memory_order_acquire);
-        glTBuffers[writeIndex].scrollInput.xoffset = xoffset;
-        glTBuffers[writeIndex].scrollInput.yoffset = yoffset;
-        glT::scrollInputActive.store(writeIndex, std::memory_order_release);
+    inline auto setScrollBack = [](GLFWwindow *w, double xoffset, double yoffset) {
+        systemHub.frame_write<ev::glScrollInput>({xoffset, yoffset});
     };
 
     inline auto setWindowPosCallback = [](GLFWwindow *w, int xpos, int ypos) {
@@ -72,7 +53,7 @@ namespace yic {
     };
 
     inline auto setWindowCloseCallback = [](GLFWwindow* w){
-        auto win = static_cast<Window*>(glfwGetWindowUserPointer(w));
+        const auto win = static_cast<Window*>(glfwGetWindowUserPointer(w));
         win->onClose();
         glfwSetKeyCallback(w, nullptr);
         glfwSetMouseButtonCallback(w, nullptr);
@@ -89,9 +70,9 @@ namespace yic {
         }
     };
 
-    Window::Window(const int &w, const int &h, vot::string name) : mWidth(w), mHeight(h), mName(std::move(name)), mWindow(createWindow()){
+    Window::Window(vot::string name) : mName(std::move(name)), mWindow(createWindow()){
         yic::systemHub.sto(ev::pWindowContext{mWindow});
-        yic::systemHub.setEvent(ev::oWindowSizeChange{vk::Extent2D{(uint32_t) w, (uint32_t) h}});
+        yic::systemHub.setEvent(ev::oWindowSizeChange{vk::Extent2D{static_cast<uint32_t>(mWidth), static_cast<uint32_t>(mHeight)}});
     }
 
     Window::~Window() {
@@ -107,6 +88,8 @@ namespace yic {
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         yic::systemHub.sto(ev::vFreeCameraController{}); // init
+
+        compWindowSize();
 
         return glfwCreateWindow(mWidth, mHeight, mName.c_str(), nullptr, nullptr);
     }
@@ -252,5 +235,25 @@ namespace yic {
         stbi_image_free(pixels);
     }
 
+    auto Window::compWindowSize() -> void {
+        GLFWmonitor* primary = glfwGetPrimaryMonitor();
+        if (!primary) {
 
+        }
+
+        const GLFWvidmode* mode = glfwGetVideoMode(primary);
+
+        int workX, workY, workW, workH;
+        glfwGetMonitorWorkarea(primary, &workX, &workY, &workW, &workH);
+
+        constexpr float aspect = 5.f / 3.f;
+
+        mHeight = static_cast<int>(workH * 0.8f);
+        mWidth = static_cast<int>(mHeight * aspect);
+
+        if (mWidth > workW * 0.9f) {
+            mWidth = static_cast<int>(workW * 0.9);
+            mHeight = static_cast<int>(mWidth / aspect);
+        }
+    }
 } // yic

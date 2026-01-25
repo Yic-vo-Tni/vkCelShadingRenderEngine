@@ -9,6 +9,37 @@
 
 namespace hide {
 
+    template<typename T>
+    struct DoubleBuffer {
+        T buffers[2]{};
+        std::atomic<std::uint32_t> active{0};
+
+        auto write(const T& v) noexcept -> void {
+            const auto writeIndex = 1u - active.load(std::memory_order_acquire);
+            buffers[writeIndex] = v;
+            active.store(writeIndex, std::memory_order_release);
+        }
+
+        auto read() const noexcept -> const T& {
+            const auto readIndex = active.load(std::memory_order_acquire);
+            return buffers[readIndex];
+        }
+
+        auto readMutable() noexcept -> T& {
+            const auto readIndex = active.load(std::memory_order_acquire);
+            return buffers[readIndex];
+        }
+    };
+
+    struct  FrameEntry {
+        virtual ~FrameEntry() = default;
+    };
+
+    template<typename T>
+    struct FrameBufferEntry final : FrameEntry {
+        DoubleBuffer<T> buffer;
+    };
+
     class SystemHub{
         template<typename T>
         struct function_traits : function_traits<decltype(&T::operator())>{};
@@ -152,10 +183,42 @@ namespace hide {
             throw std::runtime_error("The struct is not initialized or the id does not exist.");
         }
 
+        template<typename T>
+        auto frameBuffer() -> DoubleBuffer<T>& {
+            const auto tid = std::type_index(typeid(T));
+            auto it = FrameBuffers.find(tid);
+            if (it == FrameBuffers.end()) {
+                auto ent = std::make_unique<FrameBufferEntry<T>>();
+                auto* ptr = &ent->buffer;
+                FrameBuffers.emplace(tid, std::move(ent));
+                return *ptr;
+            }
+            return static_cast<FrameBufferEntry<T>*>(it->second.get())->buffer;
+        }
+
+        template<typename T>
+        auto frame_write(const T& v) noexcept -> void {
+            frameBuffer<T>().write(v);
+        }
+
+        template<typename T>
+        auto frame_read() const noexcept -> const T& {
+            return const_cast<SystemHub*>(this)->frameBuffer<T>().read();
+        }
+
+        template<typename T>
+        auto frame_consume() noexcept -> T {
+            auto &buf = frameBuffer<T>();
+            T v = buf.read();
+            buf.readMutable() = {};
+            return v;
+        }
+
     private:
         oneapi::tbb::task_group eventGroup; // TODO: join job system
 
         vot::unordered_map<std::type_index, vot::unordered_map<vot::string, std::unique_ptr<Entry>>> Entries;
+        vot::unordered_map<std::type_index, std::unique_ptr<FrameEntry>> FrameBuffers;
     };
 
 }

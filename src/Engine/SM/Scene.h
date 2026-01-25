@@ -6,7 +6,6 @@
 #define VKCELSHADINGRENDERER_SCENE_H
 
 #include "Core/Management/TripleBufferIndexManager.h"
-#include "RHI/Descriptor.h"
 
 namespace sm {
 
@@ -45,6 +44,7 @@ namespace sm {
         auto acquireActiveScene() { return mActiveScene; }
     private:
         auto updateDS() -> void;
+        auto buildSet0() -> void;
     private:
         entt::registry& ecs;
         ev::pVkSetupContext ct{};
