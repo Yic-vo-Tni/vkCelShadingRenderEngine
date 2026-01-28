@@ -22,7 +22,8 @@ namespace ui {
         // oneapi::tbb::concurrent_queue<std::function<void()>> tasks;
         std::move_only_function<void()> bind;
         vot::vector<std::move_only_function<void()>> fixed;
-        oneapi::tbb::concurrent_queue<std::function<void()>> tasks;
+        std::mutex mutex;
+        vot::vector<std::move_only_function<void()>> tasks;
     };
 
     class ImGuiHub {

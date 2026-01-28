@@ -58,11 +58,11 @@ namespace rhi2 {
     }
 
     Allocator2::~Allocator2() {
-        for(const auto& buffer : mBuffers) {
-            ct.device->destroy(buffer->buffer);
-            vmaFreeMemory(mVmaAllocator, buffer->allocation);
-        }
-        mBuffers.clear();
+        // for(const auto& buffer : mBuffers) {
+        //     ct.device->destroy(buffer->buffer);
+        //     vmaFreeMemory(mVmaAllocator, buffer->allocation);
+        // }
+        // mBuffers.clear();
 
         vmaDestroyPool(mVmaAllocator, mTransientPool);
         vmaDestroyPool(mVmaAllocator, mStaticMinPool);
@@ -133,7 +133,7 @@ namespace rhi2 {
         }
 
         const auto handle = handle::buffer{.mata = mata.get()};
-        mBuffers.push_back(std::move(mata));
+       // mBuffers.push_back(std::move(mata));
 
         return handle;
     }
@@ -162,7 +162,7 @@ namespace rhi2 {
         // releaseStagingBuffer(stagingBuffer);
 
         const auto handle = handle::buffer{.mata = mata.get()};
-        mBuffers.push_back(std::move(mata));
+        //mBuffers.push_back(std::move(mata));
 
         return handle;
     }

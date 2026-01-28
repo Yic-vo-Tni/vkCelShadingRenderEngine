@@ -22,10 +22,14 @@ namespace rhi {
         auto getFamilies() { return qFamilies; }
 
         auto acquireQueue(vot::queueType type, uint8_t qCount = 0) {
-            return Locked<vk::Queue, oneapi::tbb::queuing_rw_mutex>(qFamilies[static_cast<uint32_t>(type)].queues[qCount], *mQueuingRwMutex[static_cast<uint32_t>(type) * static_cast<uint32_t >(vot::queueType::eCount) + qCount]);
+            //return Locked<vk::Queue, oneapi::tbb::queuing_rw_mutex>(qFamilies[static_cast<uint32_t>(type)].queues[qCount], *mQueuingRwMutex[static_cast<uint32_t>(type) * static_cast<uint32_t >(vot::queueType::eCount) + qCount]);
+            const auto idx = static_cast<uint32_t>(type) * static_cast<uint32_t>(vot::queueType::eCount) + qCount;
+            return LockedMutex(qFamilies[static_cast<std::uint32_t>(type)].queues[qCount], *mQueuingMutex[idx]);
         };
         auto acquireLockedQueue(vot::queueType type, uint8_t qCount = 0) {
-            return Locked<vk::Queue, oneapi::tbb::queuing_rw_mutex>(qFamilies[static_cast<uint32_t>(type)].queues[qCount], *mQueuingRwMutex[static_cast<uint32_t>(type) * static_cast<uint32_t >(vot::queueType::eCount) + qCount]);
+            //return Locked<vk::Queue, oneapi::tbb::queuing_rw_mutex>(qFamilies[static_cast<uint32_t>(type)].queues[qCount], *mQueuingRwMutex[static_cast<uint32_t>(type) * static_cast<uint32_t >(vot::queueType::eCount) + qCount]);
+            const auto idx = static_cast<uint32_t>(type) * static_cast<uint32_t>(vot::queueType::eCount) + qCount;
+            return LockedMutex(qFamilies[static_cast<std::uint32_t>(type)].queues[qCount], *mQueuingMutex[idx]);
         };
         auto acquireQueueUnSafe(vot::queueType type, uint8_t qCount = 0){
             return qFamilies[static_cast<uint32_t>(type)].queues[qCount];
@@ -40,7 +44,8 @@ namespace rhi {
     private:
         vk::PhysicalDevice mPhy;
         vot::vector<Family> qFamilies;
-        vot::vector<std::shared_ptr<oneapi::tbb::queuing_rw_mutex>> mQueuingRwMutex;
+        //vot::vector<std::shared_ptr<oneapi::tbb::queuing_rw_mutex>> mQueuingRwMutex;
+        vot::vector<std::shared_ptr<std::mutex>> mQueuingMutex;
         auto findQueueFamily(vot::queueType type, bool print = false) -> std::optional<uint32_t>;
     };
 

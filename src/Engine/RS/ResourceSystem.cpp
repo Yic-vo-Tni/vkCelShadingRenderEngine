@@ -6,9 +6,8 @@
 
 #include "ResourceSystem.h"
 #include "Saba/Base/Time.h"
-#include <saba/src/Saba/Model/MMD/VMDAnimation.h>
-
-#include <oneapi/tbb/task_scheduler_observer.h>
+// #include <saba/src/Saba/Model/MMD/VMDAnimation.h>
+// #include "Model/MMD/"
 
 namespace rs {
     class ScopedHighPriorityTBB {
@@ -39,43 +38,76 @@ namespace rs {
         mElapsed = static_cast<float>(elapsed);
 
         const auto view = ecs.view<const vot::BasicInfoComponent, vot::VertexDataComponent, vot::AnimationComponent, vot::RenderComponent>();
-        const auto count = std::distance(view.begin(), view.end());
+
+        static bool first = true;
+        if (first) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            first = false;
+        } // HACK:
+
+        //const auto count = std::distance(view.begin(), view.end());
 
         {
-            ScopedHighPriorityTBB _prio;
-            oneapi::tbb::task_arena arena(6);
-            arena.execute([&] {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_t>(0, count),
-                                          [&](const oneapi::tbb::blocked_range<size_t> &r) {
-                                              for (size_t i = r.begin(); i != r.end(); ++i) {
-                                                  auto it = std::next(view.begin(), i);
-                                                  const auto entity = *it;
-                                                  auto &info = view.get<const vot::BasicInfoComponent>(entity);
-                                                  auto &vc = view.get<vot::VertexDataComponent>(entity);
-                                                  auto &ac = view.get<vot::AnimationComponent>(entity);
-                                                  auto &rc = view.get<vot::RenderComponent>(entity);
+            // ScopedHighPriorityTBB _prio;
+            // oneapi::tbb::task_arena arena(6);
+            // arena.execute([&] {
+            //     oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, count),
+            //                               [&](const oneapi::tbb::blocked_range<size_t> &r) {
+            //                                   for (size_t i = r.begin(); i != r.end(); ++i) {
+            //                                       auto it = std::next(view.begin(), i);
+            //                                       const auto entity = *it;
+            //                                       auto &info = view.get<const vot::BasicInfoComponent>(entity);
+            //                                       auto &vc = view.get<vot::VertexDataComponent>(entity);
+            //                                       auto &ac = view.get<vot::AnimationComponent>(entity);
+            //                                       auto &rc = view.get<vot::RenderComponent>(entity);
+            //
+            //                                       if (!ac.enableAnim) continue;
+            //
+            //                                       auto playLogic = [&] {
+            //                                           if (vc.type == vot::eAssimp) {
+            //                                              mAnimator->sampleAnimation(mElapsed, ac);
+            //                                           } else {
+            //                                               const auto t = ac.animTime += static_cast<float>(elapsed);
+            //                                               vc.pmx->BeginAnimation();
+            //                                               vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), t * 30.f, mElapsed);
+            //                                               vc.pmx->EndAnimation();
+            //
+            //                                               mAnimator->sampleVmd(vc, rc);
+            //                                           }
+            //                                       };
+            //
+            //                                       if (GLOBAL::playAllAnim || info.playAnimation) {
+            //                                           playLogic();
+            //                                       }
+            //                                   }
+            //                               });
+            // });
 
-                                                  if (!ac.enableAnim) continue;
+            for (const auto entity : view) {
+                auto& info = view.get<const vot::BasicInfoComponent>(entity);
+                auto& vc = view.get<const vot::VertexDataComponent>(entity);
+                auto& ac = view.get<const vot::AnimationComponent>(entity);
+                auto& rc = view.get<const vot::RenderComponent>(entity);
 
-                                                  auto playLogic = [&] {
-                                                      if (vc.type == vot::eAssimp) {
-                                                         mAnimator->sampleAnimation(mElapsed, ac);
-                                                      } else {
-                                                          const auto t = ac.animTime += static_cast<float>(elapsed);
-                                                          vc.pmx->BeginAnimation();
-                                                          vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), t * 30.f, mElapsed);
-                                                          vc.pmx->EndAnimation();
+                if (!ac.enableAnim) continue;
 
-                                                          mAnimator->sampleVmd(vc, rc);
-                                                      }
-                                                  };
+                auto playLogic = [&] {
+                    if (vc.type == vot::eAssimp) {
+                        mAnimator->sampleAnimation(mElapsed, ac);
+                    } else {
+                        const auto t = ac.animTime += static_cast<float>(elapsed);
+                        vc.pmx->BeginAnimation();
+                        vc.pmx->UpdateAllAnimation(ac.vmd.second.get(), t * 30.f, mElapsed);
+                        vc.pmx->EndAnimation();
 
-                                                  if (GLOBAL::playAllAnim || info.playAnimation) {
-                                                      playLogic();
-                                                  }
-                                              }
-                                          });
-            });
+                        mAnimator->sampleVmd(vc, rc);
+                    }
+                };
+
+                if (GLOBAL::playAllAnim || info.playAnimation) {
+                    playLogic();
+                }
+            }
         }
 
         if (GLOBAL::playAllAnim) {

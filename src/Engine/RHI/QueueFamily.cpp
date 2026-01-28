@@ -12,7 +12,8 @@ namespace rhi {
         mPhy = phy;
         qFamilies.resize(static_cast<uint32_t>(vot::queueType::eCount));
         for(auto i = 0; i < static_cast<uint32_t>(vot::queueType::eCount); i++){
-            mQueuingRwMutex.emplace_back(std::make_shared<oneapi::tbb::queuing_rw_mutex>());
+            //mQueuingRwMutex.emplace_back(std::make_shared<oneapi::tbb::queuing_rw_mutex>());
+            mQueuingMutex.emplace_back(std::make_shared<std::mutex>());
         }
 
         qFamilies[static_cast<uint32_t>(vot::queueType::eGraphics)] = {.familyIndex = findQueueFamily(vot::queueType::eGraphics)};

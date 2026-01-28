@@ -15,59 +15,59 @@ namespace sm {
     };
 
     struct PostProcessParamsBuffer {
-        union {
-            glm::vec4 minimumLuminance_maximumLuminance_timeDelta_lumAdapTau;
-
-            struct {
-                float minimumLuminance;
-                float maximumLuminance;
-                float timeDelta;
-                float lumAdaptTau;
-            };
-        };
-
-        union {
-            glm::vec4 whitePoint_maxDisplayBrightness_contrast_linearSectionStart;
-
-            struct {
-                float whitePoint;
-                float maxDisplayBrightness;
-                float contrast;
-                float linearSectionStart;
-            };
-        };
-
-        union {
-            glm::vec4 linearSectionLength_black_pedestal_a;
-
-            struct {
-                float linearSectionLength;
-                float black;
-                float pedestal;
-                float a;
-            };
-        };
-
-        union {
-            glm::vec4 d_hdrMax_midIn_midOut;
-
-            struct {
-                float d;
-                float hdrMax;
-                float midIn;
-                float midOut;
-            };
-        };
-
-        union {
-            glm::vec4 toneMapCurve_2texDimensions_1pad;
-
-            struct {
-                float toneMapCurve;
-                glm::vec2 texDimensions;
-                float _pad;
-            };
-        };
+        // union {
+        //     glm::vec4 minimumLuminance_maximumLuminance_timeDelta_lumAdapTau;
+        //
+        //     struct {
+        //         float minimumLuminance;
+        //         float maximumLuminance;
+        //         float timeDelta;
+        //         float lumAdaptTau;
+        //     };
+        // };
+        //
+        // union {
+        //     glm::vec4 whitePoint_maxDisplayBrightness_contrast_linearSectionStart;
+        //
+        //     struct {
+        //         float whitePoint;
+        //         float maxDisplayBrightness;
+        //         float contrast;
+        //         float linearSectionStart;
+        //     };
+        // };
+        //
+        // union {
+        //     glm::vec4 linearSectionLength_black_pedestal_a;
+        //
+        //     struct {
+        //         float linearSectionLength;
+        //         float black;
+        //         float pedestal;
+        //         float a;
+        //     };
+        // };
+        //
+        // union {
+        //     glm::vec4 d_hdrMax_midIn_midOut;
+        //
+        //     struct {
+        //         float d;
+        //         float hdrMax;
+        //         float midIn;
+        //         float midOut;
+        //     };
+        // };
+        //
+        // union {
+        //     glm::vec4 toneMapCurve_2texDimensions_1pad;
+        //
+        //     struct {
+        //         float toneMapCurve;
+        //         glm::vec2 texDimensions;
+        //         float _pad;
+        //     };
+        // };
     };
 
 

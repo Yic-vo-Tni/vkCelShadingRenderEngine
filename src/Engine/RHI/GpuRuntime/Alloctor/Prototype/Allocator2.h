@@ -53,7 +53,7 @@ namespace rhi2 {
         VmaPool mStaticMaxPool{};
         VmaPool mStaticMinPool{};
 
-        oneapi::tbb::concurrent_vector<std::shared_ptr<BufferMata>> mBuffers;
+        //oneapi::tbb::concurrent_vector<std::shared_ptr<BufferMata>> mBuffers;
         // std::atomic<uint8_t> mStagBufferCounter{};
         // std::atomic<uint8_t> mDestroyCount{};
         // oneapi::tbb::concurrent_map<vk::DeviceSize , oneapi::tbb::concurrent_queue<std::shared_ptr<BufferMata>>> mStagingBuffers;

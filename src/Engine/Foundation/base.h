@@ -87,41 +87,35 @@ struct DeepCopyUptr {
     T const& operator*()  const { return *ptr; }
 };
 
-template<typename T, typename Mutex>
-struct Locked : public nonCopyable {
+template<typename T>
+struct LockedMutex : nonCopyable {
     T& ref;
-    std::unique_lock<Mutex> lock;
+    std::lock_guard<std::mutex> lock;
 
-    Locked(T& ref, Mutex& m) : ref(ref), lock(m) {}
+    LockedMutex(T& ref, std::mutex& m)
+        : ref(ref), lock(m) {}
 
-    T* operator->() {
-        return &ref;
-    }
+    T* operator->() { return &ref; }
 };
 
 template<typename T>
-struct Locked<T, oneapi::tbb::queuing_rw_mutex> : public nonCopyable {
+struct LockedWrite : nonCopyable {
     T& ref;
-    oneapi::tbb::queuing_rw_mutex::scoped_lock lock;
+    std::unique_lock<std::shared_mutex> lock;
 
-    Locked(T& ref, oneapi::tbb::queuing_rw_mutex& m) : ref(ref), lock(m) {}
-
-    T* operator->() {
-        return &ref;
-    }
-
+    LockedWrite(T& ref, std::shared_mutex& mutex) : ref(ref), lock(mutex) {}
+    T* operator->() { return &ref; }
 };
 
 template<typename T>
-struct Locked<T, oneapi::tbb::spin_rw_mutex> : public nonCopyable{
-    T& ref;
-    oneapi::tbb::spin_rw_mutex::scoped_lock lock;
+struct LockedRead : nonCopyable {
+    const T& ref;
+    std::shared_lock<std::shared_mutex> lock;
 
-    Locked(T& ref, oneapi::tbb::spin_rw_mutex& mutex) : ref(ref), lock(mutex, true){}
+    LockedRead(const T& ref, std::shared_mutex& m)
+        : ref(ref), lock(m) {}
 
-    T* operator->(){
-        return &ref;
-    }
+    const T* operator->() const { return &ref; }
 };
 
 struct Identifiable  {

@@ -55,11 +55,21 @@ namespace rhi2 {
 
                 cmd.render([fn, &cmd] { fn(cmd); });
 
-                if (framePool.records.size() <= cmd.id) {
-                    framePool.records.resize(cmd.id + 1);
+                // if (framePool.records.size() <= cmd.id) {
+                //     framePool.records.resize(cmd.id + 1);
+                // }
+                //
+                // framePool.records[cmd.id] = cmd;
+                {
+                    std::lock_guard L(framePool.mutex);
+
+                    if (framePool.records.size() <= cmd.id) {
+                        framePool.records.resize(cmd.id + 1);
+                    }
+
+                    framePool.records[cmd.id] = cmd;
                 }
 
-                framePool.records[cmd.id] = cmd;
 
                 return;
             }
@@ -76,7 +86,13 @@ namespace rhi2 {
                 std::unique_lock lock(safePool.mutex, std::try_to_lock);
                 if (!lock.owns_lock()) continue;
 
-                framePool.records.grow_to_at_least(grow);
+                //framePool.records.grow_to_at_least(grow);
+                {
+                    std::lock_guard L(framePool.mutex);
+                    if (framePool.records.size() < grow) {
+                        framePool.records.resize(grow);
+                    }
+                }
 
                 const auto& fence = framePool.fence;
                 if (ct.device->getFenceStatus(fence) == vk::Result::eNotReady) {
@@ -94,7 +110,12 @@ namespace rhi2 {
 
                 cmd.render([fn, &cmd] { fn(cmd); });
 
-                framePool.records[cmd.id] = cmd;
+                // framePool.records[cmd.id] = cmd;
+                {
+                    std::lock_guard L(framePool.mutex);
+                    framePool.records[cmd.id] = cmd;
+                } // FIXME: temporary mutex to emulate concurrent_vector-style indexed writes. plan: segement array
+
 
                 return;
             }

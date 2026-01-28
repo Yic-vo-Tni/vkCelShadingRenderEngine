@@ -9,7 +9,9 @@ namespace ui {
 
 
     auto ImGuiHub::to(const vot::uiWidget &widget, const std::function<void()> &fn) -> void {
-        slots[widget].tasks.push(fn);
+        auto& slot = slots[widget];
+        std::lock_guard lock(slot.mutex);
+        slot.tasks.emplace_back(std::move(fn));
     }
 
     auto ImGuiHub::to_fixed(const vot::uiWidget &widget, const std::function<void()> &fn) -> void {
@@ -23,13 +25,16 @@ namespace ui {
     auto ImGuiHub::exe(const vot::uiWidget &widget) -> void {
         auto& slot = slots[widget];
 
-        if (slot.bind)
-            slot.bind();
-        for (auto& fn : slot.fixed)
+        if (slot.bind) slot.bind();
+
+        vot::vector<std::move_only_function<void()>> local;
+        {
+            std::lock_guard lock(slot.mutex);
+            local.swap(slot.tasks);
+        }
+
+        for (auto &fn: local)
             fn();
-        std::function<void()> task;
-        while (slot.tasks.try_pop(task))
-            task();
     }
 
     auto ImGuiHub::collapsingHeader(const char *label, const std::function<void()> &fn, ImGuiTreeNodeFlags flags,

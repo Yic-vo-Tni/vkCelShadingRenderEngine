@@ -55,35 +55,35 @@ namespace rs{
 
     class Bone {
     public:
-        Bone(vot::string name, int ID, const vot::vector<vmd::VmdBoneFrame> &frames)
-                : m_Name(std::move(name)), m_ID(ID),
-                  m_LocalTransform(1.f) {
-            m_NumPositions = m_NumRotations = m_NumScalings = (int)frames.size();
-            yic::logger->warn("frame size {0}", m_NumScalings);
-
-            for(auto& f : frames){
-                float t = float(f.frame) / 30.f;
-
-                KeyPosition kp{
-                    .position = glm::vec3(f.position[0], f.position[1], f.position[2]),
-                    .timeStamp = t,
-                };
-                KeyRotation kr{
-                    .orientation = glm::normalize(
-                            glm::quat(f.orientation[3], f.orientation[0],
-                                      f.orientation[1], f.orientation[2])),
-                    .timeStamp = t,
-                };
-                KeyScale ks{
-                    .scale = glm::vec3 (1.f),
-                    .timeStamp = t,
-                };
-
-                m_Positions.emplace_back(kp);
-                m_Rotations.emplace_back(kr);
-                m_Scales.emplace_back(ks);
-            }
-        }
+        // Bone(vot::string name, int ID, const vot::vector<vmd::VmdBoneFrame> &frames)
+        //         : m_Name(std::move(name)), m_ID(ID),
+        //           m_LocalTransform(1.f) {
+        //     m_NumPositions = m_NumRotations = m_NumScalings = (int)frames.size();
+        //     yic::logger->warn("frame size {0}", m_NumScalings);
+        //
+        //     for(auto& f : frames){
+        //         float t = float(f.frame) / 30.f;
+        //
+        //         KeyPosition kp{
+        //             .position = glm::vec3(f.position[0], f.position[1], f.position[2]),
+        //             .timeStamp = t,
+        //         };
+        //         KeyRotation kr{
+        //             .orientation = glm::normalize(
+        //                     glm::quat(f.orientation[3], f.orientation[0],
+        //                               f.orientation[1], f.orientation[2])),
+        //             .timeStamp = t,
+        //         };
+        //         KeyScale ks{
+        //             .scale = glm::vec3 (1.f),
+        //             .timeStamp = t,
+        //         };
+        //
+        //         m_Positions.emplace_back(kp);
+        //         m_Rotations.emplace_back(kr);
+        //         m_Scales.emplace_back(ks);
+        //     }
+        // }
 
 
         Bone(vot::string name, int ID, const aiNodeAnim *channel)

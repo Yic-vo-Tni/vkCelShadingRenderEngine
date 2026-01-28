@@ -18,7 +18,7 @@ namespace rs {
     class Animation {
     public:
         Animation(const aiAnimation* aiAnim, vot::AnimationComponent& ac);
-        Animation(const std::shared_ptr<vmd::VmdMotion>& vmd, vot::AnimationComponent& ac);
+        //Animation(const std::shared_ptr<vmd::VmdMotion>& vmd, vot::AnimationComponent& ac);
         ~Animation();
 
         auto readMissingBones(const aiAnimation* aiAnim, vot::AnimationComponent& ac) -> void;

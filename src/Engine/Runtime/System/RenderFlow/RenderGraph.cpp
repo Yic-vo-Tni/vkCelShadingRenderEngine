@@ -32,20 +32,34 @@ namespace runtime::flow {
         inferOutputs();
         sorted = topologicalSortWithLayer(); // HACK: temporary, and need eventhub to control when to restart
 
-        tbb::parallel_for_each(sorted, [&](auto &pass) {
-            yic::command2->bind(pass.order, sorted.size(),[&](vot::CommandBuffer &cmd) {
+        // tbb::parallel_for_each(sorted, [&](auto &pass) {
+        //     yic::command2->bind(pass.order, sorted.size(),[&](vot::CommandBuffer &cmd) {
+        //         if (pass.target) {
+        //             if (pass.execute) {
+        //                 pass.target->draw(cmd, [&] { pass.execute(cmd); });
+        //             } else {
+        //                 pass.target->draw(cmd, [&]{});
+        //             }
+        //
+        //         }
+        //         else if (pass.execute)
+        //             pass.execute(cmd);
+        //     });
+        // });
+
+        for (auto &pass : sorted) {
+            yic::command2->bind(pass.order, sorted.size(), [&](vot::CommandBuffer &cmd) {
                 if (pass.target) {
                     if (pass.execute) {
                         pass.target->draw(cmd, [&] { pass.execute(cmd); });
                     } else {
-                        pass.target->draw(cmd, [&]{});
+                        pass.target->draw(cmd, [&] {
+                        });
                     }
-
-                }
-                else if (pass.execute)
+                } else if (pass.execute)
                     pass.execute(cmd);
             });
-        });
+        } // temp:
 
         yic::command2->submit(); // CRITICAL: hard-coded logic, causes when sorted is empty
     }

@@ -38,7 +38,10 @@ namespace rhi2 {
         };
         struct FramePool {
             vot::vector<SafeCommandPool> commandPools;
-            oneapi::tbb::concurrent_vector<vot::CommandBuffer> records;
+            //oneapi::tbb::concurrent_vector<vot::CommandBuffer> records;
+            vot::vector<vot::CommandBuffer> records;
+            std::mutex mutex;
+
             vk::Fence fence;
             std::atomic<std::uint32_t> id = 0;
 

@@ -9,7 +9,7 @@ namespace yic {
 
     class Window {
     public:
-        Window(vot::string name);
+        explicit Window(vot::string name);
         ~Window();
 
         auto loop(const std::function<void()>& fn) const -> bool;

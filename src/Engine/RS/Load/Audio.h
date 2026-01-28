@@ -5,7 +5,7 @@
 #ifndef VKCELSHADINGRENDERER_AUDIO_H
 #define VKCELSHADINGRENDERER_AUDIO_H
 
-#include "miniaudio/miniaudio.h"
+#include "miniaudio.h"
 
 namespace vot{
     template<typename key, typename value, typename hash = std::hash<key>, typename keyEq = std::equal_to<key>>

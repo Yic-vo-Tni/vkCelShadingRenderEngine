@@ -81,34 +81,56 @@ namespace rhi {
     ///---------------------------------------------------------
 
     auto CommandManager::acquire() -> vot::CommandBuffer {
-        vot::CommandBuffer cmd;
-
-        if (mAvailablePrimaryCommandbuffers.try_pop(cmd)){
-
-            return cmd;
-        }
+        // vot::CommandBuffer cmd;
+        //
+        // if (mAvailablePrimaryCommandbuffers.try_pop(cmd)){
+        //
+        //     return cmd;
+        // }
+        //
+        // std::unique_lock<std::mutex> lock(mMutex);
+        // mCommandAvailable.wait(lock, [this] { return !mAvailablePrimaryCommandbuffers.empty();});
+        //
+        // mAvailablePrimaryCommandbuffers.try_pop(cmd);
 
         std::unique_lock<std::mutex> lock(mMutex);
-        mCommandAvailable.wait(lock, [this] { return !mAvailablePrimaryCommandbuffers.empty();});
 
-        mAvailablePrimaryCommandbuffers.try_pop(cmd);
+        mCommandAvailable.wait(lock, [this] {
+            return !mAvailablePrimaryCommandbuffers.empty();
+        });
+
+        auto cmd = std::move(mAvailablePrimaryCommandbuffers.front());
+        mAvailablePrimaryCommandbuffers.pop();
 
         return cmd;
     }
 
     auto CommandManager::release(vot::CommandBuffer &cmd) -> void {
-        if (ct.device->waitForFences(cmd.fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess){
+        // if (ct.device->waitForFences(cmd.fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess){
+        //
+        // }
+        // cmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+        // ct.device->resetFences(cmd.fence);
+        //
+        // mAvailablePrimaryCommandbuffers.push(cmd);
+        //
+        // {
+        //     std::lock_guard<std::mutex> lock(mMutex);
+        //     mCommandAvailable.notify_one();
+        // }
 
+        if (ct.device->waitForFences(cmd.fence, VK_TRUE, UINT64_MAX) != vk::Result::eSuccess) {
+            // TODO: error handle
         }
+
         cmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
         ct.device->resetFences(cmd.fence);
 
-        mAvailablePrimaryCommandbuffers.push(cmd);
-
         {
             std::lock_guard<std::mutex> lock(mMutex);
-            mCommandAvailable.notify_one();
+            mAvailablePrimaryCommandbuffers.push(std::move(cmd));
         }
+        mCommandAvailable.notify_one();
     }
 
     auto CommandManager::drawOneTimeSubmit(const std::function<void(vot::CommandBuffer &)> &rec) -> void {
@@ -157,7 +179,12 @@ namespace rhi {
         auto fence = ct.device->createFence(vk::FenceCreateInfo());
         mFences.emplace_back(fence);
 
-        mAvailablePrimaryCommandbuffers.push({primary, fence});
+        //mAvailablePrimaryCommandbuffers.push({primary, fence});
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mAvailablePrimaryCommandbuffers.push({primary, fence});
+        }
+        mCommandAvailable.notify_one();
     }
 
     auto CommandManager::alloc(const vot::threadSpecificCmdPool& threadSpecificCmdPool) -> void {

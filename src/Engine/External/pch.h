@@ -28,7 +28,10 @@
 #include "ImGui/ImGuizmo.h"
 #include "ImGui/imnodes.h"
 
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_ENABLE_EXPERIMENTAL
+#if !defined(_MSC_VER)
+    #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#endif
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -36,8 +39,6 @@
 #include "glm/gtx/quaternion.hpp"
 #include "glm/gtc/epsilon.hpp"
 #include "glm/gtx/string_cast.hpp"
-
-#include "cuda_runtime.h"
 
 #include "iostream"
 #include "stdexcept"
@@ -75,31 +76,13 @@
 #include <regex>
 #include "immintrin.h"
 #include "memory_resource"
+#include "shared_mutex"
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/sinks/ansicolor_sink.h"
 
-// #include "boost/hana.hpp"
-// #include "boost/locale.hpp"
-// #include "boost/process.hpp"
-// #include "boost/pool/object_pool.hpp"
-// #include "boost/pool/pool.hpp"
-
-#include "oneapi/tbb/task_group.h"
-#include "oneapi/tbb/parallel_invoke.h"
-#include "oneapi/tbb/concurrent_map.h"
-#include "oneapi/tbb/concurrent_unordered_map.h"
-#include "oneapi/tbb/spin_rw_mutex.h"
-#include "oneapi/tbb/queuing_rw_mutex.h"
-#include "oneapi/tbb/parallel_for_each.h"
-#include "oneapi/tbb/concurrent_queue.h"
-#include "oneapi/tbb/global_control.h"
-#include "oneapi/tbb/mutex.h"
-#include "oneapi/tbb/combinable.h"
-
-//#include "flecs/include/flecs.h"
 #include "entt/entt.hpp"
 
 #include "mimalloc/include/mimalloc.h"

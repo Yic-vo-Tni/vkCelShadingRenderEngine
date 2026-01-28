@@ -8,11 +8,11 @@
 #include "pch.h"
 #include "../Foundation/stl_mimalloc.h"
 #include "rhi_struct.h"
-#include "ozz/base/memory/unique_ptr.h"
-#include "ozz/animation/runtime/animation.h"
-#include "ozz/animation/runtime/skeleton.h"
-#include "ozz/animation/runtime/sampling_job.h"
-#include "MikuMikuFormats/Vmd.h"
+// #include "ozz/base/memory/unique_ptr.h"
+// #include "ozz/animation/runtime/animation.h"
+// #include "ozz/animation/runtime/skeleton.h"
+// #include "ozz/animation/runtime/sampling_job.h"
+
 #include <Saba/Model/MMD/PMXModel.h>
 
 namespace rs{ template<typename T> class MemoryChunk; }

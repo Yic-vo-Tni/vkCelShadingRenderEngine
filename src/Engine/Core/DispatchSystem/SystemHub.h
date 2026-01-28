@@ -9,6 +9,52 @@
 
 namespace hide {
 
+    class AsyncExecutor {
+    public:
+        AsyncExecutor() : stop(false) {
+            worker = std::jthread([this] { run(); });
+        }
+
+        ~AsyncExecutor() {
+            {
+                std::lock_guard lock(mtx);
+                stop = true;
+            }
+            cv.notify_all();
+        }
+
+        template<typename F>
+        void enqueue(F&& f) {
+            {
+                std::lock_guard lock(mtx);
+                jobs.emplace(std::forward<F>(f));
+            }
+            cv.notify_one();
+        }
+
+    private:
+        void run() {
+            while (true) {
+                std::function<void()> job;
+                {
+                    std::unique_lock lock(mtx);
+                    cv.wait(lock, [&] { return stop || !jobs.empty(); });
+                    if (stop && jobs.empty()) return;
+                    job = std::move(jobs.front());
+                    jobs.pop();
+                }
+                job();
+            }
+        }
+
+    private:
+        std::jthread worker;
+        std::queue<std::function<void()>> jobs;
+        std::mutex mtx;
+        std::condition_variable cv;
+        bool stop;
+    };
+
     template<typename T>
     struct DoubleBuffer {
         T buffers[2]{};
@@ -50,7 +96,8 @@ namespace hide {
         };
 
         struct Entry {
-            mutable oneapi::tbb::spin_rw_mutex rwMutex;
+            //mutable oneapi::tbb::spin_rw_mutex rwMutex;
+            mutable std::shared_mutex rwMutex;
         };
         template<typename T>
         struct EntryHandle : Entry {
@@ -74,8 +121,11 @@ namespace hide {
 
         template<class Event>
         auto pub_async(Event&& event) -> void{
-            eventGroup.run([ event = std::forward<Event>(event)]{
-                registerEvent<Event>()->pub(event);
+            // eventGroup.run([ event = std::forward<Event>(event)]{
+            //     registerEvent<Event>()->pub(event);
+            // });
+            asyncExecutor.enqueue([event = std::forward<Event>(event)] {
+              registerEvent<Event>()->pub(event);
             });
         }
 
@@ -129,7 +179,61 @@ namespace hide {
 
 
 
-        template<typename T>
+        // template<typename T>
+        // auto sto(T &&instance, const vot::string &id = {}) -> void {
+        //     using U = std::decay_t<T>;
+        //     auto &uEnt = Entries[std::type_index(typeid(U))][id];
+        //
+        //     if (!uEnt) { uEnt = std::make_unique<EntryHandle<U> >(); }
+        //
+        //     {
+        //         auto *ptr = static_cast<EntryHandle<U> *>(uEnt.get());
+        //         oneapi::tbb::spin_rw_mutex::scoped_lock lock(ptr->rwMutex, true);
+        //         ptr->any = std::forward<T>(instance);
+        //     }
+        // }
+        //
+        // template<typename T>
+        // auto sto(const T& instance, const vot::string& id = {}) -> void {
+        //     auto& uEnt = Entries[std::type_index(typeid(T))][id];
+        //
+        //     if (!uEnt) { uEnt = std::make_unique<EntryHandle<T>>(); }
+        //
+        //     {
+        //         auto *ptr = static_cast<EntryHandle<T> *>(uEnt.get());
+        //         oneapi::tbb::spin_rw_mutex::scoped_lock lock(ptr->rwMutex, true);
+        //         ptr->any = instance;
+        //     }
+        // }
+        //
+        // template<typename T>
+        // auto va(const vot::string& id = {}) ->T& {
+        //     if (const auto it = Entries.find(std::type_index(typeid(T))); it != Entries.end()) {
+        //         if (const auto idt = it->second.find(id); idt != it->second.end()) {
+        //             auto* ent = static_cast<EntryHandle<T>*>(idt->second.get());
+        //
+        //             oneapi::tbb::spin_rw_mutex::scoped_lock lock(ent->rwMutex, false);
+        //             if (!ent->any) {
+        //                 throw std::runtime_error("The struct is not initialized or the id does not exist.");
+        //             }
+        //             return *ent->any;
+        //         }
+        //     }
+        //     throw std::runtime_error("The struct is not initialized or the id does not exist.");
+        // }
+        //
+        // template<typename T>
+        // auto vaL(const vot::string& id = {}) -> Locked<T, oneapi::tbb::spin_rw_mutex>{
+        //     if (const auto it = Entries.find(std::type_index(typeid(T))); it != Entries.end()) {
+        //         if (const auto idt = it->second.find(id); idt != it->second.end()) {
+        //             auto* ent = static_cast<EntryHandle<T>*>(idt->second.get());
+        //             return Locked<T, oneapi::tbb::spin_rw_mutex>(*ent->any, ent->rwMutex);
+        //         }
+        //     }
+        //     throw std::runtime_error("The struct is not initialized or the id does not exist.");
+        // }
+
+          template<typename T>
         auto sto(T &&instance, const vot::string &id = {}) -> void {
             using U = std::decay_t<T>;
             auto &uEnt = Entries[std::type_index(typeid(U))][id];
@@ -138,7 +242,7 @@ namespace hide {
 
             {
                 auto *ptr = static_cast<EntryHandle<U> *>(uEnt.get());
-                oneapi::tbb::spin_rw_mutex::scoped_lock lock(ptr->rwMutex, true);
+                std::unique_lock lock{ptr->rwMutex};
                 ptr->any = std::forward<T>(instance);
             }
         }
@@ -151,7 +255,7 @@ namespace hide {
 
             {
                 auto *ptr = static_cast<EntryHandle<T> *>(uEnt.get());
-                oneapi::tbb::spin_rw_mutex::scoped_lock lock(ptr->rwMutex, true);
+                std::unique_lock lock{ptr->rwMutex};
                 ptr->any = instance;
             }
         }
@@ -162,7 +266,7 @@ namespace hide {
                 if (const auto idt = it->second.find(id); idt != it->second.end()) {
                     auto* ent = static_cast<EntryHandle<T>*>(idt->second.get());
 
-                    oneapi::tbb::spin_rw_mutex::scoped_lock lock(ent->rwMutex, false);
+                    std::shared_lock lock{ent->rwMutex};
                     if (!ent->any) {
                         throw std::runtime_error("The struct is not initialized or the id does not exist.");
                     }
@@ -173,11 +277,11 @@ namespace hide {
         }
 
         template<typename T>
-        auto vaL(const vot::string& id = {}) -> Locked<T, oneapi::tbb::spin_rw_mutex>{
+        auto vaL(const vot::string& id = {}) -> LockedWrite<T>{
             if (const auto it = Entries.find(std::type_index(typeid(T))); it != Entries.end()) {
                 if (const auto idt = it->second.find(id); idt != it->second.end()) {
                     auto* ent = static_cast<EntryHandle<T>*>(idt->second.get());
-                    return Locked<T, oneapi::tbb::spin_rw_mutex>(*ent->any, ent->rwMutex);
+                    return LockedWrite<T>(*ent->any, ent->rwMutex);
                 }
             }
             throw std::runtime_error("The struct is not initialized or the id does not exist.");
@@ -215,7 +319,9 @@ namespace hide {
         }
 
     private:
-        oneapi::tbb::task_group eventGroup; // TODO: join job system
+ //       oneapi::tbb::task_group eventGroup; // TODO: join job system
+        AsyncExecutor asyncExecutor;
+
 
         vot::unordered_map<std::type_index, vot::unordered_map<vot::string, std::unique_ptr<Entry>>> Entries;
         vot::unordered_map<std::type_index, std::unique_ptr<FrameEntry>> FrameBuffers;

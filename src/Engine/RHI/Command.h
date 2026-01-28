@@ -39,7 +39,8 @@ namespace rhi {
         std::condition_variable mCommandAvailable;
         vot::vector<vk::CommandPool> mCommandPools;
         vot::vector<vk::Fence> mFences;
-        oneapi::tbb::concurrent_queue<vot::CommandBuffer> mAvailablePrimaryCommandbuffers;
+        //oneapi::tbb::concurrent_queue<vot::CommandBuffer> mAvailablePrimaryCommandbuffers;
+        std::queue<vot::CommandBuffer> mAvailablePrimaryCommandbuffers;
 
         uint32_t* mActiveImageIndex;
         vot::vector<vk::CommandPool> mThreadCommandPools;
