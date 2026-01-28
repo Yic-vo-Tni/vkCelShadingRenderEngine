@@ -109,41 +109,70 @@ which primarily serves as a validation tool rather than a visual showcase.
 <img src="screenShot/01.png" width="340"/> <img src="screenShot/02.png" width="340"/>
 
 ## How to Build
-This project is mainly for personal learning, so it always targets the **latest toolchains and hardware**.  
+This project is mainly for personal exploration, so it always targets the **latest toolchains and hardware**.  
 Please make sure your environment is **equal to or newer than mine**, otherwise it may fail to build.
 
-### Environment (2025.11.9)
-- Vulkan SDK: 1.4.312  *(1.3 or newer is required)*
-- Vulkan Runtime (driver): 1.4.312
-- CMake: 3.29  *(3.20+ should work)*
-- Compiler: Clang 21.1.1  
-  *(MinGW Clang 18+ work, MSVC may hit CRT issues)*
-- GPU: NVIDIA GeForce RTX 3080 Ti *(RTX 20 series may work, AMD not tested)*
-- OS: Windows 11
+### My Environment (2025.11.09)
 
-### Dependencies (2026.1.10)
-Currently you need to download or build the following libraries manually:  
-`mimalloc, entt, oneAPI TBB, glm, miniaudio, nlohmann, spdlog, stb, webview, imgui(docking), imguizmo, imnode, saba, bullet`.\
-Place library `third/xxx`,Place built `.lib` in `third/lib` and `.dll` in `third/dll`.
-Notes:
-- **Bullet**: follow Saba's requirement.
-- **Saba**: needs cleanup (remove internal spdlog to avoid conflicts).
-- After all dependencies are resolved, you can open the project directly in CLion and build.
-- Plan: Gradually migrate dependencies to **git submodules**.  
-  Progress: assimp, glfw :(
+- **OS**: Windows 11
+- **GPU**: NVIDIA GeForce RTX 3080 Ti
+- **Vulkan SDK**: 1.4.312 *(minimum required: 1.3)*
+- **Vulkan Runtime (GPU Driver)**: 1.4.312
+- **CMake**: 3.29
 
-> Since the main focus of the author’s study is Vulkan, many features are implemented by first selecting and integrating existing libraries.
-> In some cases, even if only a small portion of functionality is needed, a relatively heavy dependency may be introduced.
-> This is largely due to the author’s current experience level—for example, Boost was used in this way.
+- **Compiler**:
+  - **MinGW Clang / MinGW Clang UCRT (recommended)**
+  - **MSVC / clang-cl**
+    - clang-cl: **CRT issues in Saba** (MMD loading is not supported)
+    - MSVC: additional **undefined behavior (UB)** issues may exist, only limited personal testing has been performed, and other issues are possible.
+  - **MinGW GCC**
+    - builds successfully, but **fails at runtime**
 
-> At the moment, **oneAPI TBB may not be buildable** in the current environment.
-> The current plan is to replace it with a combination of four alternative libraries.
-> This issue is mainly related to the author’s preference for a **MinGW ABI + Clang** toolchain, which causes build incompatibilities with TBB.
-> The replacement will be done gradually, with dependencies migrated to **git submodules** over time.
 
-> For **MSVC**, the main issue is related to **CRT compatibility in Saba**.
-> The current plan is to fork the Saba repository and refactor it internally,
-> with the goal of addressing and improving these CRT-related problems.
+### Build Steps（2026-01-28）
+
+Please install the **Vulkan SDK** first, then clone the repository using the following command:
+
+```bash
+git clone --recursive https://github.com/Yic-vo-Tni/Hakuro-Fabric.git
+```
+Select the CMakeLists.txt file for configuration and build.
+You can open the project directly with an IDE:
+
+- **CLion**：do not select the MinGW GCC toolchain
+- **Visual Studio**：please enable the CMake Project build mode
+
+### Third-Party Dependency Management
+
+All major third-party dependencies are currently managed via **git submodules** or **FetchContent**.  
+**Manual downloading, building, or placement of third-party libraries is no longer required.**
+
+The main dependencies in use include (but are not limited to):
+
+- assimp
+- glfw
+- entt
+- mimalloc
+- miniaudio
+- nlohmann/json
+- spdlog
+- stb
+- webview
+- imgui (docking)
+- imguizmo
+- imnodes
+- saba
+- bullet
+
+### Project Notes
+
+This project focuses more on **Vulkan architecture design, system organization, and experimental engineering practices**,  
+rather than strictly minimizing the number of dependencies.
+
+In some cases, even if only a small portion of functionality from a library is used,  
+a relatively heavy third-party dependency may still be introduced.  
+This is a deliberate trade-off based on the current learning stage and research goals,  
+and may be adjusted gradually as the project evolves.
 
 ### Validation Report (2025.9.4)
 - **Errors:** none
