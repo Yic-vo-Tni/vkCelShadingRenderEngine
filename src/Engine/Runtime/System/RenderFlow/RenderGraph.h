@@ -50,6 +50,12 @@ namespace runtime::flow {
                     images.emplace_back(std::make_shared<RenderTarget>(img));
                 }
             }
+            explicit read(const vot::vector<RT_sptr>& imgs) {
+                // for (auto& img : imgs) {
+                //     images.emplace_back(img);
+                // }
+                images = imgs;
+            }
 
             template<typename ...Args>
             requires(sizeof...(Args)>0 && (std::conjunction_v<std::is_same<std::decay_t<Args>, vot::Image_sptr>...>))
@@ -84,11 +90,21 @@ namespace runtime::flow {
     };
 
     inline PassNode operator+(PassNode A, const Node::read &B) {
-        A.passes.emplace_back([&](RenderPassNode& p) {
-            for (auto& img : B.images) {
-                p.inputs.emplace_back(img);
+        // A.passes.emplace_back([&](RenderPassNode& p) {
+        //     for (auto& img : B.images) {
+        //         p.inputs.emplace_back(img);
+        //     }
+        // });
+
+        auto images = B.images;
+
+        A.passes.emplace_back(
+            [images = std::move(images)](RenderPassNode& p) mutable {
+                for (auto& img : images) {
+                    p.inputs.emplace_back(img);
+                }
             }
-        });
+        );
         return A;
     }
     inline PassNode operator+(PassNode A, const Node::write &B) {

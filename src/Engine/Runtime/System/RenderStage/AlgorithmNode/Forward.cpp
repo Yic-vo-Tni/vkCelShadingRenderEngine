@@ -7,6 +7,8 @@
 #include "Runtime/System/DER/DynamicEditableRendering.h"
 
 
+extern "C" {
+
 __declspec(dllexport)
 vot::ImageCI Compose_Target() {
     return vot::ImageCI()
@@ -43,8 +45,10 @@ vot::DescriptorHandle Compose_Descriptor() {
 
 __declspec(dllexport)
 void Compose_Dispatch(vot::CommandBuffer &cmd, const runtime::flow::DERTranslator *tsr) {
+    vot::string name = "Compose";
     auto &compose_pipe = tsr->pipeline<rhi::GraphicsPipeline>("Compose");
     cmd.setRenderArea_(vot::Resolutions::eQHDExtent);
     cmd.bindPipeline_(*compose_pipe);
     cmd.draw(3, 1, 0, 0);
+}
 }

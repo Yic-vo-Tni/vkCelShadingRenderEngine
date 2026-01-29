@@ -12,27 +12,53 @@
 namespace runtime::flow {
 
     DynamicEditableRendering::DynamicEditableRendering() {
-        // rf.algorithms.emplace_back(
-        //                 DER::flow | [&](DER::AlgorithmFlow &flow) {
-        //                     flow.name = "rtName";
-        //                     flow.nodes.emplace_back(
-        //                         DER::node | [&](DER::AlgorithmNode &node) {
-        //                             node.id = ++nodeId;
-        //                             assert(nodeId < (1u << 23));
-        //                             node.name = "rtName";
-        //                             node.buildTarget = [&] {
-        //                                 return yic::allocator->allocImage(vot::ImageCI()
-        //                                     .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
-        //                                     .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
-        //                                     .setFormat(vk::Format::eR16G16B16A16Sfloat)
-        //                                     .setImageCount(3)
-        //                                     .setExtent(vot::Resolutions::eQHDExtent)
-        //                                     .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
-        //                             };
-        //                             node.THandle = node.buildTarget();
-        //                         }
-        //                     );
-        //                 });
+        rf.algorithms.reserve(16);
+        rf.algorithms.emplace_back(
+                        DER::flow | [&](DER::AlgorithmFlow &flow) {
+                            flow.name = "rtName";
+                            flow.nodes.emplace_back(
+                                DER::node | [&](DER::AlgorithmNode &node) {
+                                    node.id = ++nodeId;
+                                    assert(nodeId < (1u << 23));
+                                    node.name = "rtName";
+                                    node.buildTarget = [&] {
+                                        return yic::allocator->allocImage(vot::ImageCI()
+                                            .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
+                                            .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+                                            .setFormat(vk::Format::eR16G16B16A16Sfloat)
+                                            .setImageCount(3)
+                                            .setExtent(vot::Resolutions::eQHDExtent)
+                                            .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
+                                    };
+                                    //node.THandle = node.buildTarget();
+                                    node.THandle = std::make_shared<RenderTarget>(node.buildTarget());
+                                }
+                            );
+                        });
+
+        // auto node = DER::AlgorithmNode();
+        // node.id = ++nodeId;
+        // node.name = "rtName";
+        // node.buildTarget = [] {
+        //     return yic::allocator->allocImage(vot::ImageCI()
+        //                                       .setFlags(
+        //                                           vot::imageFlagBits::eDepthStencil |
+        //                                           vot::imageFlagBits::eDynamicRender)
+        //                                       .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+        //                                       .setFormat(vk::Format::eR16G16B16A16Sfloat)
+        //                                       .setImageCount(3)
+        //                                       .setExtent(vot::Resolutions::eQHDExtent)
+        //                                       .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
+        // };
+        // node.THandle = std::make_shared<RenderTarget>(node.buildTarget());
+        //
+        // auto flow = DER::AlgorithmFlow();
+        // flow.name = "rtName";
+        // flow.nodes.emplace_back(node);
+        // rf.algorithms.emplace_back(flow);
+
+        // rf.algorithms.clear();
+
     };
 
     DynamicEditableRendering::~DynamicEditableRendering() = default;
@@ -114,7 +140,7 @@ namespace runtime::flow {
                                             .setExtent(vot::Resolutions::eQHDExtent)
                                             .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), rtName);
                                     };
-                                    node.THandle = node.buildTarget();
+                                    node.THandle = std::make_shared<RenderTarget>(node.buildTarget());
                                 }
                             );
                         });
@@ -123,20 +149,15 @@ namespace runtime::flow {
 
             yic::imguiHub->collapsingHeader("Temp Test", [&] {
                 yic::imguiHub->button("Add Compose", [&] {
-                    using PFN_Compose_Target = vot::ImageCI(*)();
-                    using PFN_Compose_Pipeline = vot::PipelineCI(*)();
-                    using PFN_Compose_Dispatch = void(*)(vot::CommandBuffer &, const DERTranslator*);
-                    struct ComposeDll {
-                        HMODULE dll = nullptr;
-                        PFN_Compose_Target buildTarget = nullptr;
-                        PFN_Compose_Pipeline buildPipeline = nullptr;
-                        PFN_Compose_Dispatch dispatch = nullptr;
-                    };
 
                     static ComposeDll composeDll;
 
                     auto loadComposeDll = [&] -> bool {
-                        composeDll.dll = ::LoadLibraryA("libComposed.dll");
+#ifdef NDEBUG
+                        composeDll.dll = ::LoadLibraryA("libRenderFlow.dll");
+#else
+                        composeDll.dll = ::LoadLibraryA("libRenderFlowd.dll");
+#endif
                         if (!composeDll.dll) { return false; }
 
                         composeDll.buildTarget = reinterpret_cast<PFN_Compose_Target>(::GetProcAddress(
@@ -152,7 +173,7 @@ namespace runtime::flow {
                     static bool loaded = false;
                     if (!loaded) {
                         loaded = loadComposeDll();
-                        assert(loaded && "Failed to load Compose.dll");
+                        assert(loaded && "Failed to load renderflow.dll");
                     }
 
 
@@ -164,8 +185,10 @@ namespace runtime::flow {
                                     node.id = ++nodeId;
                                     assert(nodeId < (1u << 23));
                                     node.name = "Compose";
+                                   // node.buildTarget = [this]{ return yic::allocator->allocImage(composeDll.buildTarget(), "Compose");};
                                     node.buildTarget = []{ return yic::allocator->allocImage(composeDll.buildTarget(), "Compose");};
-                                    node.THandle = node.buildTarget();
+                                    node.THandle = std::make_shared<RenderTarget>(node.buildTarget());
+                                    //node.buildPipeline = [this] {
                                     node.buildPipeline = [] {
                                         const auto pipelineCI = composeDll.buildPipeline();
                                         auto pipeline = std::make_shared<rhi::GraphicsPipeline>();
@@ -175,8 +198,8 @@ namespace runtime::flow {
                                         return pipeline;
                                     };
                                     node.PHandle = node.buildPipeline();
-                                    node.dispatch = [&](vot::CommandBuffer &cmd) {
-                                        composeDll.dispatch(cmd, yic::derTranslator);
+                                    node.dispatch = [=](vot::CommandBuffer &cmd) {
+                                       composeDll.dispatch(cmd, yic::derTranslator);
                                     };
                                 });
                         });
@@ -184,5 +207,38 @@ namespace runtime::flow {
                 });
             });
         });
+    }
+
+    auto DynamicEditableRendering::first() -> void {
+        // static bool first = true;
+        // if (!first) {
+        //     return;
+        // }
+        // rf.algorithms.emplace_back(
+        //                 DER::flow | [&](DER::AlgorithmFlow &flow) {
+        //                     flow.name = "rtName";
+        //                     flow.nodes.emplace_back(
+        //                         DER::node | [&](DER::AlgorithmNode &node) {
+        //                             node.id = ++nodeId;
+        //                             assert(nodeId < (1u << 23));
+        //                             node.name = "rtName";
+        //                             node.buildTarget = [&] {
+        //                                 return yic::allocator->allocImage(vot::ImageCI()
+        //                                     .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
+        //                                     .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+        //                                     .setFormat(vk::Format::eR16G16B16A16Sfloat)
+        //                                     .setImageCount(3)
+        //                                     .setExtent(vot::Resolutions::eQHDExtent)
+        //                                     .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
+        //                             };
+        //                             node.THandle = node.buildTarget();
+        //                         }
+        //                     );
+        //                 });
+        //
+        // rf.algorithms.emplace_back(DER::AlgorithmFlow{});
+        // rf.algorithms.clear();
+        //
+        // first = false;
     }
 } // flow

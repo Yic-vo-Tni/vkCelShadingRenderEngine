@@ -8,6 +8,7 @@
 #include "RHI/Pipeline/ComputePipeline.h"
 #include "RHI/Pipeline/GraphicsPipeline.h"
 #include "RHI/Pipeline/RayTracingPipeline.h"
+#include "Runtime/System/RenderFlow/RenderTarget.h"
 
 using PipelineHandle = std::variant<
     std::shared_ptr<rhi::GraphicsPipeline>,
@@ -29,17 +30,27 @@ namespace runtime::flow {
         };
 
         struct AlgorithmNode {
-            std::uint32_t id;
-            vot::string name;
-            LambdaInvokeUint<vot::Image_sptr> buildTarget;
-            LambdaInvokeUint<PipelineHandle> buildPipeline;
-            LambdaInvokeUint<vot::DescriptorHandle> buildDescriptor;
-            std::function<void(vot::CommandBuffer&)> dispatch;
+            std::uint32_t id{0};
+            vot::string name{};
+            LambdaInvokeUint<vot::Image_sptr> buildTarget{};
+            LambdaInvokeUint<PipelineHandle> buildPipeline{};
+            LambdaInvokeUint<vot::DescriptorHandle> buildDescriptor{};
+            std::function<void(vot::CommandBuffer&)> dispatch{};
 
-            vot::vector<vot::Image_sptr> reads;
-            vot::Image_sptr THandle;
-            PipelineHandle PHandle;
-            vot::DescriptorHandle DHandle;
+            // vot::vector<vot::Image_sptr> reads{};
+            // vot::Image_sptr THandle{};
+            vot::vector<RT_sptr> reads{};
+            RT_sptr THandle{};
+            PipelineHandle PHandle{};
+            vot::DescriptorHandle DHandle{};
+
+            AlgorithmNode() = default;
+
+            // AlgorithmNode(AlgorithmNode&&) noexcept = default;
+            // AlgorithmNode& operator=(AlgorithmNode&&) noexcept = default;
+            //
+            // AlgorithmNode(const AlgorithmNode&) = delete;
+            // AlgorithmNode& operator=(const AlgorithmNode&) = delete;
 
             template<typename T>
             std::shared_ptr<T> *tryPipeline() {
@@ -60,7 +71,11 @@ namespace runtime::flow {
                 return std::get<std::shared_ptr<T>>(PHandle);
             }
 
-            [[nodiscard]] auto makePassNode() const -> std::variant<vot::Image_sptr, vot::string> {
+            // [[nodiscard]] auto makePassNode() const -> std::variant<vot::Image_sptr, vot::string> {
+            //     if (THandle) return THandle;
+            //     return name;
+            // }
+            [[nodiscard]] auto makePassNode() const -> std::variant<RT_sptr, vot::string> {
                 if (THandle) return THandle;
                 return name;
             }
@@ -100,6 +115,21 @@ namespace runtime::flow {
 
     }
 
+    class DERTranslator;
+    using PFN_Compose_Target = vot::ImageCI(*)();
+    using PFN_Compose_Pipeline = vot::PipelineCI(*)();
+    using PFN_Compose_Dispatch = void(*)(vot::CommandBuffer &, const DERTranslator*);
+    struct ComposeDll {
+        HMODULE dll = nullptr;
+        PFN_Compose_Target buildTarget = nullptr;
+        PFN_Compose_Pipeline buildPipeline = nullptr;
+        PFN_Compose_Dispatch dispatch = nullptr;
+
+        ~ComposeDll() {
+            if (dll) ::FreeLibrary(dll);
+        }
+    };
+
     class DynamicEditableRendering {
     public:
         DynamicEditableRendering();
@@ -118,7 +148,9 @@ namespace runtime::flow {
             throw std::runtime_error("DER::node view: node not found");
         }
         [[nodiscard]] auto acquireRF() const { return rf;}
+        auto first() -> void;
     private:
+        // ComposeDll composeDll;
         std::uint32_t rfActive{0};
         std::uint32_t nodeId{0};
         DER::RenderingFlow rf{};
@@ -130,7 +162,10 @@ namespace runtime::flow {
         explicit DERTranslator(const DynamicEditableRendering* der) : r(der) {}
         ~DERTranslator() = default;
 
-        [[nodiscard]] auto target(const vot::string &name) const -> vot::Image_sptr {
+        // [[nodiscard]] auto target(const vot::string &name) const -> vot::Image_sptr {
+        //     return r->queryNode(name).THandle;
+        // }
+        [[nodiscard]] auto target(const vot::string &name) const -> RT_sptr {
             return r->queryNode(name).THandle;
         }
 

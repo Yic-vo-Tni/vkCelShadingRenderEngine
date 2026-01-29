@@ -1,11 +1,19 @@
 # Hakuro Fabric
 
-Hakuro Fabric is a Vulkan-based rendering engine prototype focused on exploring dynamic,
+Hakuro Fabric is a personal Vulkan exploration project focused on exploring dynamic,
 decoupled, and editable rendering system design.
 
 Rather than chasing higher performance or better visual fidelity,
 this project emphasizes smoother workflows, freer composition of rendering pipelines,
-more flexible system-level organization, and explicit expression of rendering behavior
+more flexible system-level organization, and explicit expression of rendering behavior.
+
+---
+
+## Personal Notes 
+
+>Everything below is a collection of personal notes, experiments,
+and partial design thoughts recorded during development.
+It is not intended as formal documentation.
 
 ## Design Goals and Exploration Scope
 Hakuro Fabric initially began as a renderer for MMD content.
@@ -19,7 +27,6 @@ approaches to rendering workflows and system organization.
 Some of these explorations may be refined and carried forward,
 while others may be paused or discarded as their trade-offs
 and limitations become clearer.
-
 
 ### Exploration Areas
 
@@ -97,10 +104,8 @@ This structure allows animation updates and resource processing to run without b
 rendering or input handling. Basic shader hot-reloading and a lightweight temporary editor
 are also present to support rapid iteration during development.
 
-Visual quality is not a primary focus of the project at this stage.
-Rendering output is intentionally minimal, consisting of basic rasterization,
-ray-traced directional light shadows, and a hacked volumetric cloud implementation
-adapted from Shadertoy experiments.
+Rendering output is intentionally minimal and primarily serves as a validation
+tool for system behavior, rather than a visual showcase.
 
 ### Screenshots
 The following screenshots illustrate the current rendering output,
@@ -141,6 +146,11 @@ You can open the project directly with an IDE:
 
 - **CLion**：do not select the MinGW GCC toolchain
 - **Visual Studio**：please enable the CMake Project build mode
+
+> **Note:** The first run may take longer than usual,
+> because all shaders are compiled using `glslc` at startup.  
+> This is a one-time cost — subsequent runs will be much faster.
+
 
 ### Third-Party Dependency Management
 

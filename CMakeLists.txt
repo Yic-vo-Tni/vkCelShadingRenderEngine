@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.29)
 
 project(HF LANGUAGES CXX )
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "" FORCE)
 
@@ -21,8 +24,6 @@ if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Wno-implicit-fallthrough
             -Wno-extra-semi
     )
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endif()
 
 include(cmake/ThirdParty.cmake)
@@ -47,16 +48,16 @@ add_custom_target(HF_runtime ALL
         $<TARGET_FILE_DIR:HF>
 )
 
-if (MINGW)
-    add_custom_command(TARGET HF_runtime POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:glfw>
-            $<TARGET_FILE:assimp>
-            $<TARGET_FILE:spdlog>
-            $<TARGET_FILE_DIR:HF>
-            VERBATIM
-    )
-endif()
+#if (MINGW)
+#    add_custom_command(TARGET HF_runtime POST_BUILD
+#            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#            $<TARGET_FILE:glfw>
+#            $<TARGET_FILE:assimp>
+#            $<TARGET_FILE:spdlog>
+#            $<TARGET_FILE_DIR:HF>
+#            VERBATIM
+#    )
+#endif()
 
 #if (MSVC)
 #    add_custom_command(TARGET HF_runtime POST_BUILD

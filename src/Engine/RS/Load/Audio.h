@@ -87,7 +87,7 @@ namespace rs {
 
         vot::string mActiveSound{};
         vot::unordered_map<vot::string, std::unique_ptr<ma_sound>> mSounds;
-        uint8_t handle = 0;
+        std::uint8_t handle = 0;
 
         ma_uint64 pausedFrame = 0;
     };

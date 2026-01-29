@@ -44,7 +44,7 @@ namespace rhi {
 
         mVkInit = std::make_unique<VkInit>(VkInit::CreateInfo()
 #ifndef   NDBUG
-         .addInstanceLayers("VK_LAYER_KHRONOS_validation")
+         // .addInstanceLayers("VK_LAYER_KHRONOS_validation")
          .addInstanceExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
 #endif
          .addInstanceExtensions(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME)

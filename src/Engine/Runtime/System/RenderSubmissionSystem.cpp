@@ -11,9 +11,9 @@ namespace sc {
     #define RG_STAGE(fn) std::bind_front(&RenderStage::fn, uRenderStage.get())
 
     RenderSubmissionSystem::RenderSubmissionSystem(entt::registry& registry) : ecs{registry}{
+        uDynamicEditableRendering = std::make_unique<runtime::flow::DynamicEditableRendering>();
         uRenderGraph = std::make_unique<runtime::flow::RenderGraph>();
         uRenderStage = std::make_unique<RenderStage>(ecs);
-        uDynamicEditableRendering = std::make_unique<runtime::flow::DynamicEditableRendering>();
         yic::derTranslator = runtime::flow::DERTranslator::make(uDynamicEditableRendering.get());
         yic::dispatchHelper = runtime::flow::DispatchHelper::make(ecs);
     }
@@ -21,31 +21,46 @@ namespace sc {
     RenderSubmissionSystem::~RenderSubmissionSystem() = default;
 
     auto RenderSubmissionSystem::frame() -> void {
-        // yic::dispatchHelper->frame();
-        // uDynamicEditableRendering->drawEditor();
+        yic::dispatchHelper->frame();
+        uDynamicEditableRendering->drawEditor();
+
+        using namespace runtime::flow;
+
+        uRenderGraph | RG_DSL::begin
+
+        // | RG_DSL::lambda([&](auto &g) {
+        //     for (auto &[n, nodes]: uDynamicEditableRendering->acquireRF().algorithms) {
+        //         for (auto &node: nodes) {
+        //             g = std::move(g) |
+        //                 std::visit([&]<typename T0>(T0 &&v) {
+        //                     using T = std::decay_t<T0>;
+        //                     if constexpr (std::is_same_v<T, RT_sptr>) {
+        //                         return PassNode{v};
+        //                     } else if constexpr (std::is_same_v<T, vot::string>) {
+        //                         return PassNode{v};
+        //                     }
+        //                 }, node.makePassNode())
+        //                 + Node::read{node.reads}
+        //                 >> Node::invoke{node.dispatch};
+        //         }
+        //     }
+        // })
+
+        // | RG_DSL::lambda([&](RG_DSL& dsl) {
+        //     for (auto [_, nodes] : uDynamicEditableRendering->acquireRF().algorithms) {
+        //         for (auto& node : nodes) {
+        //             //auto Node = PassNode{no.THandle} >> Node::invoke{};
         //
-        // using namespace runtime::flow;
-        // uRenderGraph | RG_DSL::begin
-        //
-        //         | RG_DSL::lambda([&](auto &g) {
-        //             for (auto &[n, nodes]: uDynamicEditableRendering->acquireRF().algorithms) {
-        //                 for (auto &node: nodes) {
-        //                     g = std::move(g) |
-        //                         std::visit([&]<typename T0>(T0 &&v) {
-        //                             using T = std::decay_t<T0>;
-        //                             if constexpr (std::is_same_v<T, vot::Image_sptr>) {
-        //                                 return PassNode{v};
-        //                             } else if constexpr (std::is_same_v<T, vot::string>) {
-        //                                 return PassNode{v};
-        //                             }
-        //                         }, node.makePassNode())
-        //                         + Node::read{node.reads}
-        //                         >> Node::invoke{node.dispatch};
-        //                 }
-        //             }
-        //         })
-        //
-        //         | RG_DSL::end;
+        //             dsl = std::move(dsl)
+        //             //| Node;
+        //             | PassNode{node.THandle}
+        //             + Node::read{node.reads}
+        //             >> Node::invoke{node.dispatch};
+        //         }
+        //     }
+        // })
+
+        | RG_DSL::end;
 
         /////////////////////////////////////////////////////////
 

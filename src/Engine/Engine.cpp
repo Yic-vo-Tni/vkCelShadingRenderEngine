@@ -24,6 +24,10 @@ Engine::~Engine() {
     ui::ShaderHotReload::destroy();
     mEngineRuntime.reset();
     mWindow.reset();
+
+    yic::logger->info("before return main");
+    //MessageBoxA(nullptr, "ABOUT TO EXITPROCESS", "DBG", MB_OK);
+    ExitProcess(0);
 }
 
 auto Engine::run() -> void {

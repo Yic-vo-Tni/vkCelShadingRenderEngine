@@ -41,6 +41,7 @@
 #include "glm/gtx/string_cast.hpp"
 
 #include "iostream"
+#include "cstdint"
 #include "stdexcept"
 #include "vector"
 #include "set"
