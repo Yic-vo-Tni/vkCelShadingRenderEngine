@@ -8,6 +8,8 @@
 #include "Editor/Window.h"
 #include "Runtime/EngineRuntime.h"
 
+#include <psapi.h>
+
 class Engine {
     template<typename TickFn, typename ExitFn = std::nullptr_t>
     std::unique_ptr<std::thread> Launch(const int winPriority, TickFn&& tick, ExitFn&& onExit = nullptr) {
@@ -33,6 +35,20 @@ public:
     ~Engine();
 
     auto run() ->  void ;
+private:
+    auto dumpLoadedModules() -> void {
+        HMODULE mods[1024];
+        DWORD needed = 0;
+
+        if (EnumProcessModules(GetCurrentProcess(), mods, sizeof(mods), &needed)) {
+            for (DWORD i = 0; i < needed / sizeof(HMODULE); ++i) {
+                char path[MAX_PATH]{};
+                if (GetModuleFileNameExA(GetCurrentProcess(), mods[i], path, MAX_PATH)) {
+                    yic::logger->info("MODULE: {}", path);
+                }
+            }
+        }
+    }
 private:
     std::unique_ptr<yic::Window> mWindow;
 

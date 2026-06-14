@@ -12,29 +12,31 @@
 namespace runtime::flow {
 
     DynamicEditableRendering::DynamicEditableRendering() {
-        rf.algorithms.reserve(16);
-        rf.algorithms.emplace_back(
-                        DER::flow | [&](DER::AlgorithmFlow &flow) {
-                            flow.name = "rtName";
-                            flow.nodes.emplace_back(
-                                DER::node | [&](DER::AlgorithmNode &node) {
-                                    node.id = ++nodeId;
-                                    assert(nodeId < (1u << 23));
-                                    node.name = "rtName";
-                                    node.buildTarget = [&] {
-                                        return yic::allocator->allocImage(vot::ImageCI()
-                                            .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
-                                            .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
-                                            .setFormat(vk::Format::eR16G16B16A16Sfloat)
-                                            .setImageCount(3)
-                                            .setExtent(vot::Resolutions::eQHDExtent)
-                                            .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
-                                    };
-                                    //node.THandle = node.buildTarget();
-                                    node.THandle = std::make_shared<RenderTarget>(node.buildTarget());
-                                }
-                            );
-                        });
+        // rf.algorithms.reserve(16);
+        // rf.algorithms.emplace_back(
+        //                 DER::flow | [&](DER::AlgorithmFlow &flow) {
+        //                     flow.name = "rtName";
+        //                     flow.nodes.emplace_back(
+        //                         DER::node | [&](DER::AlgorithmNode &node) {
+        //                             node.id = ++nodeId;
+        //                             assert(nodeId < (1u << 23));
+        //                             node.name = "rtName";
+        //                             node.buildTarget = [&] {
+        //                                 return yic::allocator->allocImage(vot::ImageCI()
+        //                                     .setFlags(vot::imageFlagBits::eDepthStencil | vot::imageFlagBits::eDynamicRender)
+        //                                     .addUsage(vk::ImageUsageFlagBits::eInputAttachment)
+        //                                     .setFormat(vk::Format::eR16G16B16A16Sfloat)
+        //                                     .setImageCount(3)
+        //                                     .setExtent(vot::Resolutions::eQHDExtent)
+        //                                     .setDstImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal), "rtName");
+        //                             };
+        //                             //node.THandle = node.buildTarget();
+        //                             node.THandle = std::make_shared<RenderTarget>(node.buildTarget());
+        //                         }
+        //                     );
+        //                 });
+
+        /////
 
         // auto node = DER::AlgorithmNode();
         // node.id = ++nodeId;
@@ -150,7 +152,7 @@ namespace runtime::flow {
             yic::imguiHub->collapsingHeader("Temp Test", [&] {
                 yic::imguiHub->button("Add Compose", [&] {
 
-                    static ComposeDll composeDll;
+                   static ComposeDll composeDll;
 
                     auto loadComposeDll = [&] -> bool {
 #ifdef NDEBUG

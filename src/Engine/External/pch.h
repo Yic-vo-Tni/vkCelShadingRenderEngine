@@ -78,6 +78,7 @@
 #include "immintrin.h"
 #include "memory_resource"
 #include "shared_mutex"
+#include <source_location>
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -131,6 +132,9 @@ namespace vot {
 #include "Foundation/Path.h"
 
 ///
+
+#include "Core/Diagnostics/DiagnosticsTypes.h"
+#include "Core/Diagnostics/LifetimeTracker.h"
 
 #include "RHI/GpuRuntime/Alloctor/AllocatorTypes.h"
 #include "RHI/RenderDescription/RenderDescriptionTypes.h"

@@ -64,11 +64,11 @@ namespace sm {
         .each([&](const entt::entity, const vot::BasicInfoComponent &bc, const vot::VertexDataComponent &vc,
                 const vot::RenderComponent &rc, vot::RayTracingComponent &rtc, const vot::AnimationComponent &ac) {
             if (ac.enableAnim && (GLOBAL::playAllAnim || bc.playAnimation)){
-                bool onlyTransform = true;
+                bool fullUpdate = true;
 
-                if (elapsedTime >= 2.0) { onlyTransform = false; elapsedTime = 0.0;}
+                if (elapsedTime >= 2.0) { fullUpdate = false; elapsedTime = 0.0;}
 
-                syncBLAS(vc, rc, rtc, onlyTransform);
+                syncBLAS(vc, rc, rtc, fullUpdate);
 
                 playAnim = true;
             }

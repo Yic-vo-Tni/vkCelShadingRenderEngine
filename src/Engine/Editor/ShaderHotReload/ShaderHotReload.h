@@ -73,10 +73,10 @@ namespace ui {
         }
 
 
-        auto frame(){
-            for(auto& p : ptsUpdate){
-                if (buildTasks.find(p) != buildTasks.end()){
-                    auto& info = buildTasks[p];
+        auto frame() {
+            for (auto &p: ptsUpdate) {
+                if (buildTasks.find(p) != buildTasks.end()) {
+                    auto &info = buildTasks[p];
 
                     switch (info.flags) {
                         case vk::ShaderStageFlagBits::eVertex:
@@ -104,8 +104,8 @@ namespace ui {
                             break;
                     }
                 }
-                ptsUpdate.clear();
             }
+            ptsUpdate.clear();
         }
 
         auto tempEditor(const vot::string& pt) -> void{
